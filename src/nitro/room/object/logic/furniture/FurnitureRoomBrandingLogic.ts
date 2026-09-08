@@ -145,11 +145,23 @@ export class FurnitureRoomBrandingLogic extends FurnitureLogic
 
         if(!imageUrl || (imageUrl === '') || (imageStatus === 1)) return;
 
-        if(imageUrl.endsWith('.gif'))
+        // MPU / room branding: la imageUrl del usuario puede apuntar a cualquier
+        // host. El fetch() cross-origin necesita CORS (que los hosts externos no
+        // mandan) y Nitro sólo acepta image/png|jpeg|gif. Se descarga a través del
+        // proxy propio (habb.tv/imgproxy.php), que la baja server-side y la
+        // re-sirve con CORS y el Content-Type normalizado. La textura se registra
+        // SIEMPRE con la URL original como clave (es la que busca la visualización).
+        const isGif = /\.gif(\?|#|$)/i.test(imageUrl);
+        const isExternal = /^https?:\/\//i.test(imageUrl) && (imageUrl.indexOf(self.location.origin + '/') !== 0);
+        const fetchUrl = isExternal
+            ? (self.location.origin + '/imgproxy.php?url=' + encodeURIComponent(imageUrl))
+            : imageUrl;
+
+        if(isGif)
         {
             this.object.model.setValue(RoomObjectVariable.FURNITURE_BRANDING_IS_ANIMATED, true);
 
-            fetch(imageUrl)
+            fetch(fetchUrl)
                 .then(resp => resp.arrayBuffer())
                 .then(buff => parseGIF(buff))
                 .then(gif =>
@@ -216,6 +228,38 @@ export class FurnitureRoomBrandingLogic extends FurnitureLogic
 
             if(!texture)
             {
+                if(isExternal)
+                {
+                    // descarga vía proxy y registra la textura con la URL ORIGINAL
+                    // como clave (la visualización busca por FURNITURE_BRANDING_IMAGE_URL)
+                    try
+                    {
+                        const resp = await fetch(fetchUrl);
+
+                        if(!resp || !resp.ok) throw new Error('proxy status ' + (resp ? resp.status : '?'));
+
+                        const blob = await resp.blob();
+                        const objectUrl = URL.createObjectURL(blob);
+                        const baseTexture = BaseTexture.from(objectUrl);
+
+                        const register = () =>
+                        {
+                            asset.setTexture(imageUrl, new Texture(baseTexture));
+                            URL.revokeObjectURL(objectUrl);
+                            this.processUpdateMessage(new ObjectAdUpdateMessage(ObjectAdUpdateMessage.IMAGE_LOADED));
+                        };
+
+                        if(baseTexture.valid) register();
+                        else baseTexture.once('update', () => register());
+                    }
+                    catch (err)
+                    {
+                        this.processUpdateMessage(new ObjectAdUpdateMessage(ObjectAdUpdateMessage.IMAGE_LOADING_FAILED));
+                    }
+
+                    return;
+                }
+
                 const status = await asset.downloadAsset(imageUrl);
 
                 if(!status)

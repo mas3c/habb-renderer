@@ -5,6 +5,7 @@ export * from './data';
 export * from './engine';
 export * from './furniture';
 export * from './furniture/dimmer';
+export * from './builder';
 export * from './furniture/floor';
 export * from './furniture/logic';
 export * from './furniture/mannequin';

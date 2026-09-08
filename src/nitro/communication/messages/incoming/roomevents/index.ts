@@ -5,3 +5,5 @@ export * from './WiredOpenEvent';
 export * from './WiredRewardResultMessageEvent';
 export * from './WiredSaveSuccessEvent';
 export * from './WiredValidationErrorEvent';
+export * from './WiredFurniSelectorEvent';
+export * from './WiredFurniVariableEvent';

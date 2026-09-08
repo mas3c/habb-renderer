@@ -4,3 +4,5 @@ export * from './RoomMuteComposer';
 export * from './UpdateActionMessageComposer';
 export * from './UpdateConditionMessageComposer';
 export * from './UpdateTriggerMessageComposer';
+export * from './UpdateSelectorMessageComposer';
+export * from './UpdateVariableMessageComposer';

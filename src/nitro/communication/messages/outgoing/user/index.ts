@@ -12,3 +12,4 @@ export * from './settings';
 export * from './UnblockGroupMemberMessageComposer';
 export * from './UserRespectComposer';
 export * from './WelcomeGiftChangeEmailComposer';
+export * from './SetProfileDecorationComposer';

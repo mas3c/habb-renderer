@@ -115,6 +115,7 @@ export class OutgoingHeader
     public static MESSENGER_INIT = 2781;
     public static MESSENGER_RELATIONSHIPS = 2138;
     public static SET_RELATIONSHIP_STATUS = 3768;
+    public static SET_PROFILE_DECORATION = 4001; // custom Habb: profile decoration
     public static REMOVE_FRIEND = 1689;
     public static REQUEST_FRIEND = 3157;
     public static GET_FRIEND_REQUESTS = 2448;
@@ -268,6 +269,15 @@ export class OutgoingHeader
     public static WIRED_CONDITION_SAVE = 3203;
     public static WIRED_OPEN = 768;
     public static WIRED_TRIGGER_SAVE = 1520;
+    // WIRED 2.0 (custom, deben coincidir con Comet — FASE 4)
+    public static WIRED_SELECTOR_SAVE = 5903;
+    public static WIRED_VARIABLE_SAVE = 5904;
+    // Room Builder (custom, = Comet Events)
+    public static ROOM_BUILDER_SET_HEIGHT = 5906;
+    public static ROOM_BUILDER_SET_STATE = 5907;
+    public static ROOM_BUILDER_MOVEMENT_MODE = 5909;
+    public static ROOM_BUILDER_SELECT_FURNI = 5910;
+    public static ROOM_BUILDER_REQ_CATALOG_PAGE = 5911;
     public static GET_ITEM_DATA = 3964;
     public static ONE_WAY_DOOR_CLICK = 2765;
     public static REMOVE_WALL_ITEM = 3336;

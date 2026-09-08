@@ -5,6 +5,7 @@ export * from './bots';
 export * from './data';
 export * from './engine';
 export * from './furniture';
+export * from './builder';
 export * from './furniture/floor';
 export * from './furniture/wall';
 export * from './furniture/youtube';

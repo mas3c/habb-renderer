@@ -9,3 +9,7 @@ export * from './WiredOpenParser';
 export * from './WiredRewardResultMessageParser';
 export * from './WiredSaveSuccessParser';
 export * from './WiredValidationErrorParser';
+export * from './SelectorDefinition';
+export * from './VariableDefinition';
+export * from './WiredFurniSelectorParser';
+export * from './WiredFurniVariableParser';

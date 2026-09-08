@@ -92,6 +92,12 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
         this.stopPonging();
 
         if(this._didConnect) this.dispatchCommunicationDemoEvent(NitroCommunicationDemoEvent.CONNECTION_CLOSED, connection);
+        // El socket se cerró ANTES de abrir (onopen nunca disparó): handshake WS
+        // rechazado / reset durante el Upgrade (WAF, QUIC, cabeceras grandes, corte
+        // de red). El navegador a veces sólo emite onclose, no onerror. Sin esto el
+        // evento se traga y el cliente se queda congelado en el 40%. Avisamos para
+        // que la UI reaccione (mensaje + recarga con SSO nueva).
+        else this.dispatchCommunicationDemoEvent(NitroCommunicationDemoEvent.CONNECTION_HANDSHAKE_FAILED, connection);
     }
 
     private onConnectionErrorEvent(event: CloseEvent): void

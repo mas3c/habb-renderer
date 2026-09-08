@@ -17,6 +17,7 @@ export class IncomingHeader
     public static CFH_RESULT_MESSAGE = 3635;
     public static CLIENT_LATENCY = 10;
     public static CLIENT_PING = 3928;
+    public static PROFILE_DECORATION = 5300; // custom Habb: profile decoration
     public static DESKTOP_CAMPAIGN = 1745;
     public static DESKTOP_NEWS = 286;
     public static DESKTOP_VIEW = 122;
@@ -266,6 +267,14 @@ export class IncomingHeader
     public static WIRED_REWARD = 178;
     public static WIRED_SAVE = 1155;
     public static WIRED_TRIGGER = 383;
+    // WIRED 2.0 (custom, deben coincidir con Comet — FASE 4)
+    public static WIRED_SELECTOR = 5901;
+    public static WIRED_VARIABLE = 5902;
+    // Cambio de nombre: abrir el cuadro nativo en modo staff (:flagme). Custom, = Comet.
+    public static OPEN_NAME_CHANGE_DIALOG = 5905;
+    // Room Builder: :roombuilder abre la ventana. = Comet Composers.OpenRoomBuilder
+    public static OPEN_ROOM_BUILDER = 5908;
+    public static ROOM_BUILDER_CATALOG_PAGE = 5911;
     public static PLAYING_GAME = 448;
     public static FURNITURE_STATE_2 = 3431;
     public static REMOVE_BOT_FROM_INVENTORY = 233;
