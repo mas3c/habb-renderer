@@ -17,6 +17,8 @@ export interface WiredToolsMonitorSnapshot
     execCount: number;
     avgExecMs: string;
     peakExecMs: string;
+    delayedEventsLimit: number;
+    usageWindowMs: number;
     errors: WiredToolsMonitorError[];
     logs: WiredToolsMonitorLog[];
     history: WiredToolsMonitorHistory[];
@@ -41,6 +43,8 @@ export class WiredToolsMonitorParser implements IMessageParser
             execCount: wrapper.readInt(),
             avgExecMs: wrapper.readString(),
             peakExecMs: wrapper.readString(),
+            delayedEventsLimit: wrapper.readInt(),
+            usageWindowMs: wrapper.readInt(),
             errors: [],
             logs: [],
             history: []
