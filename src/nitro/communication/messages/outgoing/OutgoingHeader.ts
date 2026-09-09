@@ -273,7 +273,8 @@ export class OutgoingHeader
     public static WIRED_SELECTOR_SAVE = 5903;
     public static WIRED_VARIABLE_SAVE = 5904;
     public static WIRED_TOOLS_GET_VARIABLES = 5912;
-    public static WIRED_TOOLS_GET_MONITOR = 5913; // wired-tools port, Parte 2
+    public static WIRED_TOOLS_GET_MONITOR = 5913;
+    public static WIRED_TOOLS_VARIABLE_MANAGE = 5914; // wired-tools port, Parte 2
     // Room Builder (custom, = Comet Events)
     public static ROOM_BUILDER_SET_HEIGHT = 5906;
     public static ROOM_BUILDER_SET_STATE = 5907;

@@ -8,3 +8,4 @@ export * from './UpdateSelectorMessageComposer';
 export * from './UpdateVariableMessageComposer';
 export * from './WiredToolsGetVariablesComposer';
 export * from './WiredToolsGetMonitorComposer';
+export * from './WiredToolsVariableManageComposer';
