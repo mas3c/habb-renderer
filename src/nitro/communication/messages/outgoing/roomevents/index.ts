@@ -7,3 +7,4 @@ export * from './UpdateTriggerMessageComposer';
 export * from './UpdateSelectorMessageComposer';
 export * from './UpdateVariableMessageComposer';
 export * from './WiredToolsGetVariablesComposer';
+export * from './WiredToolsGetMonitorComposer';
