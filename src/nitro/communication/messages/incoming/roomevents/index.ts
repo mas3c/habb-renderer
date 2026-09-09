@@ -7,3 +7,4 @@ export * from './WiredSaveSuccessEvent';
 export * from './WiredValidationErrorEvent';
 export * from './WiredFurniSelectorEvent';
 export * from './WiredFurniVariableEvent';
+export * from './WiredToolsVariablesEvent';

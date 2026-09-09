@@ -13,3 +13,4 @@ export * from './SelectorDefinition';
 export * from './VariableDefinition';
 export * from './WiredFurniSelectorParser';
 export * from './WiredFurniVariableParser';
+export * from './WiredToolsVariablesParser';

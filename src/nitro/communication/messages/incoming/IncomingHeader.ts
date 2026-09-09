@@ -270,6 +270,7 @@ export class IncomingHeader
     // WIRED 2.0 (custom, deben coincidir con Comet — FASE 4)
     public static WIRED_SELECTOR = 5901;
     public static WIRED_VARIABLE = 5902;
+    public static WIRED_TOOLS_VARIABLES = 5912; // wired-tools port, Parte 2
     // Cambio de nombre: abrir el cuadro nativo en modo staff (:flagme). Custom, = Comet.
     public static OPEN_NAME_CHANGE_DIALOG = 5905;
     // Room Builder: :roombuilder abre la ventana. = Comet Composers.OpenRoomBuilder
