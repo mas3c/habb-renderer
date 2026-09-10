@@ -272,6 +272,7 @@ export class IncomingHeader
     public static WIRED_VARIABLE = 5902;
     public static WIRED_TOOLS_VARIABLES = 5912;
     public static WIRED_TOOLS_MONITOR = 5913; // wired-tools port, Parte 2
+    public static WIRED_TOOLS_ACCESS = 5916; // wired-tools port — máscaras de acceso
     // Cambio de nombre: abrir el cuadro nativo en modo staff (:flagme). Custom, = Comet.
     public static OPEN_NAME_CHANGE_DIALOG = 5905;
     // Room Builder: :roombuilder abre la ventana. = Comet Composers.OpenRoomBuilder

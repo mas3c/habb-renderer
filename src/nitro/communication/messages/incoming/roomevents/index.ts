@@ -9,3 +9,4 @@ export * from './WiredFurniSelectorEvent';
 export * from './WiredFurniVariableEvent';
 export * from './WiredToolsVariablesEvent';
 export * from './WiredToolsMonitorEvent';
+export * from './WiredToolsAccessEvent';
