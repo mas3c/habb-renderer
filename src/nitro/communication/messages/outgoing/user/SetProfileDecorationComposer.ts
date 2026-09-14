@@ -4,9 +4,9 @@ export class SetProfileDecorationComposer implements IMessageComposer<Constructo
 {
     private _data: ConstructorParameters<typeof SetProfileDecorationComposer>;
 
-    constructor(backgroundId: number, standId: number, overlayId: number)
+    constructor(backgroundId: number, standId: number, overlayId: number, infostandMiniCode: string, infostandProfileCode: string)
     {
-        this._data = [ backgroundId, standId, overlayId ];
+        this._data = [ backgroundId, standId, overlayId, infostandMiniCode, infostandProfileCode ];
     }
 
     public getMessageArray()
