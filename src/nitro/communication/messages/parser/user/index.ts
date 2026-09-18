@@ -1,3 +1,4 @@
+export * from './battlepass';
 export * from './access';
 export * from './AccountSafetyLockStatusChangeParser';
 export * from './ApproveNameResultParser';

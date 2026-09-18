@@ -253,6 +253,10 @@ export class OutgoingHeader
     public static USER_RESPECT = 2694;
     public static GET_SOUND_SETTINGS = 2388;
     public static USER_SETTINGS_CAMERA = 1461;
+    public static USER_SETTINGS_GAME_PRIVACY = 9415;
+    public static BATTLEPASS_STATUS = 5920;
+    public static BATTLEPASS_DATA = 5922;
+    public static BATTLEPASS_CLAIM = 5923;
     public static USER_SETTINGS_CHAT_STYLE = 1030;
     public static USER_SETTINGS_INVITES = 1086;
     public static USER_SETTINGS_OLD_CHAT = 1262;

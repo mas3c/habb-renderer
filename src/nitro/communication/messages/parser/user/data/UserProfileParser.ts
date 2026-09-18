@@ -16,6 +16,7 @@ export class UserProfileParser implements IMessageParser
     private _groups: HabboGroupEntryData[];
     private _secondsSinceLastVisit: number;
     private _openProfileWindow: boolean;
+    private _battlePassLevel: number;
 
     public flush(): boolean
     {
@@ -32,6 +33,7 @@ export class UserProfileParser implements IMessageParser
         this._groups = [];
         this._secondsSinceLastVisit = 0;
         this._openProfileWindow = false;
+        this._battlePassLevel = 0;
 
         return true;
     }
@@ -59,6 +61,10 @@ export class UserProfileParser implements IMessageParser
 
         this._secondsSinceLastVisit = wrapper.readInt();
         this._openProfileWindow = wrapper.readBoolean();
+
+        // Nivel del Battle Pass, añadido al final por Habb. Se lee solo si viene, para
+        // que el parser siga valiendo contra un emulador que no lo mande.
+        if(wrapper.bytesAvailable) this._battlePassLevel = wrapper.readInt();
 
         return true;
     }
@@ -127,4 +133,10 @@ export class UserProfileParser implements IMessageParser
     {
         return this._openProfileWindow;
     }
+
+    public get battlePassLevel(): number
+    {
+        return this._battlePassLevel;
+    }
+
 }

@@ -1,3 +1,4 @@
+export * from './battlepass';
 export * from './ApproveNameMessageComposer';
 export * from './CatalogGroupsComposer';
 export * from './ChangeEmailComposer';

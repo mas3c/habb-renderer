@@ -10,6 +10,9 @@ export class UserSettingsParser implements IMessageParser
     private _cameraFollow: boolean;
     private _flags: number;
     private _chatType: number;
+    private _showOnline: boolean;
+    private _allowFollow: boolean;
+    private _allowFriendRequests: boolean;
 
     public flush(): boolean
     {
@@ -21,6 +24,9 @@ export class UserSettingsParser implements IMessageParser
         this._cameraFollow = false;
         this._flags = 0;
         this._chatType = 0;
+        this._showOnline = true;
+        this._allowFollow = true;
+        this._allowFriendRequests = true;
 
         return true;
     }
@@ -37,6 +43,16 @@ export class UserSettingsParser implements IMessageParser
         this._cameraFollow = wrapper.readBoolean();
         this._flags = wrapper.readInt();
         this._chatType = wrapper.readInt();
+
+        // «Ajustes personaje», en positivo y al final del paquete (513), igual que el
+        // MeMenuSettingsComposer oficial. Un servidor que no los mande deja los valores
+        // por defecto en vez de romper el parseo.
+        if(wrapper.bytesAvailable)
+        {
+            this._showOnline = wrapper.readBoolean();
+            this._allowFollow = wrapper.readBoolean();
+            this._allowFriendRequests = wrapper.readBoolean();
+        }
 
         return true;
     }
@@ -79,5 +95,20 @@ export class UserSettingsParser implements IMessageParser
     public get chatType(): number
     {
         return this._chatType;
+    }
+
+    public get showOnline(): boolean
+    {
+        return this._showOnline;
+    }
+
+    public get allowFollow(): boolean
+    {
+        return this._allowFollow;
+    }
+
+    public get allowFriendRequests(): boolean
+    {
+        return this._allowFriendRequests;
     }
 }
