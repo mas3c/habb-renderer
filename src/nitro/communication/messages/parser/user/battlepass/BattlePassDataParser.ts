@@ -7,6 +7,8 @@ export interface IBattlePassRewardRef
     image: string;
     type: string;
     quantity: number;
+    /** Código de placa o id de furni, para pintar el icono real del premio. */
+    iconRef: string;
 }
 
 export interface IBattlePassMissionRow
@@ -16,6 +18,8 @@ export interface IBattlePassMissionRow
     name: string;
     description: string;
     image: string;
+    /** Familia del objetivo (habbo_talk, room_visit...), para el icono del reto. */
+    objectiveType: string;
     progress: number;
     total: number;
     rewardXp: number;
@@ -95,7 +99,8 @@ export class BattlePassDataParser implements IMessageParser
             name: wrapper.readString(),
             image: wrapper.readString(),
             type: wrapper.readString(),
-            quantity: wrapper.readInt()
+            quantity: wrapper.readInt(),
+            iconRef: wrapper.readString()
         };
     }
 
@@ -134,6 +139,7 @@ export class BattlePassDataParser implements IMessageParser
                 name: wrapper.readString(),
                 description: wrapper.readString(),
                 image: wrapper.readString(),
+                objectiveType: wrapper.readString(),
                 progress: wrapper.readInt(),
                 total: wrapper.readInt(),
                 rewardXp: wrapper.readInt(),
