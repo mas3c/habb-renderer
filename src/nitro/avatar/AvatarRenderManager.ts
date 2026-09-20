@@ -343,13 +343,16 @@ export class AvatarRenderManager extends NitroManager implements IAvatarRenderMa
         if(!this._structure) return 0;
 
         const figureData = this._structure.figureData;
-        const parts = Array.from(container.getPartTypeIds());
+        // Claves de capa, no ranuras: para comparar con searchParts (que si son
+        // ranuras) hay que traducirlas.
+        const partKeys = Array.from(container.getPartTypeIds());
+        const parts = partKeys.map(key => container.getPartType(key));
 
         let clubLevel = 0;
 
-        for(const part of parts)
+        for(const part of partKeys)
         {
-            const set = figureData.getSetType(part);
+            const set = figureData.getSetType(container.getPartType(part));
 
             if(!set) continue;
 

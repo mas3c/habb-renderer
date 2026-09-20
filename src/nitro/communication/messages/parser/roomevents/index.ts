@@ -16,3 +16,5 @@ export * from './WiredFurniVariableParser';
 export * from './WiredToolsVariablesParser';
 export * from './WiredToolsMonitorParser';
 export * from './WiredToolsAccessParser';
+export * from './YoutubeTvStateParser';
+export * from './StaffPinRequestParser';

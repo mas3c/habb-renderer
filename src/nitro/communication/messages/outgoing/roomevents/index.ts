@@ -11,3 +11,5 @@ export * from './WiredToolsGetMonitorComposer';
 export * from './WiredToolsVariableManageComposer';
 export * from './WiredToolsSetSettingsComposer';
 export * from './WiredToolsSettingsComposer';
+export * from './YoutubeTvCommandComposer';
+export * from './StaffPinComposer';

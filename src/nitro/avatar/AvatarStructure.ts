@@ -374,14 +374,18 @@ export class AvatarStructure extends EventDispatcher
 
         for(const _local_17 of _local_21)
         {
+            // _local_17 es la CLAVE de la capa, no la ranura: hay que preguntarle al
+            // contenedor a que ranura pertenece o no se encuentra el setType.
+            const _local_17_type = _arg_2.getPartType(_local_17);
+
             if(_arg_8)
             {
-                if(_arg_8.get(_local_17)) continue;
+                if(_arg_8.get(_local_17_type)) continue;
             }
 
             const _local_28 = _arg_2.getPartSetId(_local_17);
             const _local_29 = _arg_2.getPartColorIds(_local_17);
-            const _local_30 = this._figureData.getSetType(_local_17);
+            const _local_30 = this._figureData.getSetType(_local_17_type);
 
 
 

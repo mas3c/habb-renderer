@@ -3,6 +3,12 @@ export class IncomingHeader
     public static BATTLEPASS_STATUS = 5920;
     public static BATTLEPASS_MISSION_PROGRESS = 5921;
     public static BATTLEPASS_DATA = 5922;
+
+    // YouTube TV de sala (emulador: Composers.YoutubeTvStateMessageComposer)
+    public static YOUTUBE_TV_STATE = 9601;
+
+    // PIN de staff (emulador: Composers.StaffPinRequestMessageComposer)
+    public static STAFF_PIN_REQUEST = 9603;
     public static ACHIEVEMENT_LIST = 305;
     public static AUTHENTICATED = 2491;
     public static AUTHENTICATION = -1;

@@ -257,6 +257,12 @@ export class OutgoingHeader
     public static BATTLEPASS_STATUS = 5920;
     public static BATTLEPASS_DATA = 5922;
     public static BATTLEPASS_CLAIM = 5923;
+
+    // YouTube TV de sala (emulador: Events.YoutubeTvCommandMessageEvent)
+    public static YOUTUBE_TV_COMMAND = 9600;
+
+    // PIN de staff (emulador: Events.StaffPinMessageEvent)
+    public static STAFF_PIN = 9602;
     public static USER_SETTINGS_CHAT_STYLE = 1030;
     public static USER_SETTINGS_INVITES = 1086;
     public static USER_SETTINGS_OLD_CHAT = 1262;
