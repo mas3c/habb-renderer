@@ -280,10 +280,17 @@ export class OutgoingHeader
     public static SNOWWAR_JOIN_QUEUE = 6012;
     public static SNOWWAR_LEAVE_QUEUE = 6013;
     public static SNOWWAR_SELECT_ARENA = 6015;
+    // Editor de arenas de Octane: el cliente los tiene pero el emulador no los atiende.
+    public static SNOWWAR_EDIT_ROOM = 6010;
+    public static SNOWWAR_SAVE_EDITOR = 6011;
+    public static SNOWWAR_EXIT_EDITOR = 6014;
     public static SNOWWAR_GET_ALL_TIME_LEADERBOARD = 6027;
     public static SNOWWAR_GET_ALL_TIME_FRIENDS_LEADERBOARD = 6028;
     public static SNOWWAR_GET_WEEKLY_LEADERBOARD = 6029;
     public static SNOWWAR_GET_WEEKLY_FRIENDS_LEADERBOARD = 6030;
+    // Los oficiales del AIR: clasificación de grupos de siempre y semanal
+    public static SNOWWAR_GET_TOTAL_GROUP_LEADERBOARD = 1776;
+    public static SNOWWAR_GET_WEEKLY_GROUP_LEADERBOARD = 2691;
     public static USER_SETTINGS_CHAT_STYLE = 1030;
     public static USER_SETTINGS_INVITES = 1086;
     public static USER_SETTINGS_OLD_CHAT = 1262;

@@ -14,3 +14,8 @@ export * from './SnowWarGetAllTimeLeaderboardComposer';
 export * from './SnowWarGetAllTimeFriendsLeaderboardComposer';
 export * from './SnowWarGetWeeklyLeaderboardComposer';
 export * from './SnowWarGetWeeklyFriendsLeaderboardComposer';
+export * from './SnowWarGetTotalGroupLeaderboardComposer';
+export * from './SnowWarGetWeeklyGroupLeaderboardComposer';
+export * from './SnowWarEditRoomComposer';
+export * from './SnowWarSaveEditorComposer';
+export * from './SnowWarExitEditorComposer';
