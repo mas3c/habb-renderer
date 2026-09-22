@@ -12,3 +12,4 @@ export * from './WiredToolsMonitorEvent';
 export * from './WiredToolsAccessEvent';
 export * from './YoutubeTvStateEvent';
 export * from './StaffPinRequestEvent';
+export * from './UnoMessageEvent';

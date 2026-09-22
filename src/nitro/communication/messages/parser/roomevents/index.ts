@@ -18,3 +18,4 @@ export * from './WiredToolsMonitorParser';
 export * from './WiredToolsAccessParser';
 export * from './YoutubeTvStateParser';
 export * from './StaffPinRequestParser';
+export * from './UnoMessageParser';

@@ -263,6 +263,9 @@ export class OutgoingHeader
 
     // PIN de staff (emulador: Events.StaffPinMessageEvent)
     public static STAFF_PIN = 9602;
+
+    // UNO del centro de juegos (emulador: Events.UnoCommandMessageEvent)
+    public static UNO_COMMAND = 9604;
     public static USER_SETTINGS_CHAT_STYLE = 1030;
     public static USER_SETTINGS_INVITES = 1086;
     public static USER_SETTINGS_OLD_CHAT = 1262;

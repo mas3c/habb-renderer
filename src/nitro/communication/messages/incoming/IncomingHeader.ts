@@ -9,6 +9,9 @@ export class IncomingHeader
 
     // PIN de staff (emulador: Composers.StaffPinRequestMessageComposer)
     public static STAFF_PIN_REQUEST = 9603;
+
+    // UNO del centro de juegos (emulador: Composers.UnoMessageComposer)
+    public static UNO_MESSAGE = 9605;
     public static ACHIEVEMENT_LIST = 305;
     public static AUTHENTICATED = 2491;
     public static AUTHENTICATION = -1;
