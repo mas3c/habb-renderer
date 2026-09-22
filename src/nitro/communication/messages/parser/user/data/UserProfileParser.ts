@@ -18,6 +18,7 @@ export class UserProfileParser implements IMessageParser
     private _openProfileWindow: boolean;
     private _battlePassLevel: number;
     private _respectsReceived: number;
+    private _badgeCount: number;
 
     public flush(): boolean
     {
@@ -36,6 +37,7 @@ export class UserProfileParser implements IMessageParser
         this._openProfileWindow = false;
         this._battlePassLevel = 0;
         this._respectsReceived = 0;
+        this._badgeCount = -1;
 
         return true;
     }
@@ -71,6 +73,9 @@ export class UserProfileParser implements IMessageParser
         // Respetos recibidos, detrás del nivel y por el mismo motivo: si el emulador
         // no los manda, el parser se para aquí y el perfil sigue funcionando.
         if(wrapper.bytesAvailable) this._respectsReceived = wrapper.readInt();
+
+        // Total de placas (no solo las equipadas), mismo criterio. -1 = no vino.
+        if(wrapper.bytesAvailable) this._badgeCount = wrapper.readInt();
 
         return true;
     }
@@ -148,6 +153,11 @@ export class UserProfileParser implements IMessageParser
     public get respectsReceived(): number
     {
         return this._respectsReceived;
+    }
+
+    public get badgeCount(): number
+    {
+        return this._badgeCount;
     }
 
 }
