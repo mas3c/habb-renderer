@@ -17,6 +17,7 @@ export class UserProfileParser implements IMessageParser
     private _secondsSinceLastVisit: number;
     private _openProfileWindow: boolean;
     private _battlePassLevel: number;
+    private _respectsReceived: number;
 
     public flush(): boolean
     {
@@ -34,6 +35,7 @@ export class UserProfileParser implements IMessageParser
         this._secondsSinceLastVisit = 0;
         this._openProfileWindow = false;
         this._battlePassLevel = 0;
+        this._respectsReceived = 0;
 
         return true;
     }
@@ -65,6 +67,10 @@ export class UserProfileParser implements IMessageParser
         // Nivel del Battle Pass, añadido al final por Habb. Se lee solo si viene, para
         // que el parser siga valiendo contra un emulador que no lo mande.
         if(wrapper.bytesAvailable) this._battlePassLevel = wrapper.readInt();
+
+        // Respetos recibidos, detrás del nivel y por el mismo motivo: si el emulador
+        // no los manda, el parser se para aquí y el perfil sigue funcionando.
+        if(wrapper.bytesAvailable) this._respectsReceived = wrapper.readInt();
 
         return true;
     }
@@ -137,6 +143,11 @@ export class UserProfileParser implements IMessageParser
     public get battlePassLevel(): number
     {
         return this._battlePassLevel;
+    }
+
+    public get respectsReceived(): number
+    {
+        return this._respectsReceived;
     }
 
 }
