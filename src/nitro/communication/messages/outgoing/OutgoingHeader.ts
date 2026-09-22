@@ -266,6 +266,24 @@ export class OutgoingHeader
 
     // UNO del centro de juegos (emulador: Events.UnoCommandMessageEvent)
     public static UNO_COMMAND = 9604;
+
+    // SnowStorm clásico (emulador: Events.SnowStorm*Event)
+    public static SNOWWAR_LOAD_STAGE_READY = 6000;
+    public static SNOWWAR_EXIT_GAME = 6001;
+    public static SNOWWAR_WALK = 6003;
+    public static SNOWWAR_THROW_AT_LOCATION = 6004;
+    public static SNOWWAR_THROW_AT_PLAYER = 6005;
+    public static SNOWWAR_CREATE_SNOWBALL = 6006;
+    public static SNOWWAR_REQUEST_FULL_GAME_STATUS = 6007;
+    public static SNOWWAR_PLAY_AGAIN = 6008;
+    public static SNOWWAR_GAME_CHAT = 6009;
+    public static SNOWWAR_JOIN_QUEUE = 6012;
+    public static SNOWWAR_LEAVE_QUEUE = 6013;
+    public static SNOWWAR_SELECT_ARENA = 6015;
+    public static SNOWWAR_GET_ALL_TIME_LEADERBOARD = 6027;
+    public static SNOWWAR_GET_ALL_TIME_FRIENDS_LEADERBOARD = 6028;
+    public static SNOWWAR_GET_WEEKLY_LEADERBOARD = 6029;
+    public static SNOWWAR_GET_WEEKLY_FRIENDS_LEADERBOARD = 6030;
     public static USER_SETTINGS_CHAT_STYLE = 1030;
     public static USER_SETTINGS_INVITES = 1086;
     public static USER_SETTINGS_OLD_CHAT = 1262;

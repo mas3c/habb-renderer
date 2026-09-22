@@ -9,14 +9,14 @@ export class LeaderboardEntry
     private _figure:string;
     private _gender:string;
 
-    constructor(k:IMessageDataWrapper)
+    constructor(wrapper:IMessageDataWrapper)
     {
-        this._userId = k.readInt();
-        this._score = k.readInt();
-        this._rank = k.readInt();
-        this._name = k.readString();
-        this._figure = k.readString();
-        this._gender = k.readString();
+        this._userId = wrapper.readInt();
+        this._score = wrapper.readInt();
+        this._rank = wrapper.readInt();
+        this._name = wrapper.readString();
+        this._figure = wrapper.readString();
+        this._gender = wrapper.readString();
     }
 
     public get userId():number

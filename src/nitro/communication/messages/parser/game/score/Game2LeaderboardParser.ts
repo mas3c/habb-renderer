@@ -1,24 +1,18 @@
 import { IMessageDataWrapper, IMessageParser } from '../../../../../../api';
 import { LeaderboardEntry } from './LeaderboardEntry';
 
-export class Game2WeeklyLeaderboardParser implements IMessageParser
+/**
+ * AIR `Game2LeaderboardParser`: the all-time (friends / total) table. Unlike
+ * the weekly tables it carries no week header, only the page and its size.
+ */
+export class Game2LeaderboardParser implements IMessageParser
 {
-    private _year: number;
-    private _week: number;
-    private _maxOffset: number;
-    private _currentOffset: number;
-    private _minutesUntilReset: number;
     private _leaderboard: LeaderboardEntry[];
     private _totalListSize: number;
     private _gameTypeId: number;
 
     public flush(): boolean
     {
-        this._year = -1;
-        this._week = -1;
-        this._maxOffset = -1;
-        this._currentOffset = -1;
-        this._minutesUntilReset = -1;
         this._leaderboard = [];
         this._totalListSize = -1;
         this._gameTypeId = -1;
@@ -30,11 +24,6 @@ export class Game2WeeklyLeaderboardParser implements IMessageParser
     {
         if(!wrapper) return false;
 
-        this._year = wrapper.readInt();
-        this._week = wrapper.readInt();
-        this._maxOffset = wrapper.readInt();
-        this._currentOffset = wrapper.readInt();
-        this._minutesUntilReset = wrapper.readInt();
         const count = wrapper.readInt();
         this._leaderboard = [];
         for(let index = 0; index < count; index++) this._leaderboard.push(new LeaderboardEntry(wrapper));
@@ -42,31 +31,6 @@ export class Game2WeeklyLeaderboardParser implements IMessageParser
         this._gameTypeId = wrapper.readInt();
 
         return true;
-    }
-
-    public get year(): number
-    {
-        return this._year;
-    }
-
-    public get week(): number
-    {
-        return this._week;
-    }
-
-    public get maxOffset(): number
-    {
-        return this._maxOffset;
-    }
-
-    public get currentOffset(): number
-    {
-        return this._currentOffset;
-    }
-
-    public get minutesUntilReset(): number
-    {
-        return this._minutesUntilReset;
     }
 
     public get leaderboard(): LeaderboardEntry[]

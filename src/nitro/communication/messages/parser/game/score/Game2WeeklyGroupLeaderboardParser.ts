@@ -1,7 +1,11 @@
 import { IMessageDataWrapper, IMessageParser } from '../../../../../../api';
 import { LeaderboardEntry } from './LeaderboardEntry';
 
-export class Game2WeeklyLeaderboardParser implements IMessageParser
+/**
+ * AIR `Game2WeeklyGroupLeaderboardParser`: the weekly table header, the group
+ * page, then the viewer's own group id.
+ */
+export class Game2WeeklyGroupLeaderboardParser implements IMessageParser
 {
     private _year: number;
     private _week: number;
@@ -11,6 +15,7 @@ export class Game2WeeklyLeaderboardParser implements IMessageParser
     private _leaderboard: LeaderboardEntry[];
     private _totalListSize: number;
     private _gameTypeId: number;
+    private _favouriteGroupId: number;
 
     public flush(): boolean
     {
@@ -22,6 +27,7 @@ export class Game2WeeklyLeaderboardParser implements IMessageParser
         this._leaderboard = [];
         this._totalListSize = -1;
         this._gameTypeId = -1;
+        this._favouriteGroupId = -1;
 
         return true;
     }
@@ -40,6 +46,7 @@ export class Game2WeeklyLeaderboardParser implements IMessageParser
         for(let index = 0; index < count; index++) this._leaderboard.push(new LeaderboardEntry(wrapper));
         this._totalListSize = wrapper.readInt();
         this._gameTypeId = wrapper.readInt();
+        this._favouriteGroupId = wrapper.readInt();
 
         return true;
     }
@@ -82,5 +89,10 @@ export class Game2WeeklyLeaderboardParser implements IMessageParser
     public get gameTypeId(): number
     {
         return this._gameTypeId;
+    }
+
+    public get favouriteGroupId(): number
+    {
+        return this._favouriteGroupId;
     }
 }
