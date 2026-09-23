@@ -13,6 +13,9 @@ export class IncomingHeader
     // UNO del centro de juegos (emulador: Composers.UnoMessageComposer)
     public static UNO_MESSAGE = 9605;
 
+    // Menciones y bloqueados (emulador: Composers.MencionesMessageComposer)
+    public static MENCIONES_MESSAGE = 9607;
+
     // SnowStorm clásico (emulador: game/snowwar, Outgoing de compat)
     public static SNOWWAR_QUEUE_POSITION = 5001;
     public static SNOWWAR_START_LOBBY_COUNTER = 5003;

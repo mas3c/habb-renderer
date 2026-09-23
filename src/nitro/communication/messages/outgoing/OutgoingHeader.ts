@@ -267,6 +267,9 @@ export class OutgoingHeader
     // UNO del centro de juegos (emulador: Events.UnoCommandMessageEvent)
     public static UNO_COMMAND = 9604;
 
+    // Menciones y bloqueados (emulador: Events.MencionesCommandMessageEvent)
+    public static MENCIONES_COMMAND = 9606;
+
     // SnowStorm clásico (emulador: Events.SnowStorm*Event)
     public static SNOWWAR_LOAD_STAGE_READY = 6000;
     public static SNOWWAR_EXIT_GAME = 6001;
