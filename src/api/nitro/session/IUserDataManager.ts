@@ -11,7 +11,6 @@ export interface IUserDataManager
     getDataByType(webID: number, type: number): IRoomUserData;
     getUserDataByIndex(roomIndex: number): IRoomUserData;
     getUserDataByName(name: string): IRoomUserData;
-    readonly allUserData: IRoomUserData[];
     updateUserData(data: IRoomUserData): void;
     removeUserData(roomIndex: number): void;
     getUserBadges(userId: number): string[];

@@ -78,12 +78,6 @@ export class UserDataManager extends Disposable
         return existing;
     }
 
-    /** habb.tv: todos los de la sala (el autocompletado de @ en el chat). */
-    public get allUserData(): IRoomUserData[]
-    {
-        return Array.from(this._userDataByRoomIndex.values());
-    }
-
     public getUserDataByName(name: string): IRoomUserData
     {
         for(const userData of this._userDataByRoomIndex.values())
