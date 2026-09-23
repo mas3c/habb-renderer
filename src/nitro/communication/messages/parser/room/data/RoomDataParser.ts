@@ -8,6 +8,8 @@ export class RoomDataParser
     public static SHOWOWNER_BITMASK = 8;
     public static ALLOW_PETS_BITMASK = 16;
     public static DISPLAY_ROOMAD_BITMASK = 32;
+    /** habb.tv: la TV de YouTube de la sala está encendida. */
+    public static YOUTUBE_BITMASK = 64;
 
     public static OPEN_STATE = 0;
     public static DOORBELL_STATE = 1;
@@ -37,6 +39,7 @@ export class RoomDataParser
     private _thumbnail: any;
     private _allowPets: boolean;
     private _displayAd: boolean;
+    private _youtube: boolean;
     private _adName: string;
     private _adDescription: string;
     private _adExpiresIn: number;
@@ -77,6 +80,7 @@ export class RoomDataParser
         this._allowPets = false;
         this._showOwner = true;
         this._displayAd = false;
+        this._youtube = false;
         this._adName = null;
         this._adDescription = null;
         this._adExpiresIn = 0;
@@ -154,6 +158,7 @@ export class RoomDataParser
         this._showOwner = (this._bitMask & RoomDataParser.SHOWOWNER_BITMASK) > 0;
         this._allowPets = (this._bitMask & RoomDataParser.ALLOW_PETS_BITMASK) > 0;
         this._displayAd = (this._bitMask & RoomDataParser.DISPLAY_ROOMAD_BITMASK) > 0;
+        this._youtube = (this._bitMask & RoomDataParser.YOUTUBE_BITMASK) > 0;
         this._thumbnail = null;
 
         return true;
@@ -277,6 +282,11 @@ export class RoomDataParser
     public get displayRoomEntryAd(): boolean
     {
         return this._displayAd;
+    }
+
+    public get youtube(): boolean
+    {
+        return this._youtube;
     }
 
     public get canMute(): boolean
