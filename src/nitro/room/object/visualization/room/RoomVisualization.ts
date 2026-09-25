@@ -1,7 +1,7 @@
 import { Filter } from '@pixi/core';
 import { ColorMatrixFilter } from '@pixi/filter-color-matrix';
 import { Rectangle } from '@pixi/math';
-import { AlphaTolerance, IObjectVisualizationData, IPlaneVisualization, IRoomGeometry, IRoomObjectModel, IRoomObjectSprite, IRoomPlane, RoomObjectSpriteType, RoomObjectVariable, Vector3d } from '../../../../../api';
+import { AlphaTolerance, IObjectVisualizationData, IPlaneVisualization, IRoomGeometry, IVector3D, IRoomObjectModel, IRoomObjectSprite, IRoomPlane, RoomObjectSpriteType, RoomObjectVariable, Vector3d } from '../../../../../api';
 import { PlaneTextureCache } from '../../../../../pixi-proxy';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { ToInt32 } from '../../../../utils';
@@ -63,6 +63,7 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
     private _highlightArea: { x: number, y: number, width: number, height: number };
     private _highlightFilters: Filter[];
     private _highlightPlanes: RoomPlane[];
+    private _highlightDirty: boolean;
 
     constructor()
     {
@@ -102,6 +103,7 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
         this._highlightArea = null;
         this._highlightFilters = [];
         this._highlightPlanes = [];
+        this._highlightDirty = false;
 
         this._typeVisibility[RoomPlane.TYPE_UNDEFINED] = false;
         this._typeVisibility[RoomPlane.TYPE_FLOOR] = true;
@@ -174,6 +176,8 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
     public update(geometry: IRoomGeometry, time: number, update: boolean, skipUpdate: boolean): void
     {
         if(!this.object || !geometry) return;
+
+        if(this._highlightDirty && this._isPlaneSet) this.applyHighlightArea();
 
         const geometryUpdate = this.updateGeometry(geometry);
         const objectModel = this.object.model;
@@ -392,6 +396,7 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
         if(!this._roomPlaneParser.initializeFromMapData(mapData)) return;
 
         this._highlightPlanes = [];
+        this._highlightDirty = false;
 
         if(this._highlightArea) this._roomPlaneParser.initializeHighlightArea(this._highlightArea.x, this._highlightArea.y, this._highlightArea.width, this._highlightArea.height);
 
@@ -421,23 +426,7 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
 
                 if(planeType === RoomPlaneData.PLANE_FLOOR)
                 {
-                    const _local_15 = ((location.x + leftSide.x) + 0.5);
-                    const _local_16 = ((location.y + rightSide.y) + 0.5);
-                    const textureOffsetX = (Math.trunc(_local_15) - _local_15);
-                    const textureOffsetY = (Math.trunc(_local_16) - _local_16);
-
-                    plane = new RoomPlane(this._textureCache, this.object.getLocation(), location, leftSide, rightSide, RoomPlane.TYPE_FLOOR, true, secondaryNormals, randomSeed, -(textureOffsetX), -(textureOffsetY));
-
-                    if(_local_14.z !== 0)
-                    {
-                        plane.color = RoomVisualization.FLOOR_COLOR;
-                    }
-                    else
-                    {
-                        plane.color = ((_local_14.x !== 0) ? RoomVisualization.FLOOR_COLOR_RIGHT : RoomVisualization.FLOOR_COLOR_LEFT);
-                    }
-
-                    if(this._data) plane.rasterizer = this._data.floorRasterizer;
+                    plane = this.createFloorPlane(location, leftSide, rightSide, secondaryNormals, randomSeed);
                 }
 
                 else if(planeType === RoomPlaneData.PLANE_WALL)
@@ -613,7 +602,11 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
                 // AIR: el resaltado lleva el filtro y no recibe el ratón (el clic va al suelo de debajo)
                 const isHighlight = (this._highlightPlanes.indexOf(plane) !== -1);
 
-                sprite.filters = (isHighlight ? this._highlightFilters : []);
+                if(isHighlight)
+                {
+                    if(sprite.filters !== this._highlightFilters) sprite.filters = this._highlightFilters;
+                }
+                else if(sprite.filters && sprite.filters.length) sprite.filters = [];
 
                 if(isHighlight) sprite.alphaTolerance = AlphaTolerance.MATCH_NOTHING;
             }
@@ -952,24 +945,108 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
 
         if(!this._highlightFilters.length) this._highlightFilters = RoomVisualization.createHighlightFilters();
 
-        this.rebuildPlanes();
+        this._highlightDirty = true;
     }
 
     public clearHighlightArea(): void
     {
-        if(!this._highlightArea) return;
+        if(!this._highlightArea && !this._highlightPlanes.length) return;
 
         this._highlightArea = null;
-
-        this.rebuildPlanes();
+        this._highlightDirty = true;
     }
 
-    // Planos nuevos sin texturas/máscaras: forzar que update() las vuelva a aplicar aunque el modelo no haya cambiado.
-    private rebuildPlanes(): void
+    private createFloorPlane(location: IVector3D, leftSide: IVector3D, rightSide: IVector3D, secondaryNormals: IVector3D[], randomSeed: number): RoomPlane
     {
-        this.clearPlanes();
+        const normal = Vector3d.crossProduct(leftSide, rightSide);
+        const _local_15 = ((location.x + leftSide.x) + 0.5);
+        const _local_16 = ((location.y + rightSide.y) + 0.5);
+        const textureOffsetX = (Math.trunc(_local_15) - _local_15);
+        const textureOffsetY = (Math.trunc(_local_16) - _local_16);
 
-        this.updateModelCounter = -1;
+        const plane = new RoomPlane(this._textureCache, this.object.getLocation(), location, leftSide, rightSide, RoomPlane.TYPE_FLOOR, true, secondaryNormals, randomSeed, -(textureOffsetX), -(textureOffsetY));
+
+        if(normal.z !== 0)
+        {
+            plane.color = RoomVisualization.FLOOR_COLOR;
+        }
+        else
+        {
+            plane.color = ((normal.x !== 0) ? RoomVisualization.FLOOR_COLOR_RIGHT : RoomVisualization.FLOOR_COLOR_LEFT);
+        }
+
+        if(this._data) plane.rasterizer = this._data.floorRasterizer;
+
+        return plane;
+    }
+
+    // Como el AIR: solo se quitan y se añaden los planos del resaltado; el suelo y las paredes no se tocan.
+    // Corre dentro de update(), antes de pintar, así ningún sprite llega al lienzo con una textura ya destruida.
+    private applyHighlightArea(): void
+    {
+        this._highlightDirty = false;
+
+        for(const plane of this._highlightPlanes) this.disposePlaneTextures(plane);
+
+        // los materiales del suelo son compartidos y guardan la última textura pintada: si era de un
+        // plano de resaltado ya destruido, el siguiente plano la leería muerta (PlaneMaterialCellColumn)
+        if(this._highlightPlanes.length && this._data) this._data.floorRasterizer.clearCache();
+
+        this._planes = this._planes.filter(plane => (this._highlightPlanes.indexOf(plane) === -1));
+        this._highlightPlanes = [];
+
+        this._roomPlaneParser.clearHighlightArea();
+
+        if(this._highlightArea)
+        {
+            const first = this._roomPlaneParser.planeCount;
+
+            this._roomPlaneParser.initializeHighlightArea(this._highlightArea.x, this._highlightArea.y, this._highlightArea.width, this._highlightArea.height);
+
+            for(let index = first; index < this._roomPlaneParser.planeCount; index++)
+            {
+                const location = this._roomPlaneParser.getPlaneLocation(index);
+                const leftSide = this._roomPlaneParser.getPlaneLeftSide(index);
+                const rightSide = this._roomPlaneParser.getPlaneRightSide(index);
+
+                if(!location || !leftSide || !rightSide) continue;
+
+                const plane = this.createFloorPlane(location, leftSide, rightSide, this._roomPlaneParser.getPlaneSecondaryNormals(index), index);
+
+                if(this._data) plane.maskManager = this._data.maskManager;
+                if(this._floorType) plane.id = this._floorType;
+
+                this._planes.push(plane);
+                this._highlightPlanes.push(plane);
+            }
+        }
+
+        this.defineSprites();
+
+        this._visiblePlanes = [];
+        this._visiblePlaneSpriteNumbers = [];
+        this._geometryUpdateId = -1;
+    }
+
+    // RoomPlane.dispose() no suelta su textura ni las que el rasterizador guarda con su id: aquí sí.
+    private disposePlaneTextures(plane: RoomPlane): void
+    {
+        const bitmapData = (plane as any)._bitmapData;
+
+        if(bitmapData) bitmapData.destroy(true);
+
+        const prefix = `${ plane.uniqueId }:`;
+        const pool = this._textureCache.RENDER_TEXTURE_POOL;
+
+        for(const [ key, texture ] of Array.from(pool.entries()))
+        {
+            if(!key.startsWith(prefix)) continue;
+
+            texture?.destroy(true);
+            pool.delete(key);
+        }
+
+        plane.dispose();
     }
 
     public getBoundingRectangle(): Rectangle
