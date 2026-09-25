@@ -1,3 +1,5 @@
+import { Filter } from '@pixi/core';
+import { ColorMatrixFilter } from '@pixi/filter-color-matrix';
 import { Rectangle } from '@pixi/math';
 import { AlphaTolerance, IObjectVisualizationData, IPlaneVisualization, IRoomGeometry, IRoomObjectModel, IRoomObjectSprite, IRoomPlane, RoomObjectSpriteType, RoomObjectVariable, Vector3d } from '../../../../../api';
 import { PlaneTextureCache } from '../../../../../pixi-proxy';
@@ -58,6 +60,9 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
     private _maskData: RoomMapMaskData;
     private _isPlaneSet: boolean;
     private _textureCache: PlaneTextureCache;
+    private _highlightArea: { x: number, y: number, width: number, height: number };
+    private _highlightFilters: Filter[];
+    private _highlightPlanes: RoomPlane[];
 
     constructor()
     {
@@ -94,6 +99,9 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
         this._maskData = null;
         this._isPlaneSet = false;
         this._textureCache = new PlaneTextureCache();
+        this._highlightArea = null;
+        this._highlightFilters = [];
+        this._highlightPlanes = [];
 
         this._typeVisibility[RoomPlane.TYPE_UNDEFINED] = false;
         this._typeVisibility[RoomPlane.TYPE_FLOOR] = true;
@@ -365,6 +373,7 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
             this._planes = [];
         }
 
+        this._highlightPlanes = [];
         this._isPlaneSet = false;
         this._assetUpdateCounter = (this._assetUpdateCounter + 1);
 
@@ -381,6 +390,10 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
         const mapData = this.object.model.getValue<RoomMapData>(RoomObjectVariable.ROOM_MAP_DATA);
 
         if(!this._roomPlaneParser.initializeFromMapData(mapData)) return;
+
+        this._highlightPlanes = [];
+
+        if(this._highlightArea) this._roomPlaneParser.initializeHighlightArea(this._highlightArea.x, this._highlightArea.y, this._highlightArea.width, this._highlightArea.height);
 
         const maxX = this.getLandscapeWidth();
         const maxY = this.getLandscapeHeight();
@@ -542,6 +555,8 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
                     }
 
                     this._planes.push(plane);
+
+                    if(this._roomPlaneParser.isPlaneTemporaryHighlighter(index)) this._highlightPlanes.push(plane);
                 }
             }
             else
@@ -594,6 +609,13 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
                 }
 
                 sprite.spriteType = RoomObjectSpriteType.ROOM_PLANE;
+
+                // AIR: el resaltado lleva el filtro y no recibe el ratón (el clic va al suelo de debajo)
+                const isHighlight = (this._highlightPlanes.indexOf(plane) !== -1);
+
+                sprite.filters = (isHighlight ? this._highlightFilters : []);
+
+                if(isHighlight) sprite.alphaTolerance = AlphaTolerance.MATCH_NOTHING;
             }
 
             planeIndex++;
@@ -757,6 +779,9 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
                                 }
                             }
 
+                            // AIR extraDepth = -100: delante del suelo, detrás de furnis y avatares
+                            if(this._highlightPlanes.indexOf(plane) !== -1) depth = (depth - 100);
+
                             this.updateSprite(sprite, geometry, plane, `plane ${ id } ${ geometry.scale }`, depth);
                         }
 
@@ -909,6 +934,42 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
         sprite.color = plane.color;
         sprite.texture = plane.bitmapData;
         sprite.name = ((_arg_3 + '_') + this._assetUpdateCounter);
+    }
+
+    // AIR RoomAreaSelectionManager "highlight_brighten": RGB x1.5, +20 en verde y azul (offsets 0..1 en PIXI)
+    private static createHighlightFilters(): Filter[]
+    {
+        const filter = new ColorMatrixFilter();
+
+        filter.matrix = [ 1.5, 0, 0, 0, 0, 0, 1.5, 0, 0, (20 / 255), 0, 0, 1.5, 0, (20 / 255), 0, 0, 0, 1, 0 ];
+
+        return [ filter ];
+    }
+
+    public setHighlightArea(x: number, y: number, width: number, height: number): void
+    {
+        this._highlightArea = ((width > 0) && (height > 0)) ? { x, y, width, height } : null;
+
+        if(!this._highlightFilters.length) this._highlightFilters = RoomVisualization.createHighlightFilters();
+
+        this.rebuildPlanes();
+    }
+
+    public clearHighlightArea(): void
+    {
+        if(!this._highlightArea) return;
+
+        this._highlightArea = null;
+
+        this.rebuildPlanes();
+    }
+
+    // Planos nuevos sin texturas/máscaras: forzar que update() las vuelva a aplicar aunque el modelo no haya cambiado.
+    private rebuildPlanes(): void
+    {
+        this.clearPlanes();
+
+        this.updateModelCounter = -1;
     }
 
     public getBoundingRectangle(): Rectangle

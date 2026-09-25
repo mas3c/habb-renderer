@@ -33,6 +33,8 @@ export class RoomPlaneParser
     private _restrictsDragging: boolean;
     private _restrictsScaling: boolean = false;
     private _restrictedScale: number = 1;
+    private _floorTilesExpanded: number[][] = null;
+    private _temporaryHighlightPlanes: RoomPlaneData[] = [];
 
     constructor()
     {
@@ -396,6 +398,8 @@ export class RoomPlaneParser
     public reset(): void
     {
         this._planes = [];
+        this._floorTilesExpanded = null;
+        this._temporaryHighlightPlanes = [];
         this._tileMatrix = [];
         this._tileMatrixOriginal = [];
         this._width = 0;
@@ -637,6 +641,7 @@ export class RoomPlaneParser
         RoomPlaneParser.addTileTypes(_local_3);
         RoomPlaneParser.unpadHeightMap(_local_3);
         const _local_5 = RoomPlaneParser.expandFloorTiles(_local_3);
+        this._floorTilesExpanded = _local_5;
         this.extractPlanes(_local_5);
         if(k != null)
         {
@@ -1189,12 +1194,12 @@ export class RoomPlaneParser
         }
     }
 
-    private addFloor(k: IVector3D, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: boolean, _arg_5: boolean, _arg_6: boolean, _arg_7: boolean): void
+    private addFloor(k: IVector3D, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: boolean, _arg_5: boolean, _arg_6: boolean, _arg_7: boolean, highlight: boolean = false): void
     {
         let _local_9: number;
         let _local_10: Vector3d;
         let _local_11: Vector3d;
-        const _local_8: RoomPlaneData = this.addPlane(RoomPlaneData.PLANE_FLOOR, k, _arg_2, _arg_3);
+        const _local_8: RoomPlaneData = this.addPlane(RoomPlaneData.PLANE_FLOOR, k, _arg_2, _arg_3, null, highlight);
         if(_local_8 != null)
         {
             _local_9 = (RoomPlaneParser.FLOOR_THICKNESS * this._floorThicknessMultiplier);
@@ -1202,19 +1207,19 @@ export class RoomPlaneParser
             _local_11 = Vector3d.dif(k, _local_10);
             if(_arg_6)
             {
-                this.addPlane(RoomPlaneData.PLANE_FLOOR, _local_11, _arg_2, _local_10);
+                this.addPlane(RoomPlaneData.PLANE_FLOOR, _local_11, _arg_2, _local_10, null, highlight);
             }
             if(_arg_7)
             {
-                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, Vector3d.sum(_arg_2, _arg_3)), Vector3d.product(_arg_2, -1), _local_10);
+                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, Vector3d.sum(_arg_2, _arg_3)), Vector3d.product(_arg_2, -1), _local_10, null, highlight);
             }
             if(_arg_4)
             {
-                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, _arg_3), Vector3d.product(_arg_3, -1), _local_10);
+                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, _arg_3), Vector3d.product(_arg_3, -1), _local_10, null, highlight);
             }
             if(_arg_5)
             {
-                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, _arg_2), _arg_3, _local_10);
+                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, _arg_2), _arg_3, _local_10, null, highlight);
             }
         }
     }
@@ -1288,7 +1293,7 @@ export class RoomPlaneParser
         return true;
     }
 
-    private addPlane(k: number, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: IVector3D, _arg_5: IVector3D[] = null): RoomPlaneData
+    private addPlane(k: number, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: IVector3D, _arg_5: IVector3D[] = null, highlight: boolean = false): RoomPlaneData
     {
         if(((_arg_3.length == 0) || (_arg_4.length == 0)))
         {
@@ -1296,7 +1301,111 @@ export class RoomPlaneParser
         }
         const _local_6: RoomPlaneData = new RoomPlaneData(k, _arg_2, _arg_3, _arg_4, _arg_5);
         this._planes.push(_local_6);
+        if(highlight) this._temporaryHighlightPlanes.push(_local_6);
         return _local_6;
+    }
+
+    // Resaltado de zona de los selectores wired "en área" (AIR: RoomPlaneParser.initializeHighlightArea).
+    public initializeHighlightArea(x: number, y: number, width: number, height: number): void
+    {
+        this.clearHighlightArea();
+
+        if(!this._floorTilesExpanded || !this._floorTilesExpanded.length || (width <= 0) || (height <= 0)) return;
+
+        this.extractHighlightPlanes(this._floorTilesExpanded, (x * 4), (y * 4), (width * 4), (height * 4));
+    }
+
+    public clearHighlightArea(): number
+    {
+        const count = this._temporaryHighlightPlanes.length;
+
+        this._planes = this._planes.slice(0, (this._planes.length - count));
+        this._temporaryHighlightPlanes = [];
+
+        return count;
+    }
+
+    public isPlaneTemporaryHighlighter(index: number): boolean
+    {
+        if((index < 0) || (index >= this.planeCount)) return false;
+
+        return (this._temporaryHighlightPlanes.indexOf(this._planes[index]) !== -1);
+    }
+
+    // AIR RoomPlaneParser.extractPlanes con recorte (startX, startY, width, height) y highlight = true.
+    private extractHighlightPlanes(tiles: number[][], startX: number, startY: number, width: number, height: number): void
+    {
+        const rows = tiles.length;
+        const cols = tiles[0].length;
+        const endRow = Math.min(rows, (startY + height));
+        const endCol = Math.min(cols, (startX + width));
+        const visited: boolean[][] = [];
+
+        for(let r = 0; r < endRow; r++) visited[r] = [];
+
+        for(let r = Math.max(0, startY); r < endRow; r++)
+        {
+            for(let c = Math.max(0, startX); c < endCol; c++)
+            {
+                const value = tiles[r][c];
+
+                if((value < 0) || visited[r][c]) continue;
+
+                const leftEdge = ((c === 0) || (tiles[r][c - 1] !== value));
+                const topEdge = ((r === 0) || (tiles[r - 1][c] !== value));
+                let c2 = (c + 1);
+
+                while(c2 < endCol)
+                {
+                    if((tiles[r][c2] !== value) || visited[r][c2] || ((r > 0) && ((tiles[r - 1][c2] === value) === topEdge))) break;
+
+                    c2++;
+                }
+
+                let rightEdge = ((c2 === cols) || (tiles[r][c2] !== value));
+                let bottomEdge = false;
+                let done = false;
+                let r2 = (r + 1);
+
+                while((r2 <= endRow) && !done)
+                {
+                    bottomEdge = ((r2 === rows) || (tiles[r2][c] !== value));
+                    done = ((r2 === endRow) || bottomEdge || ((c > 0) && ((tiles[r2][c - 1] === value) === leftEdge)) || ((c2 < cols) && ((tiles[r2][c2] === value) === rightEdge)));
+
+                    if(r2 === rows) break;
+
+                    for(let cc = c; cc < c2; cc++)
+                    {
+                        if((tiles[r2][cc] === value) === bottomEdge)
+                        {
+                            done = true;
+                            c2 = cc;
+                            break;
+                        }
+                    }
+
+                    if(done) break;
+
+                    r2++;
+                }
+
+                if(!bottomEdge) bottomEdge = (r2 === rows);
+
+                rightEdge = ((c2 === cols) || (tiles[r][c2] !== value));
+
+                for(let vr = r; vr < r2; vr++)
+                {
+                    for(let vc = c; vc < c2; vc++) visited[vr][vc] = true;
+                }
+
+                const px = ((c / 4) - 0.5);
+                const py = ((r / 4) - 0.5);
+                const pw = ((c2 - c) / 4);
+                const ph = ((r2 - r) / 4);
+
+                this.addFloor(new Vector3d((px + pw), (py + ph), (value / 4)), new Vector3d(-(pw), 0, 0), new Vector3d(0, -(ph), 0), rightEdge, leftEdge, bottomEdge, topEdge, true);
+            }
+        }
     }
 
     public getMapData(): RoomMapData
