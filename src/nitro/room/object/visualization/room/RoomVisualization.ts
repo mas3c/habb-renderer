@@ -177,7 +177,9 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
     {
         if(!this.object || !geometry) return;
 
-        if(this._highlightDirty && this._isPlaneSet) this.applyHighlightArea();
+        const highlightChanged = (this._highlightDirty && this._isPlaneSet);
+
+        if(highlightChanged) this.applyHighlightArea();
 
         const geometryUpdate = this.updateGeometry(geometry);
         const objectModel = this.object.model;
@@ -192,7 +194,8 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
 
         needsUpdate = this.updateMasks(objectModel);
 
-        if(((time < (this._lastUpdateTime + this._updateIntervalTime)) && (!geometryUpdate)) && (!needsUpdate)) return;
+        // sin highlightChanged, los planos nuevos del resaltado esperaban hasta 250 ms sin textura (parpadeo)
+        if(((time < (this._lastUpdateTime + this._updateIntervalTime)) && (!geometryUpdate)) && (!needsUpdate) && (!highlightChanged)) return;
 
         if(this.updatePlaneTexturesAndVisibilities(objectModel))
         {
@@ -1025,7 +1028,6 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
 
         this._visiblePlanes = [];
         this._visiblePlaneSpriteNumbers = [];
-        this._geometryUpdateId = -1;
     }
 
     // RoomPlane.dispose() no suelta su textura ni las que el rasterizador guarda con su id: aquí sí.
