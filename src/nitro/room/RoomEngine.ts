@@ -286,6 +286,16 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
             return;
         }
 
+        // habb: plano guardado con el editor estando dentro. La sala ya existe y
+        // setupRoomInstance no haría nada (RoomManager no crea dos veces la misma), así
+        // que se le cambia el mapa en caliente en vez de descargarla y volver a entrar.
+        if(this.getRoomInstance(roomId))
+        {
+            this.updateRoomInstanceMap(roomId, roomMap);
+
+            return;
+        }
+
         const data = this._roomDatas.get(roomId);
 
         if(data)
@@ -313,6 +323,65 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         }
 
         this.events.dispatchEvent(new RoomEngineEvent(RoomEngineEvent.INITIALIZED, roomId));
+    }
+
+    /**
+     * habb: mapa nuevo para una sala que ya está montada (plano guardado con el editor).
+     * Mismos valores que setupRoomInstance pone al crearla, sin tocar furnis ni avatares, y
+     * los planos de suelo y pared se rehacen por la vía de los agujeros del suelo
+     * (ROOM_FLOOR_HOLE_UPDATE_TIME -> RoomVisualization.updateHole -> clearPlanes).
+     */
+    private updateRoomInstanceMap(roomId: number, roomMap: RoomMapData): void
+    {
+        const instance = this.getRoomInstance(roomId);
+        const roomObject = instance && (instance.getRoomObject(RoomEngine.ROOM_OBJECT_ID, RoomObjectCategory.ROOM) as IRoomObjectController);
+        const logic = (roomObject && roomObject.logic as RoomLogic) || null;
+
+        if(!logic || !roomObject.model) return;
+
+        instance.model.setValue(RoomVariableEnum.RESTRICTS_DRAGGING, roomMap.restrictsDragging);
+        instance.model.setValue(RoomVariableEnum.RESTRICTS_SCALING, roomMap.restrictsScaling);
+        instance.model.setValue(RoomVariableEnum.RESTRICTED_SCALE, roomMap.restrictedScale);
+
+        if(roomMap.dimensions)
+        {
+            instance.model.setValue(RoomVariableEnum.ROOM_MIN_X, roomMap.dimensions.minX);
+            instance.model.setValue(RoomVariableEnum.ROOM_MAX_X, roomMap.dimensions.maxX);
+            instance.model.setValue(RoomVariableEnum.ROOM_MIN_Y, roomMap.dimensions.minY);
+            instance.model.setValue(RoomVariableEnum.ROOM_MAX_Y, roomMap.dimensions.maxY);
+        }
+
+        // initialize() vuelve a poner suelo y paredes visibles: se respeta lo que hubiera
+        // (paredes ocultas de la sala, o el editor de planos abierto)
+        const floorVisibility = roomObject.model.getValue<number>(RoomObjectVariable.ROOM_FLOOR_VISIBILITY);
+        const wallVisibility = roomObject.model.getValue<number>(RoomObjectVariable.ROOM_WALL_VISIBILITY);
+
+        logic.initialize(roomMap);
+
+        if(floorVisibility !== undefined) roomObject.model.setValue(RoomObjectVariable.ROOM_FLOOR_VISIBILITY, floorVisibility);
+        if(wallVisibility !== undefined) roomObject.model.setValue(RoomObjectVariable.ROOM_WALL_VISIBILITY, wallVisibility);
+
+        let doorIndex = 0;
+
+        for(const door of roomMap.doors)
+        {
+            if(!door) continue;
+
+            // mismo id que al crear la sala: addMask reemplaza la máscara de la puerta vieja
+            logic.processUpdateMessage(new ObjectRoomMaskUpdateMessage(ObjectRoomMaskUpdateMessage.ADD_MASK, ('door_' + doorIndex), ObjectRoomMaskUpdateMessage.DOOR, new Vector3d(door.x, door.y, door.z), ObjectRoomMaskUpdateMessage.HOLE));
+
+            if((door.dir === 90) || (door.dir === 180))
+            {
+                instance.model.setValue(RoomObjectVariable.ROOM_DOOR_X, (door.dir === 90) ? (door.x - 0.5) : door.x);
+                instance.model.setValue(RoomObjectVariable.ROOM_DOOR_Y, (door.dir === 180) ? (door.y - 0.5) : door.y);
+                instance.model.setValue(RoomObjectVariable.ROOM_DOOR_Z, door.z);
+                instance.model.setValue(RoomObjectVariable.ROOM_DOOR_DIR, door.dir);
+            }
+
+            doorIndex++;
+        }
+
+        roomObject.model.setValue(RoomObjectVariable.ROOM_FLOOR_HOLE_UPDATE_TIME, Date.now());
     }
 
     private setupRoomInstance(roomId: number, roomMap: RoomMapData, floorType: string, wallType: string, landscapeType: string, worldType: string): IRoomInstance
