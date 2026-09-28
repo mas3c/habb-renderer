@@ -17,6 +17,7 @@ export class RoomEngineTriggerWidgetEvent extends RoomEngineObjectEvent
     public static REQUEST_ECOTRONBOX: string = 'RETWE_REQUEST_ECOTRONBOX';
     public static REQUEST_DIMMER: string = 'RETWE_REQUEST_DIMMER';
     public static REMOVE_DIMMER: string = 'RETWE_REMOVE_DIMMER';
+    public static REQUEST_AREA_HIDE: string = 'RETWE_REQUEST_AREA_HIDE';
     public static REQUEST_CLOTHING_CHANGE: string = 'RETWE_REQUEST_CLOTHING_CHANGE';
     public static REQUEST_PLAYLIST_EDITOR: string = 'RETWE_REQUEST_PLAYLIST_EDITOR';
     public static REQUEST_MANNEQUIN: string = 'RETWE_REQUEST_MANNEQUIN';

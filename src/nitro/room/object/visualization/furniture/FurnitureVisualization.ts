@@ -17,6 +17,7 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
     protected _selectedColor: number;
     protected _furnitureLift: number;
     protected _alphaMultiplier: number;
+    protected _areaHidden: boolean = false;
     protected _alphaChanged: boolean;
     protected _clickUrl: string;
     protected _clickHandling: boolean;
@@ -233,6 +234,9 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
             this._alphaChanged = true;
         }
 
+        // conf_area_hide (RoomEngine.applyAreaHide): ni se pinta ni se puede pulsar
+        this._areaHidden = (model.getValue<number>(RoomObjectVariable.FURNITURE_AREA_HIDE_HIDDEN) === 1);
+
         this.updateModelCounter = model.updateCounter;
 
         return true;
@@ -267,6 +271,16 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
         }
 
         this._alphaChanged = false;
+
+        if(this._areaHidden)
+        {
+            for(let layerId = 0; layerId < this.totalSprites; layerId++)
+            {
+                const sprite = this.getSprite(layerId);
+
+                if(sprite) sprite.visible = false;
+            }
+        }
     }
 
     protected updateSprite(scale: number, layerId: number): void

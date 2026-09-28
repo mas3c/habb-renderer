@@ -80,6 +80,7 @@ export class RoomObjectVariable
     public static FURNITURE_BADGE_ASSET_NAME: string = 'furniture_badge_asset_name';
     public static FURNITURE_BADGE_VISIBLE_IN_STATE: string = 'furniture_badge_visible_in_state';
     public static FURNITURE_ALPHA_MULTIPLIER: string = 'furniture_alpha_multiplier';
+    public static FURNITURE_AREA_HIDE_HIDDEN: string = 'furniture_area_hide_hidden';
     public static FURNITURE_USAGE_POLICY: string = 'furniture_usage_policy';
     public static FURNITURE_OWNER_ID: string = 'furniture_owner_id';
     public static FURNITURE_OWNER_NAME: string = 'furniture_owner_name';

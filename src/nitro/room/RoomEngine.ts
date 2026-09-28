@@ -11,7 +11,7 @@ import { RenderRoomMessageComposer, RenderRoomThumbnailMessageComposer } from '.
 import { FurniId } from '../utils';
 import { ImageResult } from './ImageResult';
 import { ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExperienceUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarGuideStatusUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPetGestureUpdateMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage, ObjectDataUpdateMessage, ObjectGroupBadgeUpdateMessage, ObjectHeightUpdateMessage, ObjectItemDataUpdateMessage, ObjectModelDataUpdateMessage, ObjectMoveUpdateMessage, ObjectRoomColorUpdateMessage, ObjectRoomFloorHoleUpdateMessage, ObjectRoomMaskUpdateMessage, ObjectRoomPlanePropertyUpdateMessage, ObjectRoomPlaneVisibilityUpdateMessage, ObjectRoomUpdateMessage, ObjectStateUpdateMessage } from './messages';
-import { RoomLogic, RoomMapData, RoomObjectVisualizationFactory } from './object';
+import { FurnitureAreaHideLogic, RoomLogic, RoomMapData, RoomObjectVisualizationFactory } from './object';
 import { RoomContentLoader } from './RoomContentLoader';
 import { RoomMessageHandler } from './RoomMessageHandler';
 import { RoomObjectEventHandler } from './RoomObjectEventHandler';
@@ -66,6 +66,11 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     private _roomDatas: Map<number, RoomData>;
     private _roomInstanceDatas: Map<number, RoomInstanceData>;
     private _skipFurnitureCreationForNextFrame: boolean;
+
+    // conf_area_hide: salas con la zona por recalcular, la firma de los agujeros ya puestos y cuántos son
+    private _areaHidePending: Set<number> = new Set();
+    private _areaHideSignatures: Map<number, string> = new Map();
+    private _areaHideHoleCounts: Map<number, number> = new Map();
     private _mouseCursorUpdate: boolean;
     private _badgeListenerObjects: Map<string, RoomObjectBadgeImageAssetListener[]>;
     private _logicFactory: IRoomObjectLogicFactory;
@@ -228,6 +233,10 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
     public removeRoomInstance(roomId: number): void
     {
+        this._areaHidePending.delete(roomId);
+        this._areaHideSignatures.delete(roomId);
+        this._areaHideHoleCounts.delete(roomId);
+
         const instance = this.getRoomInstance(roomId);
 
         if(instance)
@@ -817,6 +826,161 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         }
     }
 
+    /**
+     * conf_area_hide («Esconder área en la sala»), como Polaris/Octane pero sin paquete propio: la
+     * zona sale de los datos del panel [estado, x, y, ancho, largo, invisible, pared, invertir].
+     * Encendido, el suelo de la zona se abre (agujeros) y se ocultan los furnis que la tocan, y los
+     * de pared si lo pide; «invertir» oculta todo lo de fuera. El panel no se oculta a sí mismo,
+     * salvo «invisible» con un conf_invis_control encendido en la sala.
+     */
+    private applyAreaHide(roomId: number): boolean
+    {
+        const roomObject = this.getRoomOwnObject(roomId);
+
+        if(!roomObject || !roomObject.logic) return !this.getRoomInstance(roomId);
+
+        const floorObjects = this.getRoomObjects(roomId, RoomObjectCategory.FLOOR);
+        const zones: { x: number, y: number, width: number, length: number, walls: boolean, invert: boolean }[] = [];
+        const controllers = new Set<IRoomObject>();
+        let invisibleControlOn = false;
+
+        for(const object of floorObjects)
+        {
+            if((object.type === 'conf_invis_control') && (object.getState(0) === 1)) invisibleControlOn = true;
+
+            if(!((object as IRoomObjectController).logic instanceof FurnitureAreaHideLogic)) continue;
+
+            controllers.add(object);
+
+            const data = (object.model.getValue<number[]>(RoomObjectVariable.FURNITURE_DATA) || []);
+
+            if((data[0] === 1) && (data[3] > 0) && (data[4] > 0)) zones.push({ x: data[1], y: data[2], width: data[3], length: data[4], walls: (data[6] === 1), invert: (data[7] === 1) });
+        }
+
+        // rehacer el suelo es caro: los agujeros solo cambian si cambian las zonas
+        const signature = JSON.stringify(zones.map(zone => [ zone.x, zone.y, zone.width, zone.length, zone.invert ]));
+
+        if(signature !== (this._areaHideSignatures.get(roomId) ?? '[]'))
+        {
+            if(!roomObject.model.getValue<RoomMapData>(RoomObjectVariable.ROOM_MAP_DATA)?.tileMap?.length) return false;
+
+            const previous = (this._areaHideHoleCounts.get(roomId) ?? 0);
+
+            for(let i = 0; i < previous; i++) roomObject.logic.processUpdateMessage(new ObjectRoomFloorHoleUpdateMessage(ObjectRoomFloorHoleUpdateMessage.REMOVE, (RoomEngine.AREA_HIDE_HOLE_ID - i)));
+
+            const holes = this.getAreaHideHoles(roomObject, zones);
+
+            holes.forEach((hole, i) => roomObject.logic.processUpdateMessage(new ObjectRoomFloorHoleUpdateMessage(ObjectRoomFloorHoleUpdateMessage.ADD, (RoomEngine.AREA_HIDE_HOLE_ID - i), hole.x, hole.y, hole.width, 1)));
+
+            this._areaHideSignatures.set(roomId, signature);
+            this._areaHideHoleCounts.set(roomId, holes.length);
+        }
+
+        for(const object of floorObjects)
+        {
+            const hidden = controllers.has(object)
+                ? (invisibleControlOn && (object.model.getValue<number[]>(RoomObjectVariable.FURNITURE_DATA)?.[5] === 1))
+                : zones.some(zone => (zone.invert !== RoomEngine.floorObjectInArea(object, zone)));
+
+            RoomEngine.setAreaHidden(object, hidden);
+        }
+
+        for(const object of this.getRoomObjects(roomId, RoomObjectCategory.WALL))
+        {
+            RoomEngine.setAreaHidden(object, zones.some(zone => zone.walls && (zone.invert !== RoomEngine.wallObjectInArea(object, zone))));
+        }
+
+        return true;
+    }
+
+    // ids de los agujeros de la zona: negativos, los de furnis-agujero son siempre positivos
+    private static AREA_HIDE_HOLE_ID: number = -1000000;
+
+    private static setAreaHidden(object: IRoomObject, hidden: boolean): void
+    {
+        if(!object || !object.model) return;
+
+        // sin tocar el modelo si no cambia: cada setValue repinta el furni
+        if((object.model.getValue<number>(RoomObjectVariable.FURNITURE_AREA_HIDE_HIDDEN) === 1) === hidden) return;
+
+        object.model.setValue(RoomObjectVariable.FURNITURE_AREA_HIDE_HIDDEN, (hidden ? 1 : 0));
+    }
+
+    private static floorObjectInArea(object: IRoomObject, zone: { x: number, y: number, width: number, length: number }): boolean
+    {
+        const location = object.getLocation();
+
+        if(!location) return false;
+
+        let sizeX = Math.max(1, (object.model.getValue<number>(RoomObjectVariable.FURNITURE_SIZE_X) || 1));
+        let sizeY = Math.max(1, (object.model.getValue<number>(RoomObjectVariable.FURNITURE_SIZE_Y) || 1));
+        const quarter = Math.trunc((Math.trunc((object.getDirection().x + 45)) % 360) / 90);
+
+        if((quarter === 1) || (quarter === 3)) [ sizeX, sizeY ] = [ sizeY, sizeX ];
+
+        const x = Math.round(location.x);
+        const y = Math.round(location.y);
+
+        return (x < (zone.x + zone.width)) && ((x + sizeX) > zone.x) && (y < (zone.y + zone.length)) && ((y + sizeY) > zone.y);
+    }
+
+    private static wallObjectInArea(object: IRoomObject, zone: { x: number, y: number, width: number, length: number }): boolean
+    {
+        const location = object.getLocation();
+
+        if(!location) return false;
+
+        // en la pared la posición cae entre baldosas: vale cualquiera de las que toca
+        for(const x of [ Math.floor(location.x), Math.ceil(location.x) ])
+        {
+            for(const y of [ Math.floor(location.y), Math.ceil(location.y) ])
+            {
+                if((x >= zone.x) && (x < (zone.x + zone.width)) && (y >= zone.y) && (y < (zone.y + zone.length))) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** baldosas que existen dentro (o fuera, si invierte) de las zonas, en tiras de una fila. */
+    private getAreaHideHoles(roomObject: IRoomObjectController, zones: { x: number, y: number, width: number, length: number, invert: boolean }[]): { x: number, y: number, width: number }[]
+    {
+        const holes: { x: number, y: number, width: number }[] = [];
+        const tileMap = roomObject.model.getValue<RoomMapData>(RoomObjectVariable.ROOM_MAP_DATA)?.tileMap;
+        const blocked = (x: number, y: number) => !((tileMap?.[y]?.[x]?.height ?? -1) >= 0);
+        // Las baldosas con forma de puerta (cerradas arriba, a la izquierda y abajo o a la derecha) nunca:
+        // hundida una, el parser la sube a z 100 y la cámara se va miles de píxeles. Da igual cuál sea la
+        // puerta de verdad: el parser trata así a todas las que tienen esa forma.
+        const isDoor = (x: number, y: number) => blocked(x, (y - 1)) && blocked((x - 1), y) && (blocked(x, (y + 1)) || blocked((x + 1), y));
+
+        if(!zones.length || !tileMap?.length) return holes;
+
+        for(let y = 0; y < tileMap.length; y++)
+        {
+            const row = (tileMap[y] || []);
+            let start = -1;
+
+            for(let x = 0; x <= row.length; x++)
+            {
+                const hide = (x < row.length) && (row[x]?.height >= 0) && !isDoor(x, y)
+                    && zones.some(zone => (zone.invert !== ((x >= zone.x) && (x < (zone.x + zone.width)) && (y >= zone.y) && (y < (zone.y + zone.length)))));
+
+                if(hide)
+                {
+                    if(start === -1) start = x;
+
+                    continue;
+                }
+
+                if(start !== -1) holes.push({ x: start, y, width: (x - start) });
+
+                start = -1;
+            }
+        }
+
+        return holes;
+    }
+
     public setRoomEngineGameMode(roomId: number, isPlaying: boolean): void
     {
         const roomInstance = this.getRoomInstance(roomId);
@@ -883,6 +1047,16 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         RoomEnterEffect.turnVisualizationOn();
 
         this.processPendingFurniture();
+
+        if(this._areaHidePending.size)
+        {
+            const pending = [ ...this._areaHidePending ];
+
+            this._areaHidePending.clear();
+
+            // sin mapa todavía (entrando en la sala) se reintenta en el siguiente fotograma
+            for(const roomId of pending) if(!this.applyAreaHide(roomId)) this._areaHidePending.add(roomId);
+        }
 
         this._roomManager.update(time, update);
 
@@ -1833,6 +2007,8 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         this.removeRoomObject(roomId, objectId, RoomObjectCategory.FLOOR);
         this.setMouseDefault(roomId, RoomObjectCategory.FLOOR, objectId);
 
+        this._areaHidePending.add(roomId);
+
         if(_arg_4) this.refreshTileObjectMap(roomId, 'RoomEngine.disposeObjectFurniture()');
     }
 
@@ -1947,6 +2123,8 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         object.processUpdateMessage(new RoomObjectUpdateMessage(location, direction));
         object.processUpdateMessage(new ObjectDataUpdateMessage(state, data, extra));
 
+        this._areaHidePending.add(roomId);
+
         return true;
     }
 
@@ -1966,6 +2144,8 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         object.logic.processUpdateMessage(dataUpdateMessage);
 
         this.updateRoomObjectMask(roomId, objectId);
+
+        this._areaHidePending.add(roomId);
 
         return true;
     }
@@ -2051,6 +2231,8 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         if(!object) return;
 
         object.processUpdateMessage(new ObjectMoveUpdateMessage(location, targetLocation, null, !!targetLocation));
+
+        this._areaHidePending.add(roomId);
     }
 
     public updateRoomObjectWallLocation(roomId: number, objectId: number, location: IVector3D): boolean
@@ -2062,6 +2244,8 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         if(roomObject.logic) roomObject.logic.processUpdateMessage(new ObjectMoveUpdateMessage(location, null, null));
 
         this.updateRoomObjectMask(roomId, objectId);
+
+        this._areaHidePending.add(roomId);
 
         return true;
     }
@@ -2316,6 +2500,9 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         }
 
         if(roomId !== RoomEngine.TEMPORARY_ROOM) this.addObjectToTileMap(id, object);
+
+        // al cargar su .nitro el furni estrena lógica: un panel conf_area_hide solo se reconoce desde aquí
+        if(roomId !== RoomEngine.TEMPORARY_ROOM) this._areaHidePending.add(id);
     }
 
     public changeObjectModelData(roomId: number, objectId: number, category: number, numberKey: string, numberValue: number): boolean

@@ -15,6 +15,7 @@ export * from './FurnitureEditableRoomLinkLogic';
 export * from './FurnitureEffectBoxLogic';
 export * from './FurnitureExternalImageLogic';
 export * from './FurnitureFireworksLogic';
+export * from './FurnitureAreaHideLogic';
 export * from './FurnitureFloorHoleLogic';
 export * from './FurnitureFriendFurniLogic';
 export * from './FurnitureGroupForumTerminalLogic';

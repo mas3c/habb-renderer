@@ -203,6 +203,7 @@ export class RoomObjectEventHandler extends Disposable implements IRoomCanvasMou
             case RoomObjectWidgetRequestEvent.ECOTRONBOX:
             case RoomObjectWidgetRequestEvent.DIMMER:
             case RoomObjectWidgetRequestEvent.WIDGET_REMOVE_DIMMER:
+            case RoomObjectWidgetRequestEvent.AREA_HIDE:
             case RoomObjectWidgetRequestEvent.CLOTHING_CHANGE:
             case RoomObjectWidgetRequestEvent.JUKEBOX_PLAYLIST_EDITOR:
             case RoomObjectWidgetRequestEvent.MANNEQUIN:
@@ -762,6 +763,9 @@ export class RoomObjectEventHandler extends Disposable implements IRoomCanvasMou
                 return;
             case RoomObjectWidgetRequestEvent.WIDGET_REMOVE_DIMMER:
                 eventDispatcher.dispatchEvent(new RoomEngineTriggerWidgetEvent(RoomEngineTriggerWidgetEvent.REMOVE_DIMMER, roomId, objectId, objectCategory));
+                return;
+            case RoomObjectWidgetRequestEvent.AREA_HIDE:
+                eventDispatcher.dispatchEvent(new RoomEngineTriggerWidgetEvent(RoomEngineTriggerWidgetEvent.REQUEST_AREA_HIDE, roomId, objectId, objectCategory));
                 return;
             case RoomObjectWidgetRequestEvent.CLOTHING_CHANGE:
                 eventDispatcher.dispatchEvent(new RoomEngineTriggerWidgetEvent(RoomEngineTriggerWidgetEvent.REQUEST_CLOTHING_CHANGE, roomId, objectId, objectCategory));

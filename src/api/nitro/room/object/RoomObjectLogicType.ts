@@ -18,6 +18,7 @@ export class RoomObjectLogicType
     public static FURNITURE_WINDOW = 'furniture_window';
     public static FURNITURE_EXTERNAL_IMAGE_WALLITEM = 'furniture_external_image_wallitem';
     public static FURNITURE_ROOMDIMMER = 'furniture_roomdimmer';
+    public static FURNITURE_AREA_HIDE = 'furniture_area_hide';
     public static FURNITURE_SOUND_MACHINE = 'furniture_sound_machine';
     public static FURNITURE_JUKEBOX = 'furniture_jukebox';
     public static FURNITURE_CRACKABLE = 'furniture_crackable';

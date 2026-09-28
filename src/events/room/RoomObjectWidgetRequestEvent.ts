@@ -18,6 +18,7 @@ export class RoomObjectWidgetRequestEvent extends RoomObjectEvent
     public static ECOTRONBOX: string = 'ROWRE_ECOTRONBOX';
     public static DIMMER: string = 'ROWRE_DIMMER';
     public static WIDGET_REMOVE_DIMMER: string = 'ROWRE_WIDGET_REMOVE_DIMMER';
+    public static AREA_HIDE: string = 'ROWRE_AREA_HIDE';
     public static CLOTHING_CHANGE: string = 'ROWRE_CLOTHING_CHANGE';
     public static JUKEBOX_PLAYLIST_EDITOR: string = 'ROWRE_JUKEBOX_PLAYLIST_EDITOR';
     public static MANNEQUIN: string = 'ROWRE_MANNEQUIN';
