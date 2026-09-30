@@ -100,4 +100,6 @@ export interface IRoomEngine extends INitroManager
     disposed: boolean;
     selectedAvatarId: number;
     isDecorating: boolean;
+    setWiredMoveStyle(objectIds: number[], style: { duration: number, curve: number, intensity: number }): void;
+    setWiredClickSettings(userOption: number, furniOption: number): void;
 }

@@ -12,6 +12,9 @@ export class RoomObjectEventHandler extends Disposable implements IRoomCanvasMou
     private _roomEngine: IRoomEngineServices;
 
     private _eventIds: Map<number, Map<string, string>>;
+    // «Configurar clic» (wf_act_click_conf): avatares 0 normal · 1 andar detrás · 2 atravesar; furnis 0 normal · 1 atravesar
+    private _wiredClickUser: number = 0;
+    private _wiredClickFurni: number = 0;
 
     private _selectedAvatarId: number;
     private _selectedObjectId: number;
@@ -85,6 +88,12 @@ export class RoomObjectEventHandler extends Disposable implements IRoomCanvasMou
         }
     }
 
+    public setWiredClickSettings(userOption: number, furniOption: number): void
+    {
+        this._wiredClickUser = userOption;
+        this._wiredClickFurni = furniOption;
+    }
+
     public processRoomCanvasMouseEvent(event: RoomSpriteMouseEvent, object: IRoomObject, geometry: IRoomGeometry): void
     {
         if(!event || !object) return;
@@ -92,6 +101,9 @@ export class RoomObjectEventHandler extends Disposable implements IRoomCanvasMou
         if(RoomEnterEffect.isRunning()) return;
 
         const type = object.type;
+        const realCategory = this._roomEngine.getRoomObjectCategoryForType(type);
+
+        if(((realCategory === RoomObjectCategory.UNIT) && (this._wiredClickUser === 2)) || ((realCategory === RoomObjectCategory.FLOOR) && (this._wiredClickFurni === 1))) return;
 
         let category = this._roomEngine.getRoomObjectCategoryForType(type);
 
@@ -424,7 +436,8 @@ export class RoomObjectEventHandler extends Disposable implements IRoomCanvasMou
 
                         if(!this._roomEngine.isPlayingGame())
                         {
-                            didWalk = true;
+                            // «andar detrás»: el avatar se elige, pero el clic sigue a la baldosa
+                            didWalk = (this._wiredClickUser !== 1);
                         }
                         else
                         {

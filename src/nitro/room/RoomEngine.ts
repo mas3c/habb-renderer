@@ -10,7 +10,7 @@ import { PetFigureData } from '../avatar';
 import { RenderRoomMessageComposer, RenderRoomThumbnailMessageComposer } from '../communication';
 import { FurniId } from '../utils';
 import { ImageResult } from './ImageResult';
-import { ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExperienceUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarGuideStatusUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPetGestureUpdateMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage, ObjectDataUpdateMessage, ObjectGroupBadgeUpdateMessage, ObjectHeightUpdateMessage, ObjectItemDataUpdateMessage, ObjectModelDataUpdateMessage, ObjectMoveUpdateMessage, ObjectRoomColorUpdateMessage, ObjectRoomFloorHoleUpdateMessage, ObjectRoomMaskUpdateMessage, ObjectRoomPlanePropertyUpdateMessage, ObjectRoomPlaneVisibilityUpdateMessage, ObjectRoomUpdateMessage, ObjectStateUpdateMessage } from './messages';
+import { ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExperienceUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarGuideStatusUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPetGestureUpdateMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage, ObjectDataUpdateMessage, ObjectGroupBadgeUpdateMessage, ObjectHeightUpdateMessage, ObjectItemDataUpdateMessage, ObjectModelDataUpdateMessage, IWiredMoveStyle, ObjectMoveUpdateMessage, ObjectRoomColorUpdateMessage, ObjectRoomFloorHoleUpdateMessage, ObjectRoomMaskUpdateMessage, ObjectRoomPlanePropertyUpdateMessage, ObjectRoomPlaneVisibilityUpdateMessage, ObjectRoomUpdateMessage, ObjectStateUpdateMessage } from './messages';
 import { FurnitureAreaHideLogic, RoomLogic, RoomMapData, RoomObjectVisualizationFactory } from './object';
 import { RoomContentLoader } from './RoomContentLoader';
 import { RoomMessageHandler } from './RoomMessageHandler';
@@ -2224,13 +2224,33 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         if(roomOwnObject && roomOwnObject.logic && maskUpdate) roomOwnObject.logic.processUpdateMessage(maskUpdate);
     }
 
+    private _wiredMoveStyles: Map<number, { style: IWiredMoveStyle, until: number }> = new Map();
+
+    /** «Configurar clic» de la sala (wf_act_click_conf); 0, 0 lo deja como siempre. */
+    public setWiredClickSettings(userOption: number, furniOption: number): void
+    {
+        if(this._roomObjectEventHandler) this._roomObjectEventHandler.setWiredClickSettings(userOption, furniOption);
+    }
+
+    /** Aviso del emulador (9614): el próximo deslizamiento de estos furnis lleva esta duración y curva. */
+    public setWiredMoveStyle(objectIds: number[], style: IWiredMoveStyle): void
+    {
+        const until = (Date.now() + 2000);
+
+        for(const id of objectIds) this._wiredMoveStyles.set(id, { style, until });
+    }
+
     public rollRoomObjectFloor(roomId: number, objectId: number, location: IVector3D, targetLocation: IVector3D): void
     {
         const object = this.getRoomObjectFloor(roomId, objectId);
 
         if(!object) return;
 
-        object.processUpdateMessage(new ObjectMoveUpdateMessage(location, targetLocation, null, !!targetLocation));
+        const pending = this._wiredMoveStyles.get(objectId);
+
+        if(pending) this._wiredMoveStyles.delete(objectId);
+
+        object.processUpdateMessage(new ObjectMoveUpdateMessage(location, targetLocation, null, !!targetLocation, (pending && (pending.until > Date.now())) ? pending.style : null));
 
         this._areaHidePending.add(roomId);
     }

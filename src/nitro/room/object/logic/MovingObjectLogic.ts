@@ -14,6 +14,9 @@ export class MovingObjectLogic extends RoomObjectLogicBase
     private _lastUpdateTime: number;
     private _changeTime: number;
     private _updateInterval: number;
+    private _curve: number = 0;
+    private _intensity: number = 0;
+    private _styled: boolean = false;
 
     constructor()
     {
@@ -77,7 +80,7 @@ export class MovingObjectLogic extends RoomObjectLogicBase
             if(this._locationDelta.length > 0)
             {
                 vector.assign(this._locationDelta);
-                vector.multiply((difference / this._updateInterval));
+                vector.multiply(MovingObjectLogic.ease(difference / this._updateInterval, this._curve, this._intensity));
                 vector.add(this._location);
             }
             else
@@ -124,8 +127,55 @@ export class MovingObjectLogic extends RoomObjectLogicBase
 
         this._changeTime = this._lastUpdateTime;
 
+        const style = message.style;
+
+        if(style && (style.duration > 0))
+        {
+            this.updateInterval = style.duration;
+            this._curve = style.curve;
+            this._intensity = style.intensity;
+            this._styled = true;
+        }
+        else if(this._styled)
+        {
+            this.updateInterval = MovingObjectLogic.DEFAULT_UPDATE_INTERVAL;
+            this._curve = 0;
+            this._styled = false;
+        }
+
         this._locationDelta.assign(message.targetLocation);
         this._locationDelta.subtract(this._location);
+    }
+
+    /** Curvas de «Curva de Movimiento» (Octane): 0 lineal · 1 entrada · 2 salida · 3 entrada y salida · 4 rebote · 5 elástica · 6 caída. */
+    public static ease(t: number, curve: number, intensity: number): number
+    {
+        if(!curve || (t <= 0) || (t >= 1)) return t;
+
+        let e = t;
+
+        switch(curve)
+        {
+            case 1: e = t * t; break;
+            case 2: e = 1 - ((1 - t) * (1 - t)); break;
+            case 3: e = (t < 0.5) ? (2 * t * t) : (1 - (Math.pow(-2 * t + 2, 2) / 2)); break;
+            case 4: {
+                let u = t;
+                const n = 7.5625, d = 2.75;
+
+                if(u < (1 / d)) e = n * u * u;
+                else if(u < (2 / d)) { u -= (1.5 / d); e = (n * u * u) + 0.75; }
+                else if(u < (2.5 / d)) { u -= (2.25 / d); e = (n * u * u) + 0.9375; }
+                else { u -= (2.625 / d); e = (n * u * u) + 0.984375; }
+                break;
+            }
+            case 5: e = (Math.pow(2, -10 * t) * Math.sin(((t * 10) - 0.75) * ((2 * Math.PI) / 3))) + 1; break;
+            case 6: e = t * t * t; break;
+        }
+
+        const k = Math.max(0, Math.min(100, intensity)) / 100;
+
+        return t + ((e - t) * k);
     }
 
     protected getLocationOffset(): IVector3D
