@@ -2225,6 +2225,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     }
 
     private _wiredMoveStyles: Map<number, { style: IWiredMoveStyle, until: number }> = new Map();
+    private _wiredMoveStylesUnits: Map<number, { style: IWiredMoveStyle, until: number }> = new Map();
 
     /** «Configurar clic» de la sala (wf_act_click_conf); 0, 0 lo deja como siempre. */
     public setWiredClickSettings(userOption: number, furniOption: number): void
@@ -2233,11 +2234,11 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     }
 
     /** Aviso del emulador (9614): el próximo deslizamiento de estos furnis lleva esta duración y curva. */
-    public setWiredMoveStyle(objectIds: number[], style: IWiredMoveStyle): void
+    public setWiredMoveStyle(objectIds: number[], style: IWiredMoveStyle, units: boolean = false): void
     {
         const until = (Date.now() + 2000);
 
-        for(const id of objectIds) this._wiredMoveStyles.set(id, { style, until });
+        for(const id of objectIds) (units ? this._wiredMoveStylesUnits : this._wiredMoveStyles).set(id, { style, until });
     }
 
     public rollRoomObjectFloor(roomId: number, objectId: number, location: IVector3D, targetLocation: IVector3D): void
@@ -2250,7 +2251,11 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
         if(pending) this._wiredMoveStyles.delete(objectId);
 
-        object.processUpdateMessage(new ObjectMoveUpdateMessage(location, targetLocation, null, !!targetLocation, (pending && (pending.until > Date.now())) ? pending.style : null));
+        const style = (pending && (pending.until > Date.now())) ? pending.style : null;
+        // Proyectil: el furni sale ya girado hacia donde viaja
+        const direction = (style && (style.rotation >= 0)) ? new Vector3d(style.rotation * 45) : null;
+
+        object.processUpdateMessage(new ObjectMoveUpdateMessage(location, targetLocation, direction, !!targetLocation, style));
 
         this._areaHidePending.add(roomId);
     }
@@ -2307,7 +2312,17 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
         if(isNaN(headDirection)) headDirection = object.model.getValue<number>(RoomObjectVariable.HEAD_DIRECTION);
 
-        object.processUpdateMessage(new ObjectAvatarUpdateMessage(this.fixedUserLocation(roomId, location), this.fixedUserLocation(roomId, targetLocation), direction, headDirection, canStandUp, baseY));
+        const update = new ObjectAvatarUpdateMessage(this.fixedUserLocation(roomId, location), this.fixedUserLocation(roomId, targetLocation), direction, headDirection, canStandUp, baseY);
+        const pending = targetLocation ? this._wiredMoveStylesUnits.get(objectId) : null;
+
+        if(pending)
+        {
+            this._wiredMoveStylesUnits.delete(objectId);
+
+            if(pending.until > Date.now()) update.style = pending.style;
+        }
+
+        object.processUpdateMessage(update);
 
         const roomSession = ((this._roomSessionManager && this._roomSessionManager.getSession(roomId)) || null);
 

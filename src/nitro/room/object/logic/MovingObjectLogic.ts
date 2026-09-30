@@ -16,6 +16,7 @@ export class MovingObjectLogic extends RoomObjectLogicBase
     private _updateInterval: number;
     private _curve: number = 0;
     private _intensity: number = 0;
+    private _arc: number = 0;
     private _styled: boolean = false;
 
     constructor()
@@ -79,9 +80,26 @@ export class MovingObjectLogic extends RoomObjectLogicBase
 
             if(this._locationDelta.length > 0)
             {
+                const t = (difference / this._updateInterval);
+
                 vector.assign(this._locationDelta);
-                vector.multiply(MovingObjectLogic.ease(difference / this._updateInterval, this._curve, this._intensity));
+                vector.multiply(MovingObjectLogic.ease(t, this._curve, this._intensity));
                 vector.add(this._location);
+
+                // Proyectil con curva: se aparta a un lado del trazo y vuelve (seno), en baldosas
+                if(this._arc)
+                {
+                    const dx = this._locationDelta.x, dy = this._locationDelta.y;
+                    const len = Math.sqrt((dx * dx) + (dy * dy));
+
+                    if(len > 0)
+                    {
+                        const k = Math.sin(Math.PI * t) * (this._arc / 1000) * len * 0.5;
+
+                        vector.x += (-dy / len) * k;
+                        vector.y += (dx / len) * k;
+                    }
+                }
             }
             else
             {
@@ -134,12 +152,14 @@ export class MovingObjectLogic extends RoomObjectLogicBase
             this.updateInterval = style.duration;
             this._curve = style.curve;
             this._intensity = style.intensity;
+            this._arc = style.arc || 0;
             this._styled = true;
         }
         else if(this._styled)
         {
             this.updateInterval = MovingObjectLogic.DEFAULT_UPDATE_INTERVAL;
             this._curve = 0;
+            this._arc = 0;
             this._styled = false;
         }
 

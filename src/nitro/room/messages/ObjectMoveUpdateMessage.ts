@@ -6,6 +6,9 @@ export interface IWiredMoveStyle
     duration: number;
     curve: number;
     intensity: number;
+    /** Proyectil: curva lateral (-1000..1000, 0 recta) y rotación al salir (0-7, -1 ninguna). */
+    arc?: number;
+    rotation?: number;
 }
 
 export class ObjectMoveUpdateMessage extends RoomObjectUpdateMessage
@@ -27,6 +30,11 @@ export class ObjectMoveUpdateMessage extends RoomObjectUpdateMessage
     public get style(): IWiredMoveStyle
     {
         return this._style;
+    }
+
+    public set style(style: IWiredMoveStyle)
+    {
+        this._style = style;
     }
 
     public get targetLocation(): IVector3D
