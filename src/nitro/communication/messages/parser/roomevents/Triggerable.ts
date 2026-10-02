@@ -5,6 +5,7 @@ export class Triggerable
     private _stuffTypeSelectionEnabled: boolean;
     private _furniLimit: number;
     private _stuffIds: number[];
+    private _stuffIds2: number[];
     private _id: number;
     private _stringParam: string;
     private _intParams: number[];
@@ -14,15 +15,21 @@ export class Triggerable
     constructor(wrapper: IMessageDataWrapper)
     {
         this._stuffIds = [];
+        this._stuffIds2 = [];
         this._intParams = [];
         this._stuffTypeSelectionEnabled = wrapper.readBoolean();
         this._furniLimit = wrapper.readInt();
 
         let count = wrapper.readInt();
+        let stuffIds = this._stuffIds;
 
+        // Habb: tras un -1 viene la segunda selección (stuffIds2 del Habbo actual)
         while(count > 0)
         {
-            this._stuffIds.push(wrapper.readInt());
+            const id = wrapper.readInt();
+
+            if(id === -1) stuffIds = this._stuffIds2;
+            else stuffIds.push(id);
 
             count--;
         }
@@ -71,6 +78,11 @@ export class Triggerable
     public get selectedItems(): number[]
     {
         return this._stuffIds;
+    }
+
+    public get selectedItems2(): number[]
+    {
+        return this._stuffIds2;
     }
 
     public get id(): number
