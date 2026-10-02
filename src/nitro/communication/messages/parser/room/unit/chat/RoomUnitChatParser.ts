@@ -6,6 +6,8 @@ export class RoomUnitChatParser implements IMessageParser
     private _message: string;
     private _gesture: number;
     private _bubble: number;
+    // ancho forzado por el wired «Mensaje» (0 ancho, 1 normal, 2 estrecho); -1 = el de la sala
+    private _bubbleWidth: number = -1;
     private _urls: string[];
     private _messageLength: number;
 
@@ -17,6 +19,7 @@ export class RoomUnitChatParser implements IMessageParser
         this._bubble = 0;
         this._urls = [];
         this._messageLength = 0;
+        this._bubbleWidth = -1;
 
         return true;
     }
@@ -33,6 +36,9 @@ export class RoomUnitChatParser implements IMessageParser
         this.parseUrls(wrapper);
 
         this._messageLength = wrapper.readInt();
+
+        // cola opcional (Polaris/Comet): el emulador viejo no la manda
+        this._bubbleWidth = wrapper.bytesAvailable ? wrapper.readInt() : -1;
 
         return true;
     }
@@ -68,6 +74,11 @@ export class RoomUnitChatParser implements IMessageParser
     public get gesture(): number
     {
         return this._gesture;
+    }
+
+    public get bubbleWidth(): number
+    {
+        return this._bubbleWidth;
     }
 
     public get bubble(): number

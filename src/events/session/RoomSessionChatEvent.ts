@@ -24,8 +24,9 @@ export class RoomSessionChatEvent extends RoomSessionEvent
     private _links: string[];
     private _extraParam: number;
     private _style: number;
+    private _bubbleWidth: number;
 
-    constructor(type: string, session: IRoomSession, objectId: number, message: string, chatType: number, style: number = 0, links: string[] = null, extraParam: number = -1)
+    constructor(type: string, session: IRoomSession, objectId: number, message: string, chatType: number, style: number = 0, links: string[] = null, extraParam: number = -1, bubbleWidth: number = -1)
     {
         super(type, session);
 
@@ -35,6 +36,13 @@ export class RoomSessionChatEvent extends RoomSessionEvent
         this._links = links;
         this._extraParam = extraParam;
         this._style = style;
+        this._bubbleWidth = bubbleWidth;
+    }
+
+    /** Ancho forzado de la burbuja (wired «Mensaje»): 0 ancho, 1 normal, 2 estrecho; -1 = el de la sala. */
+    public get bubbleWidth(): number
+    {
+        return this._bubbleWidth;
     }
 
     public get objectId(): number
