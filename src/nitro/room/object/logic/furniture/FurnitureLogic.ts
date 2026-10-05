@@ -97,7 +97,9 @@ export class FurnitureLogic extends MovingObjectLogic
 
                     this._centerX = (this._sizeX / 2);
                     this._centerY = (this._sizeY / 2);
-                    this._centerZ = (this._sizeZ / 2);
+                    // Como el cliente Flash: centerZ del furni si lo trae (paredes altas como
+                    // cland_c15_wall, centerZ 0, bajan hasta el suelo); si no, la mitad de la altura.
+                    this._centerZ = ((typeof dimensions.centerZ === 'number') ? dimensions.centerZ : (this._sizeZ / 2));
                 }
 
                 const directions = asset.logic.model.directions;
