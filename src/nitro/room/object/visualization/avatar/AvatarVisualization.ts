@@ -2,7 +2,7 @@ import { BLEND_MODES } from '@pixi/constants';
 import { Resource, Texture } from '@pixi/core';
 import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, RoomObjectSpriteType, RoomObjectVariable } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
-import { ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
+import { ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
 import { AvatarVisualizationData } from './AvatarVisualizationData';
 
 export class AvatarVisualization extends RoomObjectSpriteVisualization implements IAvatarImageListener, IAvatarEffectListener
@@ -15,6 +15,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private static GAME_CLICK_TARGET_ID: number = 5;
     private static MUTED_BUBBLE_ID: number = 6;
     private static GUIDE_BUBBLE_ID: number = 7;
+    private static HABBICON_ID: number = 8;
     private static OWN_USER_ID: number = 4;
     private static UPDATE_TIME_INCREASER: number = 41;
     private static AVATAR_LAYER_ID: number = 0;
@@ -797,6 +798,27 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         else
         {
             if(numberAddition) this.removeAddition(AvatarVisualization.NUMBER_BUBBLE_ID);
+        }
+
+        // Habbicon (AIR): una burbuja nueva cada vez que sube la secuencia, aunque sea el mismo icono
+        const habbiconId = model.getValue<number>(RoomObjectVariable.FIGURE_HABBICON);
+        const habbiconSecuencia = model.getValue<number>(RoomObjectVariable.FIGURE_HABBICON_SEQUENCE) || 0;
+        const habbiconAddition = this.getAddition(AvatarVisualization.HABBICON_ID) as HabbiconAddition;
+
+        if(habbiconId > 0)
+        {
+            if(!habbiconAddition || (habbiconAddition.habbiconId !== habbiconId) || (habbiconAddition.secuencia !== habbiconSecuencia))
+            {
+                if(habbiconAddition) this.removeAddition(AvatarVisualization.HABBICON_ID);
+
+                this.addAddition(new HabbiconAddition(AvatarVisualization.HABBICON_ID, habbiconId, habbiconSecuencia, this));
+            }
+
+            needsUpdate = true;
+        }
+        else
+        {
+            if(habbiconAddition) this.removeAddition(AvatarVisualization.HABBICON_ID);
         }
 
         let expressionAddition = this.getAddition(AvatarVisualization.EXPRESSION_ID);

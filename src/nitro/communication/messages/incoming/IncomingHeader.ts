@@ -16,6 +16,9 @@ export class IncomingHeader
     // Impostor del centro de juegos (emulador: Composers.ImpostorMessageComposer)
     public static IMPOSTOR_MESSAGE = 9617;
 
+    // Habbicons del AIR: alguien de la sala usa uno (emulador: Composers.RoomHabbiconMessageComposer)
+    public static ROOM_HABBICON = 9619;
+
     // Menciones y bloqueados (emulador: Composers.MencionesMessageComposer)
     public static MENCIONES_MESSAGE = 9607;
 

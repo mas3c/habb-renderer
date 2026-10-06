@@ -30,6 +30,8 @@ export class RoomObjectVariable
     public static FIGURE_GAINED_EXPERIENCE: string = 'figure_gained_experience';
     public static FIGURE_EXPERIENCE_TIMESTAMP: string = 'figure_experience_timestamp';
     public static FIGURE_NUMBER_VALUE: string = 'figure_number_value';
+    public static FIGURE_HABBICON: string = 'figure_habbicon';
+    public static FIGURE_HABBICON_SEQUENCE: string = 'figure_habbicon_trigger_sequence';
     public static FIGURE_IS_PLAYING_GAME: string = 'figure_is_playing_game';
     public static FIGURE_GUIDE_STATUS: string = 'figure_guide_status';
     public static FIGURE_EXPRESSION: string = 'figure_expression';

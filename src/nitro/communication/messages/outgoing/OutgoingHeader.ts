@@ -270,6 +270,9 @@ export class OutgoingHeader
     // Impostor del centro de juegos (emulador: Events.ImpostorCommandMessageEvent)
     public static IMPOSTOR_COMMAND = 9616;
 
+    // Habbicons del AIR: usar uno en la sala (emulador: Events.UseHabbiconMessageEvent)
+    public static USE_HABBICON = 9618;
+
     // Menciones y bloqueados (emulador: Events.MencionesCommandMessageEvent)
     public static MENCIONES_COMMAND = 9606;
 

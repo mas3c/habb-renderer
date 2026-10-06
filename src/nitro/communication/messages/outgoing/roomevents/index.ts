@@ -15,4 +15,5 @@ export * from './YoutubeTvCommandComposer';
 export * from './StaffPinComposer';
 export * from './MencionesCommandComposer';
 export * from './ImpostorCommandComposer';
+export * from './UseHabbiconComposer';
 export * from './UnoCommandComposer';

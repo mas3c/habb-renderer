@@ -3,7 +3,7 @@ import { AvatarAction, IRoomGeometry, IRoomObjectModel, MouseEventType, RoomObje
 import { RoomObjectFurnitureActionEvent, RoomObjectMouseEvent, RoomObjectMoveEvent, RoomSpriteMouseEvent } from '../../../../../events';
 import { GetTickerTime } from '../../../../../pixi-proxy';
 import { RoomObjectUpdateMessage } from '../../../../../room';
-import { ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSelectedMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage } from '../../../messages';
+import { ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarHabbiconUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSelectedMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage } from '../../../messages';
 import { MovingObjectLogic } from '../MovingObjectLogic';
 
 export class AvatarLogic extends MovingObjectLogic
@@ -32,6 +32,7 @@ export class AvatarLogic extends MovingObjectLogic
     private _signEndTimestamp: number;
     private _gestureEndTimestamp: number;
     private _numberValueEndTimestamp: number;
+    private _habbiconEndTimestamp: number = 0;
 
     constructor()
     {
@@ -211,6 +212,14 @@ export class AvatarLogic extends MovingObjectLogic
             this._effectChangeTimeStamp = 0;
         }
 
+        // la burbuja del Habbicon dura 3 s + 350 ms de salida (HabbiconBubble del AIR)
+        if((this._habbiconEndTimestamp > 0) && (time > this._habbiconEndTimestamp))
+        {
+            model.setValue(RoomObjectVariable.FIGURE_HABBICON, 0);
+
+            this._habbiconEndTimestamp = 0;
+        }
+
         if((this._numberValueEndTimestamp > 0) && (time > this._numberValueEndTimestamp))
         {
             model.setValue(RoomObjectVariable.FIGURE_NUMBER_VALUE, 0);
@@ -309,6 +318,17 @@ export class AvatarLogic extends MovingObjectLogic
 
             if(message.isSleeping) this._blinkingStartTimestamp = -1;
             else this._blinkingStartTimestamp = (this.time + this.randomBlinkStartTimestamp());
+
+            return;
+        }
+
+        if(message instanceof ObjectAvatarHabbiconUpdateMessage)
+        {
+            // la secuencia sube aunque sea el mismo Habbicon: así la burbuja vuelve a empezar
+            model.setValue(RoomObjectVariable.FIGURE_HABBICON, message.habbiconId);
+            model.setValue(RoomObjectVariable.FIGURE_HABBICON_SEQUENCE, (model.getValue<number>(RoomObjectVariable.FIGURE_HABBICON_SEQUENCE) || 0) + 1);
+
+            this._habbiconEndTimestamp = (this.time + 3500);
 
             return;
         }

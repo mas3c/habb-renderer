@@ -12,6 +12,7 @@ export * from './ObjectAvatarGuideStatusUpdateMessage';
 export * from './ObjectAvatarMutedUpdateMessage';
 export * from './ObjectAvatarOwnMessage';
 export * from './ObjectAvatarPetGestureUpdateMessage';
+export * from './ObjectAvatarHabbiconUpdateMessage';
 export * from './ObjectAvatarPlayerValueUpdateMessage';
 export * from './ObjectAvatarPlayingGameUpdateMessage';
 export * from './ObjectAvatarPostureUpdateMessage';
