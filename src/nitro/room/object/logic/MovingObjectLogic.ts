@@ -132,6 +132,32 @@ export class MovingObjectLogic extends RoomObjectLogicBase
     {
         if(!message) return;
 
+        // Una posición normal (no de deslizamiento) en pleno deslizamiento. El servidor
+        // manda el estado nuevo de un furni que un wired cambia Y mueve a la vez con su
+        // posición final, justo detrás del deslizamiento: antes eso movía el ORIGEN al
+        // destino sin anular el desplazamiento pendiente, y el furni seguía de largo otro
+        // tanto y se quedaba ahí hasta recargar (la bola del bingo, 06-10-2026).
+        if(message.location && !(message instanceof ObjectMoveUpdateMessage) && (this._locationDelta.length > 0))
+        {
+            const destino = MovingObjectLogic.TEMP_VECTOR;
+
+            destino.assign(this._location);
+            destino.add(this._locationDelta);
+
+            const mismoSitio = (Math.abs(destino.x - message.location.x) < 0.01) && (Math.abs(destino.y - message.location.y) < 0.01) && (Math.abs(destino.z - message.location.z) < 0.01);
+
+            if(mismoSitio)
+            {
+                // ya va hacia ahí: que termine de deslizarse
+                if(this.object && message.direction) this.object.setDirection(message.direction);
+
+                return;
+            }
+
+            // a otro sitio: se corta el deslizamiento y se planta donde dice el servidor
+            this._locationDelta.assign(new Vector3d());
+        }
+
         super.processUpdateMessage(message);
 
         if(message.location) this._location.assign(message.location);
