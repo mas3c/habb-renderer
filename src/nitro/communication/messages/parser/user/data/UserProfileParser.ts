@@ -19,6 +19,7 @@ export class UserProfileParser implements IMessageParser
     private _battlePassLevel: number;
     private _respectsReceived: number;
     private _badgeCount: number;
+    private _playTimeMinutes: number;
 
     public flush(): boolean
     {
@@ -38,6 +39,7 @@ export class UserProfileParser implements IMessageParser
         this._battlePassLevel = 0;
         this._respectsReceived = 0;
         this._badgeCount = -1;
+        this._playTimeMinutes = -1;
 
         return true;
     }
@@ -76,6 +78,9 @@ export class UserProfileParser implements IMessageParser
 
         // Total de placas (no solo las equipadas), mismo criterio. -1 = no vino.
         if(wrapper.bytesAvailable) this._badgeCount = wrapper.readInt();
+
+        // Tiempo de juego en minutos (como Steam), mismo criterio. -1 = no vino.
+        if(wrapper.bytesAvailable) this._playTimeMinutes = wrapper.readInt();
 
         return true;
     }
@@ -158,6 +163,11 @@ export class UserProfileParser implements IMessageParser
     public get badgeCount(): number
     {
         return this._badgeCount;
+    }
+
+    public get playTimeMinutes(): number
+    {
+        return this._playTimeMinutes;
     }
 
 }
