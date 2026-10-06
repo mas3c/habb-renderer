@@ -13,6 +13,9 @@ export class IncomingHeader
     // UNO del centro de juegos (emulador: Composers.UnoMessageComposer)
     public static UNO_MESSAGE = 9605;
 
+    // Impostor del centro de juegos (emulador: Composers.ImpostorMessageComposer)
+    public static IMPOSTOR_MESSAGE = 9617;
+
     // Menciones y bloqueados (emulador: Composers.MencionesMessageComposer)
     public static MENCIONES_MESSAGE = 9607;
 

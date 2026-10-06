@@ -267,6 +267,9 @@ export class OutgoingHeader
     // UNO del centro de juegos (emulador: Events.UnoCommandMessageEvent)
     public static UNO_COMMAND = 9604;
 
+    // Impostor del centro de juegos (emulador: Events.ImpostorCommandMessageEvent)
+    public static IMPOSTOR_COMMAND = 9616;
+
     // Menciones y bloqueados (emulador: Events.MencionesCommandMessageEvent)
     public static MENCIONES_COMMAND = 9606;
 
