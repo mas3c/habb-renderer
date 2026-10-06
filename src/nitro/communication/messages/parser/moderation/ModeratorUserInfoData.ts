@@ -21,6 +21,7 @@ export class ModeratorUserInfoData
     private _userClassification: string;
     private _lastSanctionTime: string = '';
     private _sanctionAgeHours: number = 0;
+    private _ping: string = '';
 
     constructor(wrapper: IMessageDataWrapper)
     {
@@ -46,6 +47,9 @@ export class ModeratorUserInfoData
             this._lastSanctionTime = wrapper.readString();
             this._sanctionAgeHours = wrapper.readInt();
         }
+
+        // habb.tv: la latencia que mide el cliente del usuario («85 ms», o «—» sin datos)
+        if(wrapper.bytesAvailable) this._ping = wrapper.readString();
     }
 
     public get userId(): number
@@ -131,6 +135,11 @@ export class ModeratorUserInfoData
     public get userClassification(): string
     {
         return this._userClassification;
+    }
+
+    public get ping(): string
+    {
+        return this._ping;
     }
 
     public get lastSanctionTime(): string

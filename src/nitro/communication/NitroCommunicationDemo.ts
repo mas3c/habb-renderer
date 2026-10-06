@@ -3,7 +3,7 @@ import { NitroManager } from '../../core';
 import { NitroCommunicationDemoEvent, SocketConnectionEvent } from '../../events';
 import { GetTickerTime } from '../../pixi-proxy';
 import { Nitro } from '../Nitro';
-import { AuthenticatedEvent, ClientHelloMessageComposer, ClientPingEvent, InfoRetrieveMessageComposer, PongMessageComposer, SSOTicketMessageComposer } from './messages';
+import { AuthenticatedEvent, ClientHelloMessageComposer, ClientPingEvent, InfoRetrieveMessageComposer, LatencyPingReportMessageComposer, LatencyPingRequestMessageComposer, LatencyPingResponseEvent, PongMessageComposer, SSOTicketMessageComposer } from './messages';
 
 export class NitroCommunicationDemo extends NitroManager implements INitroCommunicationDemo
 {
@@ -13,6 +13,14 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
     private _didConnect: boolean;
 
     private _pongInterval: any;
+
+    // Latencia como Habbo (LatencyTracker): cada 20 s se manda un número, el servidor lo
+    // devuelve y se cronometra; cada 3 medidas se manda la media al emulador, que se la
+    // enseña al staff (ModTool y :playerinfo). El jugador no la ve, como en Habbo.
+    private _latencyInterval: any = null;
+    private _latencyId: number = 0;
+    private _latencySent: Map<number, number> = new Map();
+    private _latencies: number[] = [];
 
     constructor(communication: INitroCommunicationManager)
     {
@@ -43,6 +51,7 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
         }
 
         this._communication.registerMessageEvent(new ClientPingEvent(this.onClientPingEvent.bind(this)));
+        this._communication.registerMessageEvent(new LatencyPingResponseEvent(this.onLatencyPingResponse.bind(this)));
         this._communication.registerMessageEvent(new AuthenticatedEvent(this.onAuthenticatedEvent.bind(this)));
     }
 
@@ -60,6 +69,8 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
         this._handShaking = false;
 
         this.stopPonging();
+
+        this.stopLatency();
 
         super.onDispose();
     }
@@ -91,6 +102,8 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
 
         this.stopPonging();
 
+        this.stopLatency();
+
         if(this._didConnect) this.dispatchCommunicationDemoEvent(NitroCommunicationDemoEvent.CONNECTION_CLOSED, connection);
         // El socket se cerró ANTES de abrir (onopen nunca disparó): handshake WS
         // rechazado / reset durante el Upgrade (WAF, QUIC, cabeceras grandes, corte
@@ -107,6 +120,8 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
         if(!connection) return;
 
         this.stopPonging();
+
+        this.stopLatency();
 
         this.dispatchCommunicationDemoEvent(NitroCommunicationDemoEvent.CONNECTION_ERROR, connection);
     }
@@ -144,6 +159,8 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
         this.dispatchCommunicationDemoEvent(NitroCommunicationDemoEvent.CONNECTION_AUTHENTICATED, event.connection);
 
         event.connection.send(new InfoRetrieveMessageComposer());
+
+        this.startLatency();
     }
 
     private startHandshake(connection: IConnection): void
@@ -183,6 +200,62 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
         if(!connection) return;
 
         connection.send(new PongMessageComposer());
+    }
+
+    private startLatency(): void
+    {
+        this.stopLatency();
+
+        // la primera a los 20 s: justo al entrar el cliente está cargando y la medida sale inflada
+        this._latencyInterval = setInterval(() => this.sendLatencyPing(), 20000);
+    }
+
+    private stopLatency(): void
+    {
+        if(this._latencyInterval) clearInterval(this._latencyInterval);
+
+        this._latencyInterval = null;
+        this._latencySent.clear();
+        this._latencies = [];
+    }
+
+    private sendLatencyPing(): void
+    {
+        const connection = this._communication.connection;
+
+        // en segundo plano el navegador retrasa los temporizadores y la medida saldría inflada
+        if(!connection || document.hidden) return;
+
+        const ahora = performance.now();
+
+        for(const [ id, enviado ] of this._latencySent) if((ahora - enviado) > 60000) this._latencySent.delete(id);
+
+        const id = ++this._latencyId;
+
+        this._latencySent.set(id, ahora);
+
+        connection.send(new LatencyPingRequestMessageComposer(id));
+    }
+
+    private onLatencyPingResponse(event: LatencyPingResponseEvent): void
+    {
+        const enviado = this._latencySent.get(event.getParser().id);
+
+        if(enviado === undefined) return;
+
+        this._latencySent.delete(event.getParser().id);
+        this._latencies.push(Math.round(performance.now() - enviado));
+
+        if(this._latencies.length < 3) return;
+
+        const media = (valores: number[]) => Math.round(valores.reduce((a, b) => (a + b), 0) / valores.length);
+        const average = media(this._latencies);
+        // sin los picos (más del doble de la media), como Habbo
+        const validas = this._latencies.filter(valor => (valor <= (average * 2)));
+
+        event.connection.send(new LatencyPingReportMessageComposer(average, media(validas), validas.length));
+
+        this._latencies = [];
     }
 
     private dispatchCommunicationDemoEvent(type: string, connection: IConnection): void
