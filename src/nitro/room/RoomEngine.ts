@@ -1604,6 +1604,22 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
             roomCamera.roomWd = bounds.width;
             roomCamera.roomHt = bounds.height;
 
+            // Red de seguridad: en salas muy grandes el encaje del AIR en los límites de la sala puede dejar al
+            // avatar fuera de la pantalla (sala 40: centrada en 35,52 con el avatar en 0,17, 746 px por encima).
+            // Si al entrar o al moverse queda fuera, se centra en él; con el avatar quieto no se toca (arrastrar
+            // la sala para mirar sigue funcionando).
+            if(this.useOffsetScrolling && roomCamera.location)
+            {
+                const enPantalla = this.getRoomObjectScreenLocation(roomId, roomCamera.targetId, roomCamera.targetCategory, canvasId);
+                // el punto son los pies: arriba hace falta sitio para el cuerpo entero
+                const margen = 60, margenArriba = 140;
+
+                if(enPantalla && ((enPantalla.x < margen) || (enPantalla.x > (width - margen)) || (enPantalla.y < margenArriba) || (enPantalla.y > (height - margen))))
+                {
+                    roomCamera.target = new Vector3d((roomCamera.location.x + enPantalla.x - (width / 2)), (roomCamera.location.y + enPantalla.y - (height / 2)), 0);
+                }
+            }
+
             if(!this._sessionDataManager.isCameraFollowDisabled)
             {
                 if(this.useOffsetScrolling)

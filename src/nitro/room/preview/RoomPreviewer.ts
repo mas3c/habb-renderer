@@ -390,7 +390,8 @@ export class RoomPreviewer
         }
     }
 
-    public changeRoomObjectDirection(): void
+    /** @param positive sentido de giro: el de las flechas del visor del catálogo (Habbo), a la derecha por defecto */
+    public changeRoomObjectDirection(positive: boolean = true): void
     {
         if(this.isRoomEngineReady)
         {
@@ -398,7 +399,7 @@ export class RoomPreviewer
 
             if(!roomObject) return;
 
-            const direction = this._roomEngine.objectEventHandler.getValidRoomObjectDirection(roomObject, true);
+            const direction = this._roomEngine.objectEventHandler.getValidRoomObjectDirection(roomObject, positive);
 
             switch(this._currentPreviewObjectCategory)
             {
