@@ -1,3 +1,4 @@
 import { INitroManager } from '../../common';
 
-export type INitroCommunicationDemo = INitroManager
+/** ultimaLatencia: el último ping medido en ms (-1 sin medir), para el monitor de la HK */
+export type INitroCommunicationDemo = INitroManager & { readonly ultimaLatencia?: number };

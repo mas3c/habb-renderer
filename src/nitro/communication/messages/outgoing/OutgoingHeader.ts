@@ -275,6 +275,7 @@ export class OutgoingHeader
 
     // Menciones y bloqueados (emulador: Events.MencionesCommandMessageEvent)
     public static MENCIONES_COMMAND = 9606;
+    public static MONITOR_CLIENTE = 9620;
 
     // SnowStorm clásico (emulador: Events.SnowStorm*Event)
     public static SNOWWAR_LOAD_STAGE_READY = 6000;

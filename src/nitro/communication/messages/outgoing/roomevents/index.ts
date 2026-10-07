@@ -14,6 +14,7 @@ export * from './WiredToolsSettingsComposer';
 export * from './YoutubeTvCommandComposer';
 export * from './StaffPinComposer';
 export * from './MencionesCommandComposer';
+export * from './MonitorClienteComposer';
 export * from './ImpostorCommandComposer';
 export * from './UseHabbiconComposer';
 export * from './UnoCommandComposer';

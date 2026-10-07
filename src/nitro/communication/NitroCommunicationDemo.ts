@@ -21,6 +21,8 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
     private _latencyId: number = 0;
     private _latencySent: Map<number, number> = new Map();
     private _latencies: number[] = [];
+    /** el último ping medido (ms), para el monitor de la HK; -1 sin medir */
+    private _ultimaLatencia: number = -1;
 
     constructor(communication: INitroCommunicationManager)
     {
@@ -244,7 +246,8 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
         if(enviado === undefined) return;
 
         this._latencySent.delete(event.getParser().id);
-        this._latencies.push(Math.round(performance.now() - enviado));
+        this._ultimaLatencia = Math.round(performance.now() - enviado);
+        this._latencies.push(this._ultimaLatencia);
 
         if(this._latencies.length < 3) return;
 
@@ -266,5 +269,10 @@ export class NitroCommunicationDemo extends NitroManager implements INitroCommun
     private getSSO(): string
     {
         return NitroConfiguration.getValue('sso.ticket', null);
+    }
+
+    public get ultimaLatencia(): number
+    {
+        return this._ultimaLatencia;
     }
 }
