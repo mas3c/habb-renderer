@@ -9,6 +9,8 @@ export interface WiredToolsVariable
     value: string;   // el long del servidor como texto
     persistent: boolean;
     updatedAt: number; // segundos unix; 0 si desconocido
+    hasValue: boolean; // de su furni de declaración (sin declaración: true)
+    availability: number; // 0 sala · 10 permanente · 11 compartida · -1 desconocida
 }
 
 export class WiredToolsVariablesParser implements IMessageParser
@@ -38,7 +40,9 @@ export class WiredToolsVariablesParser implements IMessageParser
                 name: wrapper.readString(),
                 value: wrapper.readString(),
                 persistent: wrapper.readBoolean(),
-                updatedAt: wrapper.readInt()
+                updatedAt: wrapper.readInt(),
+                hasValue: wrapper.readBoolean(),
+                availability: wrapper.readInt()
             });
         }
 
