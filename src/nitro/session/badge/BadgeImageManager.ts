@@ -166,16 +166,19 @@ export class BadgeImageManager implements IDisposable
     private loadGroupBadge(badgeCode: string): void
     {
         const groupBadge = new GroupBadge(badgeCode);
-        const partMatches = [...badgeCode.matchAll(/[b|s][0-9]{4,6}/g)];
+        const partMatches = [...badgeCode.matchAll(/[bst][0-9]{4,6}/g)];
 
         for(const partMatch of partMatches)
         {
+            // Cada pieza: tipo + id + color(2) [+ posición(1)]. El id lleva 2 cifras salvo en 7 caracteres
+            // (símbolo de 3 cifras). El emulador guarda la base sin posición («b1106» = base 11, color 06):
+            // antes 5 caracteres se leían como id de 3 cifras (base 110, que no existe) y la placa salía sin fondo.
             const partCode = partMatch[0];
-            const shortMethod = (partCode.length === 6);
-            const partType = partCode[0];
-            const partId = parseInt(partCode.slice(1, shortMethod ? 3 : 4));
-            const partColor = parseInt(partCode.slice(shortMethod ? 3 : 4, shortMethod ? 5 : 6));
-            const partPosition = partCode.length < 6 ? 0 : parseInt(partCode.slice(shortMethod ? 5 : 6, shortMethod ? 6 : 7)); // sometimes position is ommitted 
+            const idLen = (partCode.length === 7) ? 3 : 2;
+            const partType = (partCode[0] === 't') ? 's' : partCode[0];
+            const partId = parseInt(partCode.slice(1, 1 + idLen)) + ((partCode[0] === 't') ? 100 : 0);
+            const partColor = parseInt(partCode.slice(1 + idLen, 3 + idLen));
+            const partPosition = (partCode.length > 3 + idLen) ? parseInt(partCode.slice(3 + idLen, 4 + idLen)) : 0;
             const part = new GroupBadgePart(partType, partId, partColor, partPosition);
 
             groupBadge.parts.push(part);
