@@ -1,5 +1,5 @@
 import { Texture } from '@pixi/core';
-import { IRoomObjectSprite } from '../../../../../../api';
+import { IRoomGeometry, IRoomObjectSprite } from '../../../../../../api';
 import { AvatarEstela } from '../AvatarEstela';
 import { AvatarVisualization } from '../AvatarVisualization';
 import { IAvatarAddition } from './IAvatarAddition';
@@ -18,6 +18,12 @@ export class EstelaAddition implements IAvatarAddition
     private _escala = 64;
     private _lienzo: HTMLCanvasElement = null;
     private _textura: Texture = null;
+
+    /** la de la sala, para saber dónde cae de verdad el avatar en pantalla (la pone AvatarVisualization) */
+    public geometria: IRoomGeometry = null;
+    // píxel de pantalla (entero) donde estaba el avatar al pintar el lienzo: el lienzo se queda ahí
+    private _anclaX: number = null;
+    private _anclaY: number = null;
 
     constructor(id: number, spec: string, visualization: AvatarVisualization)
     {
@@ -78,16 +84,52 @@ export class EstelaAddition implements IAvatarAddition
         const ctx = this._lienzo.getContext('2d');
 
         ctx.clearRect(0, 0, this._lienzo.width, this._lienzo.height);
-        this._estela.pintar(ctx, this.piesX, this.piesY, sitio.x, sitio.y, sitio.z, ahora, this._escala);
+        // el avatar cae en pantalla en posiciones con decimales: el lienzo se ancla al píxel entero que queda
+        // debajo y las partículas se pintan en esa rejilla fija (ver seguir())
+        const pantalla = this.geometria ? this.geometria.getScreenPosition(sitio) : null;
+        const fx = pantalla ? (pantalla.x - Math.floor(pantalla.x)) : 0;
+        const fy = pantalla ? (pantalla.y - Math.floor(pantalla.y)) : 0;
+
+        this._anclaX = pantalla ? Math.floor(pantalla.x) : null;
+        this._anclaY = pantalla ? Math.floor(pantalla.y) : null;
+
+        this._estela.pintar(ctx, (this.piesX + fx), (this.piesY + fy), sitio.x, sitio.y, sitio.z, ahora, this._escala);
         this._textura.baseTexture.update();
 
         sprite.visible = true;
         sprite.texture = this._textura;
         // los pies están un cuarto de baldosa por debajo del punto del avatar (donde va su sombra)
-        sprite.offsetX = -this.piesX;
-        sprite.offsetY = Math.round(this._escala / 4) - this.piesY;
+        sprite.offsetX = -this.piesX - fx;
+        sprite.offsetY = Math.round(this._escala / 4) - this.piesY - fy;
         sprite.relativeDepth = 0.9;
         sprite.alpha = 255;
+
+        return true;
+    }
+
+    /**
+     * En cada fotograma. El lienzo se repinta con la animación de la sala (24 por segundo) pero el avatar se
+     * desliza por la pantalla en cada fotograma y el sprite va pegado a él: entre repintado y repintado el rastro
+     * se iba con el avatar y volvía de golpe (se veía a tirones). Aquí solo se corrige el desfase para que el
+     * lienzo se quede donde se pintó, clavado al suelo. Devuelve si ha cambiado algo.
+     */
+    public seguir(sprite: IRoomObjectSprite, geometria: IRoomGeometry): boolean
+    {
+        const objeto = this._visualization?.object;
+
+        if(!sprite || !sprite.visible || !objeto || !geometria || (this._anclaX === null)) return false;
+
+        const pantalla = geometria.getScreenPosition(objeto.getLocation());
+
+        if(!pantalla) return false;
+
+        const offsetX = (this._anclaX - this.piesX - pantalla.x);
+        const offsetY = (this._anclaY + Math.round(this._escala / 4) - this.piesY - pantalla.y);
+
+        if((offsetX === sprite.offsetX) && (offsetY === sprite.offsetY)) return false;
+
+        sprite.offsetX = offsetX;
+        sprite.offsetY = offsetY;
 
         return true;
     }

@@ -169,9 +169,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         // basta con tocar los filtros, el lienzo los repinta
         if(this._aura && this._aura.animada) this._aura.tick(time);
 
-        // la estela, igual: el avatar se desliza por la pantalla en cada fotograma pero esta visualización solo
-        // se actualiza cada 41 ms, y entre medias el rastro se iba con él y volvía de golpe (se veía a tirones)
-        this.animarEstela();
+        this.animarEstela(geometry);
 
         if(time < (this._lastUpdate + AvatarVisualization.UPDATE_TIME_INCREASER)) return;
 
@@ -1068,7 +1066,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         }
     }
 
-    private animarEstela(): void
+    /** lo llama RoomSpriteCanvas en cada fotograma (update() va a 24 por segundo): la estela se queda clavada al suelo */
+    public cadaFotograma(geometry: IRoomGeometry): void
     {
         if(!this._additions || !this._additions.has(AvatarVisualization.ESTELA_ID)) return;
 
@@ -1076,7 +1075,26 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         for(const addition of this._additions.values())
         {
-            if((addition.id === AvatarVisualization.ESTELA_ID) && addition.animate(this.getSprite(index))) this.updateSpriteCounter++;
+            if((addition.id === AvatarVisualization.ESTELA_ID) && (addition as EstelaAddition).seguir(this.getSprite(index), geometry)) this.updateSpriteCounter++;
+
+            index++;
+        }
+    }
+
+    private animarEstela(geometry: IRoomGeometry): void
+    {
+        if(!this._additions || !this._additions.has(AvatarVisualization.ESTELA_ID)) return;
+
+        let index = this._extraSpritesStartIndex;
+
+        for(const addition of this._additions.values())
+        {
+            if(addition.id === AvatarVisualization.ESTELA_ID)
+            {
+                (addition as EstelaAddition).geometria = geometry;
+
+                if(addition.animate(this.getSprite(index))) this.updateSpriteCounter++;
+            }
 
             index++;
         }

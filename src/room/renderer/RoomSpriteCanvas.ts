@@ -454,6 +454,11 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         if(updateVisuals) visualization.update(this._geometry, time, (!sortableCache.isEmpty || update), (this._skipObjectUpdate && this._runningSlow));
 
+        // lo que tiene que seguir al fotograma aunque la animación vaya a 24 por segundo (la estela del avatar)
+        const cadaFotograma = (visualization as unknown as { cadaFotograma?: (geometry: IRoomGeometry) => void }).cadaFotograma;
+
+        if(cadaFotograma) cadaFotograma.call(visualization, this._geometry);
+
         if(locationCache.locationChanged) update = true;
 
         if(!sortableCache.needsUpdate(visualization.instanceId, visualization.updateSpriteCounter) && !update)
