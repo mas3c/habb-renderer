@@ -214,6 +214,113 @@ export class AvatarEstela
         ctx.shadowBlur = 0;
     }
 
+    /**
+     * La miniatura de la casilla del catálogo: unas partículas de muestra a su tamaño de verdad (sin encoger), una
+     * al lado de otra y centradas, como una ficha del efecto. Cabe en ancho x alto; si una pieza no cabe (la
+     * baldosa de la pista de baile) se reduce solo esa.
+     */
+    public static miniatura(spec: string, ancho = 60, alto = 26): HTMLCanvasElement
+    {
+        const lienzo = document.createElement('canvas');
+
+        lienzo.width = ancho;
+        lienzo.height = alto;
+
+        const estela = AvatarEstela.crear(spec);
+
+        if(!estela) return lienzo;
+
+        const efecto = estela.efecto;
+        const pieza = (pintar: (ctx: CanvasRenderingContext2D) => void): HTMLCanvasElement =>
+        {
+            const c = document.createElement('canvas');
+
+            c.width = 200;
+            c.height = 200;
+
+            const ctx = c.getContext('2d');
+
+            // sin halos: en una casilla pequeña el resplandor se recorta en cuadrado
+            Object.defineProperty(ctx, 'shadowBlur', { get: () => 0, set: () => undefined });
+            ctx.imageSmoothingEnabled = false;
+            pintar(ctx);
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+
+            return recortar(c);
+        };
+        const una = (a: number, s: number, n: number, lado = 1, mx = 1, my = -1) => pieza(ctx => estela.particula(ctx, { x: 0, y: 0, z: 0, t0: 0, s, lado, n, mx, my }, a, 100, 150, 1, 0));
+
+        let piezas: HTMLCanvasElement[];
+
+        if(efecto === 'arcoiris')
+        {
+            // la cinta: muchas partículas seguidas, la más vieja a la izquierda
+            piezas = [ pieza(ctx =>
+            {
+                for(let i = 0; i < 26; i++) estela.particula(ctx, { x: 0, y: 0, z: 0, t0: 0, s: 0.5, lado: 1, n: i, mx: 1, my: -1 }, (0.5 - (i / 52)), 60 + (i * 2), 150, 1, 0);
+            }) ];
+        }
+        else if(efecto === 'huellas')
+        {
+            // pisadas vistas desde arriba, izquierda y derecha alternas
+            const color = hex(estela.color({ x: 0, y: 0, z: 0, t0: 0, s: 0.5, lado: 1, n: 0, mx: 0, my: 0 }, 0, 0xFFFFFF));
+
+            piezas = [ pieza(ctx =>
+            {
+                ctx.fillStyle = color;
+                for(let i = 0; i < 3; i++)
+                {
+                    const cx = 70 + (i * 13), cy = 140 + ((i % 2) ? -5 : 5), lado = (i % 2) ? 1 : -1;
+
+                    ctx.beginPath();
+                    ctx.ellipse(cx, cy, 3.4, 5, lado * 0.15, 0, Math.PI * 2);
+                    ctx.ellipse(cx + (lado * 0.6), cy + 7, 2.6, 2.6, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    for(let d = 0; d < 4; d++)
+                    {
+                        ctx.beginPath();
+                        ctx.arc(cx - 3 + (d * 2) - (lado * 0.5), cy - 6.5 + (Math.abs(d - 1.5) * 0.8), 1.05, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }) ];
+        }
+        else if(efecto === 'baldosas') piezas = [ una(0.1, 0.5, 0), una(0.1, 0.5, 1) ];
+        else if(efecto === 'portal') piezas = [ una(0.25, 0.5, 0) ];
+        else if(efecto === 'rayos') piezas = [ una(0.1, 0.35, 0), una(0.1, 0.62, 1) ];
+        else if((efecto === 'fuego') || (efecto === 'fatuo')) piezas = [ una(0.4, 0.3, 1), una(0.02, 0.5, 2), una(0.22, 0.4, 4) ];
+        else if(efecto === 'fenix') piezas = [ una(0.02, 0.5, 1), una(0.2, 0.5, 0), una(0.3, 0.3, 2) ];
+        else piezas = [ una(0.05, 0.2, 0, -1), una(0.15, 0.55, 1), una(0.1, 0.8, 2, -1) ];
+
+        piezas = piezas.filter(p => (p.width > 1));
+
+        // si no caben todas a lo ancho, las que sobren fuera
+        const hueco = 3;
+
+        while((piezas.length > 1) && ((piezas.reduce((t, p) => (t + p.width), 0) + (hueco * (piezas.length - 1))) > ancho)) piezas.pop();
+
+        const ctx = lienzo.getContext('2d');
+        const total = (piezas.reduce((t, p) => (t + Math.min(p.width, ancho)), 0) + (hueco * (piezas.length - 1)));
+        let x = Math.round((ancho - total) / 2);
+
+        ctx.imageSmoothingEnabled = false;
+
+        for(const p of piezas)
+        {
+            const f = Math.min(1, (ancho / p.width), (alto / p.height));
+            const w = Math.round(p.width * f), h = Math.round(p.height * f);
+
+            ctx.imageSmoothingEnabled = (f < 1);
+            ctx.drawImage(p, x, Math.round((alto - h) / 2), w, h);
+            x += (w + hueco);
+        }
+
+        contornear(lienzo);
+
+        return lienzo;
+    }
+
     private color(p: Particula, ahora: number, porDefecto: number): number
     {
         if(this._paleta) return AvatarAura.calcularColor(this._paleta, (ahora * 0.0018) + (p.s * 3));
@@ -1020,3 +1127,68 @@ const calabaza = (tam: number, luz: boolean) => sprite(`calabaza${ +luz }`, tam,
     c.lineTo(m - (w * 0.2), cy + (h * 0.24));
     c.fill();
 });
+
+/** el lienzo recortado a lo que tiene dibujado (alfa > 30); 1x1 si está vacío */
+const recortar = (c: HTMLCanvasElement): HTMLCanvasElement =>
+{
+    const { data } = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+    let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+
+    for(let y = 0; y < c.height; y++)
+    {
+        for(let x = 0; x < c.width; x++)
+        {
+            if(data[(((y * c.width) + x) * 4) + 3] <= 30) continue;
+
+            if(x < x0) x0 = x;
+            if(x > x1) x1 = x;
+            if(y < y0) y0 = y;
+            if(y > y1) y1 = y;
+        }
+    }
+
+    const r = document.createElement('canvas');
+
+    if(x1 < 0) { r.width = r.height = 1; return r; }
+
+    r.width = (x1 - x0) + 1;
+    r.height = (y1 - y0) + 1;
+    r.getContext('2d').drawImage(c, x0, y0, r.width, r.height, 0, 0, r.width, r.height);
+
+    return r;
+};
+
+/** un filo oscuro y suave alrededor de lo dibujado: la casilla es clara y lo blanco (huellas, nieve) no se veía */
+const contornear = (c: HTMLCanvasElement): void =>
+{
+    const ctx = c.getContext('2d');
+    const imagen = ctx.getImageData(0, 0, c.width, c.height);
+    const d = imagen.data, antes = new Uint8ClampedArray(d);
+    const W = c.width, H = c.height;
+
+    for(let y = 0; y < H; y++)
+    {
+        for(let x = 0; x < W; x++)
+        {
+            const i = ((y * W) + x) * 4;
+
+            if(antes[i + 3] > 60) continue;
+
+            let junto = false;
+
+            for(const [ vx, vy ] of [ [ 0, 1 ], [ 0, -1 ], [ 1, 0 ], [ -1, 0 ] ])
+            {
+                const nx = (x + vx), ny = (y + vy);
+
+                if((nx >= 0) && (ny >= 0) && (nx < W) && (ny < H) && (antes[(((ny * W) + nx) * 4) + 3] > 60)) { junto = true; break; }
+            }
+
+            if(!junto) continue;
+
+            d[i] = d[i + 1] = d[i + 2] = 40;
+            d[i + 3] = 110;
+        }
+    }
+
+    ctx.putImageData(imagen, 0, 0);
+};
