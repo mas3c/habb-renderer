@@ -1,4 +1,5 @@
 export * from './advertisement';
+export * from './auras';
 export * from './availability';
 export * from './avatar';
 export * from './bots';

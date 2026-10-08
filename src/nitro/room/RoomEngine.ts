@@ -10,7 +10,7 @@ import { PetFigureData } from '../avatar';
 import { RenderRoomMessageComposer, RenderRoomThumbnailMessageComposer } from '../communication';
 import { FurniId } from '../utils';
 import { ImageResult } from './ImageResult';
-import { ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExperienceUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarGuideStatusUpdateMessage, ObjectAvatarHabbiconUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPetGestureUpdateMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage, ObjectDataUpdateMessage, ObjectGroupBadgeUpdateMessage, ObjectHeightUpdateMessage, ObjectItemDataUpdateMessage, ObjectModelDataUpdateMessage, IWiredMoveStyle, ObjectMoveUpdateMessage, ObjectRoomColorUpdateMessage, ObjectRoomFloorHoleUpdateMessage, ObjectRoomMaskUpdateMessage, ObjectRoomPlanePropertyUpdateMessage, ObjectRoomPlaneVisibilityUpdateMessage, ObjectRoomUpdateMessage, ObjectStateUpdateMessage } from './messages';
+import { ObjectAvatarAuraUpdateMessage, ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExperienceUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarGuideStatusUpdateMessage, ObjectAvatarHabbiconUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPetGestureUpdateMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage, ObjectDataUpdateMessage, ObjectGroupBadgeUpdateMessage, ObjectHeightUpdateMessage, ObjectItemDataUpdateMessage, ObjectModelDataUpdateMessage, IWiredMoveStyle, ObjectMoveUpdateMessage, ObjectRoomColorUpdateMessage, ObjectRoomFloorHoleUpdateMessage, ObjectRoomMaskUpdateMessage, ObjectRoomPlanePropertyUpdateMessage, ObjectRoomPlaneVisibilityUpdateMessage, ObjectRoomUpdateMessage, ObjectStateUpdateMessage } from './messages';
 import { FurnitureAreaHideLogic, RoomLogic, RoomMapData, RoomObjectVisualizationFactory } from './object';
 import { RoomContentLoader } from './RoomContentLoader';
 import { RoomMessageHandler } from './RoomMessageHandler';
@@ -2428,6 +2428,18 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         if(!message) return false;
 
         object.processUpdateMessage(message);
+
+        return true;
+    }
+
+    /** pone o quita el aura de un avatar (AvatarAura: «filtro|color|coloreable», vacía = ninguna) */
+    public updateRoomObjectUserAura(roomId: number, objectId: number, aura: string): boolean
+    {
+        const object = this.getRoomObjectUser(roomId, objectId);
+
+        if(!object) return false;
+
+        object.processUpdateMessage(new ObjectAvatarAuraUpdateMessage(aura));
 
         return true;
     }

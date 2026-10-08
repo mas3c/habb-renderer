@@ -1,6 +1,6 @@
 import { AvatarGuideStatus, IConnection, IRoomCreator, IVector3D, LegacyDataType, ObjectRolling, PetType, RoomObjectType, RoomObjectUserType, RoomObjectVariable, Vector3d } from '../../api';
 import { Disposable } from '../../core';
-import { DiceValueMessageEvent, FloorHeightMapEvent, FurnitureAliasesComposer, FurnitureAliasesEvent, FurnitureDataEvent, FurnitureFloorAddEvent, FurnitureFloorDataParser, FurnitureFloorEvent, FurnitureFloorRemoveEvent, FurnitureFloorUpdateEvent, FurnitureWallAddEvent, FurnitureWallDataParser, FurnitureWallEvent, FurnitureWallRemoveEvent, FurnitureWallUpdateEvent, GetRoomEntryDataMessageComposer, GuideSessionEndedMessageEvent, GuideSessionErrorMessageEvent, GuideSessionStartedMessageEvent, IgnoreResultEvent, ItemDataUpdateMessageEvent, ObjectsDataUpdateEvent, ObjectsRollingEvent, OneWayDoorStatusMessageEvent, PetExperienceEvent, PetFigureUpdateEvent, RoomEntryTileMessageEvent, RoomEntryTileMessageParser, RoomHeightMapEvent, RoomHeightMapUpdateEvent, RoomPaintEvent, RoomReadyMessageEvent, RoomUnitChatEvent, RoomUnitChatShoutEvent, RoomUnitChatWhisperEvent, RoomUnitDanceEvent, RoomUnitEffectEvent, RoomUnitEvent, RoomUnitExpressionEvent, RoomUnitHandItemEvent, RoomUnitIdleEvent, RoomUnitInfoEvent, RoomUnitNumberEvent, RoomUnitRemoveEvent, RoomHabbiconMessageEvent, RoomUnitStatusEvent, RoomUnitTypingEvent, RoomVisualizationSettingsEvent, UserInfoEvent, YouArePlayingGameEvent } from '../communication';
+import { DiceValueMessageEvent, FloorHeightMapEvent, FurnitureAliasesComposer, FurnitureAliasesEvent, FurnitureDataEvent, FurnitureFloorAddEvent, FurnitureFloorDataParser, FurnitureFloorEvent, FurnitureFloorRemoveEvent, FurnitureFloorUpdateEvent, FurnitureWallAddEvent, FurnitureWallDataParser, FurnitureWallEvent, FurnitureWallRemoveEvent, FurnitureWallUpdateEvent, GetRoomEntryDataMessageComposer, GuideSessionEndedMessageEvent, GuideSessionErrorMessageEvent, GuideSessionStartedMessageEvent, IgnoreResultEvent, ItemDataUpdateMessageEvent, ObjectsDataUpdateEvent, ObjectsRollingEvent, OneWayDoorStatusMessageEvent, PetExperienceEvent, PetFigureUpdateEvent, RoomEntryTileMessageEvent, RoomEntryTileMessageParser, RoomHeightMapEvent, RoomHeightMapUpdateEvent, RoomPaintEvent, RoomReadyMessageEvent, RoomUnitChatEvent, RoomUnitChatShoutEvent, RoomUnitChatWhisperEvent, RoomUnitDanceEvent, RoomUnitEffectEvent, RoomUnitEvent, RoomUnitExpressionEvent, RoomUnitHandItemEvent, RoomUnitIdleEvent, RoomUnitInfoEvent, RoomUnitNumberEvent, RoomUnitRemoveEvent, RoomHabbiconMessageEvent, RoomAuraMessageEvent, RoomUnitStatusEvent, RoomUnitTypingEvent, RoomVisualizationSettingsEvent, UserInfoEvent, YouArePlayingGameEvent } from '../communication';
 import { RoomPlaneParser } from './object/RoomPlaneParser';
 import { RoomVariableEnum } from './RoomVariableEnum';
 import { FurnitureStackingHeightMap, LegacyWallGeometry } from './utils';
@@ -16,6 +16,9 @@ export class RoomMessageHandler extends Disposable
     private _ownUserId: number;
     private _initialConnection: boolean;
     private _guideId: number;
+    // última aura de cada índice de la sala: el paquete puede llegar antes que el avatar, y así se
+    // aplica cuando aparezca (onRoomUnitEvent)
+    private _auras: Map<number, string> = new Map();
     private _requesterId: number;
 
     constructor(roomCreator: IRoomCreator)
@@ -87,6 +90,7 @@ export class RoomMessageHandler extends Disposable
         this._connection.addMessageEvent(new RoomUnitInfoEvent(this.onRoomUnitInfoEvent.bind(this)));
         this._connection.addMessageEvent(new RoomUnitNumberEvent(this.onRoomUnitNumberEvent.bind(this)));
         this._connection.addMessageEvent(new RoomHabbiconMessageEvent(this.onRoomHabbiconEvent.bind(this)));
+        this._connection.addMessageEvent(new RoomAuraMessageEvent(this.onRoomAuraEvent.bind(this)));
         this._connection.addMessageEvent(new RoomUnitRemoveEvent(this.onRoomUnitRemoveEvent.bind(this)));
         this._connection.addMessageEvent(new RoomUnitStatusEvent(this.onRoomUnitStatusEvent.bind(this)));
         this._connection.addMessageEvent(new RoomUnitChatEvent(this.onRoomUnitChatEvent.bind(this)));
@@ -112,12 +116,14 @@ export class RoomMessageHandler extends Disposable
 
         this._currentRoomId = id;
         this._latestEntryTileEvent = null;
+        this._auras.clear();
     }
 
     public clearRoomId(): void
     {
         this._currentRoomId = 0;
         this._latestEntryTileEvent = null;
+        this._auras.clear();
     }
 
     private onUserInfoEvent(event: UserInfoEvent): void
@@ -657,6 +663,8 @@ export class RoomMessageHandler extends Disposable
             }
 
             this._roomCreator.updateRoomObjectUserAction(this._currentRoomId, user.roomIndex, RoomObjectVariable.FIGURE_IS_MUTED, (this._roomCreator.sessionDataManager.isUserIgnored(user.name) ? 1 : 0));
+
+            if(this._auras.has(user.roomIndex)) this._roomCreator.updateRoomObjectUserAura(this._currentRoomId, user.roomIndex, this._auras.get(user.roomIndex));
         }
 
         this.updateGuideMarker();
@@ -702,6 +710,20 @@ export class RoomMessageHandler extends Disposable
     }
 
     /** Un Habbicon encima de un avatar (Habbicons del AIR). */
+    private onRoomAuraEvent(event: RoomAuraMessageEvent): void
+    {
+        if(!(event instanceof RoomAuraMessageEvent) || !event.connection || !this._roomCreator) return;
+
+        const parser = event.getParser();
+
+        if(!parser) return;
+
+        if(parser.aura) this._auras.set(parser.roomIndex, parser.aura);
+        else this._auras.delete(parser.roomIndex);
+
+        this._roomCreator.updateRoomObjectUserAura(this._currentRoomId, parser.roomIndex, parser.aura);
+    }
+
     private onRoomHabbiconEvent(event: RoomHabbiconMessageEvent): void
     {
         if(!(event instanceof RoomHabbiconMessageEvent) || !event.connection || !this._roomCreator) return;
@@ -718,6 +740,9 @@ export class RoomMessageHandler extends Disposable
         if(!(event instanceof RoomUnitRemoveEvent) || !event.connection || !this._roomCreator) return;
 
         this._roomCreator.removeRoomObjectUser(this._currentRoomId, event.getParser().unitId);
+
+        // el índice lo puede heredar quien entre después
+        this._auras.delete(event.getParser().unitId);
 
         this.updateGuideMarker();
     }

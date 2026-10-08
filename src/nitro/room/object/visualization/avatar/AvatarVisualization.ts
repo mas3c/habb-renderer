@@ -3,6 +3,7 @@ import { Resource, Texture } from '@pixi/core';
 import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, RoomObjectSpriteType, RoomObjectVariable } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
+import { AvatarAura } from './AvatarAura';
 import { AvatarVisualizationData } from './AvatarVisualizationData';
 
 export class AvatarVisualization extends RoomObjectSpriteVisualization implements IAvatarImageListener, IAvatarEffectListener
@@ -18,6 +19,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private static HABBICON_ID: number = 8;
     private static OWN_USER_ID: number = 4;
     private static UPDATE_TIME_INCREASER: number = 41;
+    private static SIN_FILTROS: any[] = [];
     private static AVATAR_LAYER_ID: number = 0;
     private static SHADOW_LAYER_ID: number = 1;
     private static SNOWBOARDING_EFFECT: number = 97;
@@ -73,6 +75,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private _updatesUntilFrameUpdate: number;
 
     private _isAvatarReady: boolean;
+    // aura (Hobbaz): filtros de Pixi sobre el sprite del avatar; FIGURE_AURA la describe
+    private _aura: AvatarAura = null;
+    private _auraSpec: string = '';
     private _needsUpdate: boolean;
     private _geometryUpdateCounter: number;
 
@@ -158,6 +163,10 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     public update(geometry: IRoomGeometry, time: number, update: boolean, skipUpdate: boolean): void
     {
         if(!this.object || !geometry || !this._data) return;
+
+        // los colores y el pulso del aura cambian en cada fotograma, aunque el avatar no se mueva:
+        // basta con tocar los filtros, el lienzo los repinta
+        if(this._aura && this._aura.animada) this._aura.tick(time);
 
         if(time < (this._lastUpdate + AvatarVisualization.UPDATE_TIME_INCREASER)) return;
 
@@ -284,19 +293,10 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                 {
                     sprite.texture = avatarImage;
 
-                    if(highlightEnabled)
-                    {
-                        // sprite.filters  = [
-                        //     new GlowFilter({
-                        //         color: 0xFFFFFF,
-                        //         distance: 6
-                        //     })
-                        // ];
-                    }
-                    else
-                    {
-                        sprite.filters = [];
-                    }
+                    // el aura (o nada); el resaltado de Nitro ya va pintado en la propia imagen
+                    const filtros = (this._aura ? this._aura.filters : AvatarVisualization.SIN_FILTROS);
+
+                    if(sprite.filters !== filtros) sprite.filters = filtros;
                 }
 
                 if(sprite.texture)
@@ -798,6 +798,17 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         else
         {
             if(numberAddition) this.removeAddition(AvatarVisualization.NUMBER_BUBBLE_ID);
+        }
+
+        // aura: se rehacen los filtros solo si cambia; el sprite los recoge abajo (SPRITE_INDEX_AVATAR)
+        const auraSpec = (model.getValue<string>(RoomObjectVariable.FIGURE_AURA) || '');
+
+        if(auraSpec !== this._auraSpec)
+        {
+            this._auraSpec = auraSpec;
+            this._aura = AvatarAura.crear(auraSpec);
+
+            needsUpdate = true;
         }
 
         // Habbicon (AIR): una burbuja nueva cada vez que sube la secuencia, aunque sea el mismo icono

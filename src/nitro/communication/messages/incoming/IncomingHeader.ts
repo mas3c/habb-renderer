@@ -18,6 +18,8 @@ export class IncomingHeader
 
     // Habbicons del AIR: alguien de la sala usa uno (emulador: Composers.RoomHabbiconMessageComposer)
     public static ROOM_HABBICON = 9619;
+    public static AURAS = 9622;
+    public static ROOM_AURA = 9623;
 
     // Menciones y bloqueados (emulador: Composers.MencionesMessageComposer)
     public static MENCIONES_MESSAGE = 9607;
