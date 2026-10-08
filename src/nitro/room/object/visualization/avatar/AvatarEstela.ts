@@ -4,7 +4,8 @@ import { AvatarAura } from './AvatarAura';
  * Estela al andar (idea propia de Habb): al caminar, el keko suelta partículas en las baldosas por las que
  * pasa y se desvanecen en ~1 s. Se describe con «efecto|color» (FIGURE_ESTELA; vacía = ninguna):
  *   efecto: huellas, chispas, burbujas, humo, petalos, hojas, nieve, corazones, estrellas, notas, fuego,
- *           hielo, rayos, arcoiris, galaxia, portal, fenix, monedas, mariposas, baldosas, codigo
+ *           hielo, rayos, arcoiris, galaxia, portal, fenix, monedas, mariposas, baldosas, codigo,
+ *           y de Halloween: murcielagos, fantasmas, calabazas, fatuo, caramelos
  *   color:  0xRRGGBB, una paleta animada de las auras (rainbow, gold, fire…) o vacío (los suyos).
  *
  * Es solo dibujo: guarda las partículas en coordenadas de la sala (baldosas) y las pinta en un lienzo 2D
@@ -52,8 +53,24 @@ const EFECTOS: Record<string, Efecto> = {
     monedas: { vida: 900, paso: 0.3, cuantas: 1 },
     mariposas: { vida: 1500, paso: 0.45, cuantas: 1 },
     baldosas: { vida: 1300, paso: 1, cuantas: 1 },
-    codigo: { vida: 1000, paso: 0.3, cuantas: 1 }
+    codigo: { vida: 1000, paso: 0.3, cuantas: 1 },
+    murcielagos: { vida: 1300, paso: 0.45, cuantas: 1 },
+    fantasmas: { vida: 1600, paso: 0.6, cuantas: 1 },
+    calabazas: { vida: 1500, paso: 0.8, cuantas: 1 },
+    fatuo: { vida: 900, paso: 0.14, cuantas: 1 },
+    caramelos: { vida: 900, paso: 0.3, cuantas: 1 }
 };
+
+// Halloween
+const MURCIELAGO = [
+    [ '1.......1', '11.1.1.11', '111222111', '.11.1.11.', '....1....' ],
+    [ '...1.1...', '..11111..', '..12121..', '...111...', '....1....' ]
+];
+const FANTASMA = [ '.111.', '11111', '12121', '11111', '11111', '1.1.1' ];
+const CALABAZA = [ '...4...', '.11411.', '1211121', '1111111', '1222221', '.11111.' ];
+const CARAMELO = [ '1.222.1', '1122211', '1.222.1' ];
+const CARAMELOS = [ 0xFF4081, 0xFFEB3B, 0x7C4DFF, 0x00E5FF, 0xFF6E40 ];
+const FATUO = { 1: 0x00A152, 2: 0x76FF03, 3: 0xE6FFB0 };
 
 // llamas con tres tonos (1 borde, 2 medio, 3 núcleo): se encogen según se consumen
 const LLAMAS = [
@@ -298,6 +315,7 @@ export class AvatarEstela
                 return;
             }
             case 'fuego':
+            case 'fatuo':
             case 'fenix': {
                 // una llama que tiembla en el sitio, se encoge y sube un poco; alguna suelta una brasa
                 const fenix = (this.efecto === 'fenix');
@@ -313,19 +331,20 @@ export class AvatarEstela
                     return;
                 }
 
-                const tonos = this._paleta && !fenix ? { 1: this.color(p, ahora, 0), 2: this.color(p, ahora + 300, 0), 3: 0xFFFFFF } : (fenix ? FENIX : (this._color ? { 1: this._color, 2: this._color, 3: 0xFFFFFF } : FUEGO));
+                const fatuo = (this.efecto === 'fatuo');
+                const tonos = fatuo ? FATUO : this._paleta && !fenix ? { 1: this.color(p, ahora, 0), 2: this.color(p, ahora + 300, 0), 3: 0xFFFFFF } : (fenix ? FENIX : (this._color ? { 1: this._color, 2: this._color, 3: 0xFFFFFF } : FUEGO));
                 const llama = LLAMAS[(a < 0.3) ? 0 : (a < 0.65) ? 1 : 2];
                 const tiembla = Math.round(Math.sin((ahora / 70) + (p.s * 10)) * k);
 
                 ctx.globalAlpha = (a > 0.7) ? ((1 - a) / 0.3) : 1;
-                if(fenix) { ctx.shadowColor = '#FF6F00'; ctx.shadowBlur = 4 * k; }
+                if(fenix || fatuo) { ctx.shadowColor = fatuo ? '#76FF03' : '#FF6F00'; ctx.shadowBlur = 4 * k; }
                 dibujarColores(ctx, llama, x + Math.round(azar / 3) + tiembla, y - Math.round(a * 6 * k), k, tonos);
                 ctx.shadowBlur = 0;
 
                 if(p.s > 0.6)
                 {
                     ctx.globalAlpha = desvanece;
-                    ctx.fillStyle = hex(fenix ? 0xFFE57F : 0xFFD54F);
+                    ctx.fillStyle = hex(fatuo ? 0xB2FF59 : fenix ? 0xFFE57F : 0xFFD54F);
                     ctx.fillRect(x + azar + vaiven, y - Math.round((10 + (a * 26)) * k), k, k);
                 }
                 return;
@@ -409,6 +428,41 @@ export class AvatarEstela
                 ctx.shadowBlur = 3 * k;
                 dibujar(ctx, cifra, x + azar, y - Math.round((26 * (1 - Math.min(1, a * 1.6))) * k) - k, k, color);
                 ctx.shadowBlur = 0;
+                return;
+            }
+            case 'murcielagos': {
+                // salen en desbandada hacia arriba, aleteando rápido y con los ojos rojos
+                const aleta = MURCIELAGO[(Math.sin((ahora / 45) + (p.s * 9)) > 0) ? 0 : 1];
+
+                ctx.globalAlpha = (a > 0.7) ? ((1 - a) / 0.3) : 1;
+                dibujarColores(ctx, aleta, x + Math.round(azar * (1 + a)) + Math.round(Math.sin((a * 7) + (p.s * 6)) * 4 * k), y - Math.round((8 + (a * 28)) * k), k, { 1: this._color ?? 0x2A1B3D, 2: 0xFF1744 });
+                return;
+            }
+            case 'fantasmas': {
+                // fantasmitas medio transparentes que suben ondulando
+                ctx.globalAlpha = 0.75 * ((a < 0.15) ? (a / 0.15) : (a > 0.6) ? ((1 - a) / 0.4) : 1);
+                dibujarColores(ctx, FANTASMA, x + azar + Math.round(Math.sin((ahora / 200) + (p.s * 6)) * 4 * k), y - Math.round((4 + (a * 26)) * k), k, { 1: this._color ?? 0xF5F5F5, 2: 0x263238 });
+                return;
+            }
+            case 'calabazas': {
+                // calabazas que caen al suelo con un botecito y se quedan con la cara encendida
+                const bote = Math.abs(Math.sin(Math.min(1, a * 2.2) * Math.PI * 1.5)) * (1 - Math.min(1, a * 2.2)) * 8 * k;
+                const luz = (Math.sin((ahora / 90) + (p.s * 12)) > -0.4) ? 0xFFEB3B : 0xFFA000;
+
+                ctx.globalAlpha = (a > 0.75) ? ((1 - a) / 0.25) : 1;
+                ctx.shadowColor = '#FF6F00';
+                ctx.shadowBlur = 3 * k;
+                dibujarColores(ctx, CALABAZA, x + Math.round(azar / 2), y - Math.round(bote) - k, k, { 1: 0xF57C00, 2: luz, 4: 0x558B2F });
+                ctx.shadowBlur = 0;
+                return;
+            }
+            case 'caramelos': {
+                // caramelos de colores que saltan de los pies y caen rebotando
+                const t = Math.min(1, a * 1.25);
+                const alto = Math.abs(Math.sin(t * Math.PI * 1.5)) * (1 - (t * 0.6)) * 16 * k;
+
+                ctx.globalAlpha = (a > 0.8) ? ((1 - a) / 0.2) : 1;
+                dibujarColores(ctx, CARAMELO, x + Math.round(azar * t), y - Math.round(alto) - k, k, { 1: 0xFFFFFF, 2: CARAMELOS[p.n % CARAMELOS.length] });
                 return;
             }
             case 'galaxia': {
