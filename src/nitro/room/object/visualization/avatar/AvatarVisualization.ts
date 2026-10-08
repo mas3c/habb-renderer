@@ -169,6 +169,10 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         // basta con tocar los filtros, el lienzo los repinta
         if(this._aura && this._aura.animada) this._aura.tick(time);
 
+        // la estela, igual: el avatar se desliza por la pantalla en cada fotograma pero esta visualización solo
+        // se actualiza cada 41 ms, y entre medias el rastro se iba con él y volvía de golpe (se veía a tirones)
+        this.animarEstela();
+
         if(time < (this._lastUpdate + AvatarVisualization.UPDATE_TIME_INCREASER)) return;
 
         this._lastUpdate += AvatarVisualization.UPDATE_TIME_INCREASER;
@@ -251,7 +255,11 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
             for(const addition of this._additions.values())
             {
-                if(addition.animate(this.getSprite(index++))) this.updateSpriteCounter++;
+                const sprite = this.getSprite(index++);
+
+                if(addition.id === AvatarVisualization.ESTELA_ID) continue;
+
+                if(addition.animate(sprite)) this.updateSpriteCounter++;
             }
         }
 
@@ -1057,6 +1065,20 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         {
             sprite.texture = Texture.EMPTY;
             sprite.alpha = 255;
+        }
+    }
+
+    private animarEstela(): void
+    {
+        if(!this._additions || !this._additions.has(AvatarVisualization.ESTELA_ID)) return;
+
+        let index = this._extraSpritesStartIndex;
+
+        for(const addition of this._additions.values())
+        {
+            if((addition.id === AvatarVisualization.ESTELA_ID) && addition.animate(this.getSprite(index))) this.updateSpriteCounter++;
+
+            index++;
         }
     }
 
