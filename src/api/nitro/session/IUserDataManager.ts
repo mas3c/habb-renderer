@@ -13,6 +13,8 @@ export interface IUserDataManager
     getUserDataByName(name: string): IRoomUserData;
     updateUserData(data: IRoomUserData): void;
     removeUserData(roomIndex: number): void;
+    setChatIcono(roomIndex: number, iconoId: number): void;
+    getChatIcono(roomIndex: number): number;
     getUserBadges(userId: number): string[];
     setUserBadges(userId: number, badges: string[]): void;
     updateFigure(roomIndex: number, figure: string, sex: string, hasSaddle: boolean, isRiding: boolean): void;

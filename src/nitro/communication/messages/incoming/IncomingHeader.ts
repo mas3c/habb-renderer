@@ -20,6 +20,8 @@ export class IncomingHeader
     public static ROOM_HABBICON = 9619;
     public static AURAS = 9622;
     public static ROOM_AURA = 9623;
+    public static ICONOS = 9625;
+    public static ROOM_ICONO = 9626;
 
     // Menciones y bloqueados (emulador: Composers.MencionesMessageComposer)
     public static MENCIONES_MESSAGE = 9607;

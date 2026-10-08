@@ -110,8 +110,25 @@ export class UserDataManager extends Disposable
         this._userDataByRoomIndex.set(data.roomIndex, data);
     }
 
+    /** icono del chat de cada índice (Hartico): aparte de RoomUserData, que se rehace cada vez que el servidor reenvía al avatar */
+    private _chatIconos: Map<number, number> = new Map();
+
+    public setChatIcono(roomIndex: number, iconoId: number): void
+    {
+        if(iconoId > 0) this._chatIconos.set(roomIndex, iconoId);
+        else this._chatIconos.delete(roomIndex);
+    }
+
+    public getChatIcono(roomIndex: number): number
+    {
+        return (this._chatIconos.get(roomIndex) || 0);
+    }
+
     public removeUserData(roomIndex: number): void
     {
+        // el índice lo puede heredar quien entre después
+        this._chatIconos.delete(roomIndex);
+
         const existing = this.getUserDataByIndex(roomIndex);
 
         if(!existing) return;

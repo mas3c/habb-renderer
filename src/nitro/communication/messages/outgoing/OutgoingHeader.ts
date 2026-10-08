@@ -273,6 +273,7 @@ export class OutgoingHeader
     // Habbicons del AIR: usar uno en la sala (emulador: Events.UseHabbiconMessageEvent)
     public static USE_HABBICON = 9618;
     public static AURAS = 9621;
+    public static ICONOS = 9624;
 
     // Menciones y bloqueados (emulador: Events.MencionesCommandMessageEvent)
     public static MENCIONES_COMMAND = 9606;

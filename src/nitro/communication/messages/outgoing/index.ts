@@ -1,5 +1,6 @@
 export * from './advertisement';
 export * from './auras';
+export * from './iconos';
 export * from './avatar';
 export * from './camera';
 export * from './campaign';
