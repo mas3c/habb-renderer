@@ -274,6 +274,7 @@ export class OutgoingHeader
     public static USE_HABBICON = 9618;
     public static AURAS = 9621;
     public static ICONOS = 9624;
+    public static ESTELAS = 9627;
 
     // Menciones y bloqueados (emulador: Events.MencionesCommandMessageEvent)
     public static MENCIONES_COMMAND = 9606;

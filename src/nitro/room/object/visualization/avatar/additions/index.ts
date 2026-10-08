@@ -1,3 +1,4 @@
+export * from './EstelaAddition';
 export * from './ExpressionAddition';
 export * from './ExpressionAdditionFactory';
 export * from './FloatingHeartAddition';

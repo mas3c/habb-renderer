@@ -3,7 +3,7 @@ import { AvatarAction, IRoomGeometry, IRoomObjectModel, MouseEventType, RoomObje
 import { RoomObjectFurnitureActionEvent, RoomObjectMouseEvent, RoomObjectMoveEvent, RoomSpriteMouseEvent } from '../../../../../events';
 import { GetTickerTime } from '../../../../../pixi-proxy';
 import { RoomObjectUpdateMessage } from '../../../../../room';
-import { ObjectAvatarAuraUpdateMessage, ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarHabbiconUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSelectedMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage } from '../../../messages';
+import { ObjectAvatarAuraUpdateMessage, ObjectAvatarEstelaUpdateMessage, ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarHabbiconUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSelectedMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage } from '../../../messages';
 import { MovingObjectLogic } from '../MovingObjectLogic';
 
 export class AvatarLogic extends MovingObjectLogic
@@ -318,6 +318,13 @@ export class AvatarLogic extends MovingObjectLogic
 
             if(message.isSleeping) this._blinkingStartTimestamp = -1;
             else this._blinkingStartTimestamp = (this.time + this.randomBlinkStartTimestamp());
+
+            return;
+        }
+
+        if(message instanceof ObjectAvatarEstelaUpdateMessage)
+        {
+            model.setValue(RoomObjectVariable.FIGURE_ESTELA, (message.estela || ''));
 
             return;
         }

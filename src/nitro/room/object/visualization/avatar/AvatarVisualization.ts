@@ -2,7 +2,7 @@ import { BLEND_MODES } from '@pixi/constants';
 import { Resource, Texture } from '@pixi/core';
 import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, RoomObjectSpriteType, RoomObjectVariable } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
-import { ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
+import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
 import { AvatarAura } from './AvatarAura';
 import { AvatarVisualizationData } from './AvatarVisualizationData';
 
@@ -17,6 +17,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private static MUTED_BUBBLE_ID: number = 6;
     private static GUIDE_BUBBLE_ID: number = 7;
     private static HABBICON_ID: number = 8;
+    private static ESTELA_ID: number = 9;
     private static OWN_USER_ID: number = 4;
     private static UPDATE_TIME_INCREASER: number = 41;
     private static SIN_FILTROS: any[] = [];
@@ -809,6 +810,19 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             this._aura = AvatarAura.crear(auraSpec);
 
             needsUpdate = true;
+        }
+
+        // estela al andar: una addition con su lienzo; se rehace si cambia
+        const estelaSpec = (model.getValue<string>(RoomObjectVariable.FIGURE_ESTELA) || '');
+        const estelaAddition = this.getAddition(AvatarVisualization.ESTELA_ID) as EstelaAddition;
+
+        if(!estelaAddition || (estelaAddition.spec !== estelaSpec))
+        {
+            if(estelaAddition) this.removeAddition(AvatarVisualization.ESTELA_ID);
+
+            if(estelaSpec) this.addAddition(new EstelaAddition(AvatarVisualization.ESTELA_ID, estelaSpec, this));
+
+            if(estelaAddition || estelaSpec) needsUpdate = true;
         }
 
         // Habbicon (AIR): una burbuja nueva cada vez que sube la secuencia, aunque sea el mismo icono
