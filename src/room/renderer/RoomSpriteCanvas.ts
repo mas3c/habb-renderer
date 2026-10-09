@@ -377,13 +377,23 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         const objects = this._container.objects;
 
+        // Desempate de profundidad ESTABLE: la posición de cada sprite entre todos los de la sala,
+        // cuenten o no en pantalla. Antes era el número de sprites visibles hasta ese momento, que
+        // cambia al mover la cámara (entran y salen por el recorte): dos furnis planos a la misma
+        // altura (los suelos de furni apilados del Recibidor) se turnaban encima y parpadeaban.
+        let ordinal = 0;
+
         if(objects.size)
         {
             for(const object of objects.values())
             {
                 if(!object) continue;
 
-                spriteCount = (spriteCount + this.renderObject(object, object.instanceId.toString(), time, update, updateVisuals, spriteCount));
+                spriteCount = (spriteCount + this.renderObject(object, object.instanceId.toString(), time, update, updateVisuals, ordinal));
+
+                const visualization = (object.visualization as IRoomObjectSpriteVisualization);
+
+                ordinal += ((visualization && visualization.sprites) ? visualization.sprites.length : 0);
             }
         }
 
@@ -492,8 +502,12 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         let spriteCount = 0;
 
+        let tie = (count - 1);
+
         for(const sprite of visualization.sprites.values())
         {
+            tie++;
+
             if(!sprite || !sprite.visible) continue;
 
             const texture = sprite.texture;
@@ -545,7 +559,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
             sortableSprite.x = (spriteX - this._screenOffsetX);
             sortableSprite.y = (spriteY - this._screenOffsetY);
-            sortableSprite.z = ((z + sprite.relativeDepth) + (3.7E-11 * count));
+            sortableSprite.z = ((z + sprite.relativeDepth) + (3.7E-11 * tie));
 
             spriteCount++;
             count++;
