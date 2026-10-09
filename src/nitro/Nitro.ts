@@ -129,6 +129,16 @@ export class Nitro implements INitro
                 const container = options?.container;
                 const temporal = !!(container && options.target && !container.isRenderGroup);
 
+                // Con una matriz, Pixi 6 la aplicaba ENCIMA de la posición propia del objeto; Pixi 8 la sustituye.
+                // Nitro cuenta con lo primero (p. ej. las caras del editor de avatar se bajan 10 px antes de
+                // pasarlas a imagen, y generateTexture siempre pasa una matriz para encuadrar).
+                if(container && options.transform && !container.isRenderGroup)
+                {
+                    container.updateLocalTransform();
+
+                    options = { ...options, transform: options.transform.clone().append(container.localTransform) };
+                }
+
                 pintar(options, deprecated);
 
                 if(temporal && container.isRenderGroup && !container.destroyed) container.disableRenderGroup();
