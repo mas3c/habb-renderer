@@ -94,9 +94,18 @@ export class Nitro implements INitro
         // y entonces el navegador y Windows lo mezclan con lo de detrás; al arrastrar la sala, cuando
         // la gráfica lo saca por un plano de superposición, salían tonos negros en el monitor que una
         // captura (OBS) no veía. La sala ya pinta su propio fondo negro, así que no cambia la imagen.
+        // «Pruebas de imagen» (Ajustes › Avanzados): opciones del contexto WebGL para diagnosticar
+        // parpadeos que solo se ven en algunos monitores/gráficas. Se leen al arrancar.
+        let pruebas: { buffer?: boolean, gpu?: string } = {};
+
+        try { pruebas = (JSON.parse(window.localStorage.getItem('habbPruebasImagen')) || {}); }
+        catch {}
+
         const instance = new this(new NitroCore(), {
             useContextAlpha: false,
             backgroundAlpha: 1,
+            preserveDrawingBuffer: !!pruebas.buffer,
+            powerPreference: ((pruebas.gpu === 'high-performance') || (pruebas.gpu === 'low-power')) ? pruebas.gpu : 'default',
             autoDensity: false,
             width: window.innerWidth,
             height: window.innerHeight,
