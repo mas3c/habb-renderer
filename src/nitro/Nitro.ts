@@ -23,7 +23,11 @@ LegacyExternalInterface.available;
 
 settings.SCALE_MODE = (!(window.devicePixelRatio % 1)) ? SCALE_MODES.NEAREST : SCALE_MODES.LINEAR;
 settings.ROUND_PIXELS = true;
-settings.GC_MAX_IDLE = 120;
+// Fotogramas sin pintarse antes de que Pixi borre una textura de la GPU. Estaba en 120: a 155 FPS
+// eso es menos de un segundo, y al arrastrar la sala los furnis que salían un momento de pantalla
+// perdían su textura y se volvían a subir al reaparecer (tirones y furnis mal pintados un instante).
+// 3600 es el valor de Pixi; Hobbaz usa 60 s. La memoria la controla RoomContentLoader.purge.
+settings.GC_MAX_IDLE = 3600;
 
 export class Nitro implements INitro
 {
