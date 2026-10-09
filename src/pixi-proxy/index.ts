@@ -1,4 +1,3 @@
-export { POINT_STRUCT_SIZE } from '@pixi/tilemap';
 export * from './adjustment-filter';
 export * from './GetTicker';
 export * from './GetTickerFPS';
@@ -16,7 +15,6 @@ export * from './NitroRenderTexture';
 export * from './NitroSprite';
 export * from './NitroSpritesheet';
 export * from './NitroTexture';
-export * from './NitroTilemap';
 export * from './PaletteMapFilter';
 export * from './PixiApplicationProxy';
 export * from './PixiInteractionEventProxy';

@@ -18,7 +18,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
     private _totalTimeRunning: number;
     private _lastFrame: number;
 
-    private _master: Sprite;
+    private _master: Container;
     private _display: Container;
     private _mask: Graphics;
 
@@ -125,7 +125,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
     {
         if(!this._master)
         {
-            this._master = new NitroSprite();
+            // Pixi 8: solo los Container pueden tener hijos (antes era un sprite vacío)
+            this._master = new NitroContainer();
 
             this._master.interactiveChildren = false;
         }
@@ -216,9 +217,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
             if(!this._mask)
             {
                 this._mask = new Graphics()
-                    .beginFill(0xFF0000)
-                    .drawRect(0, 0, width, height)
-                    .endFill();
+                    .rect(0, 0, width, height)
+                    .fill(0xFF0000);
 
                 if(this._master)
                 {
@@ -231,9 +231,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
             {
                 this._mask
                     .clear()
-                    .beginFill(0xFF0000)
-                    .drawRect(0, 0, width, height)
-                    .endFill();
+                    .rect(0, 0, width, height)
+                    .fill(0xFF0000);
             }
         }
 

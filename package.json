@@ -22,7 +22,6 @@
   },
   "main": "./index",
   "dependencies": {
-    "@pixi/tilemap": "5.0.2",
     "gifuct-js": "^2.1.2",
     "howler": "^2.2.3",
     "pako": "^2.0.4",

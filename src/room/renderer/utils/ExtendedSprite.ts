@@ -16,7 +16,8 @@ export class ExtendedSprite extends Sprite
 
     constructor(texture: Texture = null)
     {
-        super(texture);
+        // Pixi 8 no acepta null (Pixi 6 lo trataba como textura vacía)
+        super(texture ?? Texture.EMPTY);
 
         this._offsetX = 0;
         this._offsetY = 0;

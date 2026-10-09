@@ -80,8 +80,8 @@ export class AvatarAura
     {
         switch(filtro)
         {
-            case 'OutlineFilter': return [ new OutlineFilter(1, c) ];
-            case 'ThickOutlineFilter': return [ new OutlineFilter(2, c) ];
+            case 'OutlineFilter': return [ new OutlineFilter({ thickness: 1, color: c }) ];
+            case 'ThickOutlineFilter': return [ new OutlineFilter({ thickness: 2, color: c }) ];
             // pixi-filters 6 vuelve al offset {x, y} de Hobbaz (la 4, la de Pixi 6, pedía ángulo 45° y distancia ·√2)
             case 'DropShadowFilter': return [ new DropShadowFilter({ color: c, quality: 20, blur: 0, alpha: 0.6, offset: { x: 2.8, y: 2.8 } }) ];
             case 'SoftShadowFilter': return [ new DropShadowFilter({ color: c, quality: 5, blur: 3, alpha: 0.55, offset: { x: 3.5, y: 3.5 } }) ];
@@ -89,8 +89,8 @@ export class AvatarAura
             case 'InnerGlowFilter': return [ new GlowFilter({ color: c, distance: 6, outerStrength: 0, innerStrength: 3, quality: 0.5 }) ];
             case 'BigGlowFilter': return [ new GlowFilter({ color: c, distance: 8, outerStrength: 3, quality: 0.5 }) ];
             case 'PulseGlowFilter': return [ new GlowFilter({ color: c, distance: 8, outerStrength: 2.5, quality: 0.5 }) ];
-            case 'OutlineGlowFilter': return [ new OutlineFilter(1, c), new GlowFilter({ color: c, distance: 6, outerStrength: 2, quality: 0.5 }) ];
-            case 'NeonFilter': return [ new OutlineFilter(2, c), new GlowFilter({ color: c, distance: 10, outerStrength: 3, quality: 0.5 }) ];
+            case 'OutlineGlowFilter': return [ new OutlineFilter({ thickness: 1, color: c }), new GlowFilter({ color: c, distance: 6, outerStrength: 2, quality: 0.5 }) ];
+            case 'NeonFilter': return [ new OutlineFilter({ thickness: 2, color: c }), new GlowFilter({ color: c, distance: 10, outerStrength: 3, quality: 0.5 }) ];
             case 'HaloFilter': return [ new GlowFilter({ color: c, distance: 14, outerStrength: 2, innerStrength: 0.5, quality: 0.4 }) ];
         }
 
