@@ -117,6 +117,22 @@ export class Nitro implements INitro
 
             // al recuperar el contexto Pixi rehace su tabla de mezclas
             renderer.runners?.contextChange?.add({ contextChange: subtract });
+
+            // Pintar un contenedor dentro de una textura lo convierte en grupo de render, y Pixi 8 guarda un Batcher
+            // (con búferes de GPU) por grupo que solo suelta al destruirlo. Nitro pinta miles de contenedores
+            // temporales (paredes, suelos, avatares, miniaturas) sin destruirlos: +60 MB de JS por cada pocas salas.
+            // Si no era grupo antes de pintarlo en una textura, se le quita al terminar (cubre generateTexture y extract).
+            const pintar = renderer.render.bind(renderer) as (options: any, deprecated?: any) => void;
+
+            (renderer as { render: (options: any, deprecated?: any) => void }).render = (options: any, deprecated?: any) =>
+            {
+                const container = options?.container;
+                const temporal = !!(container && options.target && !container.isRenderGroup);
+
+                pintar(options, deprecated);
+
+                if(temporal && container.isRenderGroup && !container.destroyed) container.disableRenderGroup();
+            };
         });
 
         canvas.addEventListener('webglcontextlost', () => instance.events.dispatchEvent(new NitroEvent(Nitro.WEBGL_CONTEXT_LOST)));
