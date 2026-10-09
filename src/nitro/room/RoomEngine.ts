@@ -572,7 +572,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
             {
                 const overlay = new NitroSprite(Texture.EMPTY);
 
-                overlay.name = RoomEngine.OVERLAY;
+                overlay.label = RoomEngine.OVERLAY;
                 overlay.interactive = false;
 
                 displayObject.addChild(overlay);
@@ -3012,7 +3012,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
         sprite = new NitroSprite(_arg_3);
 
-        sprite.name = _arg_2;
+        sprite.label = _arg_2;
 
         sprite.scale.set(scale);
 
@@ -3578,7 +3578,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
         if(!displayObject) return null;
 
-        return ((displayObject.getChildByName(RoomEngine.OVERLAY) as NitroSprite) || null);
+        return ((displayObject.getChildByLabel(RoomEngine.OVERLAY) as NitroSprite) || null);
     }
 
     private removeOverlayIconSprite(k: NitroSprite, _arg_2: string): boolean
@@ -3593,7 +3593,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
             if(child)
             {
-                if(child.name === _arg_2)
+                if(child.label === _arg_2)
                 {
                     k.removeChildAt(index);
 
@@ -3628,7 +3628,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
             if(child)
             {
-                if(child.name === _arg_2) return child;
+                if(child.label === _arg_2) return child;
             }
 
             index--;
