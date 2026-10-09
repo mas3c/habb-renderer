@@ -59,6 +59,12 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
     private _restrictsScaling: boolean;
     private _noSpriteVisibilityChecking: boolean;
+    // Recorte con margen: al mover la cámara solo se recoloca el contenedor, y los sprites se
+    // recalculan (todos los objetos) cuando se ha movido más de medio margen. Antes se recalculaban
+    // en CADA fotograma del arrastre: en salas grandes los FPS caían justo al arrastrar.
+    private static CULL_MARGIN: number = 200;
+    private _culledOffsetX: number = 0;
+    private _culledOffsetY: number = 0;
     private _usesExclusionRectangles: boolean;
     private _usesMask: boolean;
     private _canvasUpdated: boolean;
@@ -336,7 +342,15 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         {
             this._display.position.set(this._screenOffsetX, this._screenOffsetY);
 
-            update = true;
+            const half = (RoomSpriteCanvas.CULL_MARGIN / 2);
+
+            if((Math.abs(this._screenOffsetX - this._culledOffsetX) > half) || (Math.abs(this._screenOffsetY - this._culledOffsetY) > half)) update = true;
+        }
+
+        if(update)
+        {
+            this._culledOffsetX = this._screenOffsetX;
+            this._culledOffsetY = this._screenOffsetY;
         }
 
         if(this._display.scale.x !== this._scale)
@@ -800,7 +814,9 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         width = (width * this._scale);
         height = (height * this._scale);
 
-        if(((x < this._width) && ((x + width) >= 0)) && ((y < this._height) && ((y + height) >= 0)))
+        const margin = RoomSpriteCanvas.CULL_MARGIN;
+
+        if(((x < (this._width + margin)) && ((x + width) >= -margin)) && ((y < (this._height + margin)) && ((y + height) >= -margin)))
         {
             if(!this._usesExclusionRectangles) return true;
         }
