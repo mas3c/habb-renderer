@@ -63,8 +63,12 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
     private _effectManager: EffectAssetDownloadManager;
     private _effectListener: IAvatarEffectListener;
 
+    // Los que están vivos: sus librerías de ropa no se pueden liberar (AvatarAssetDownloadManager.purge)
+    public static LIVE: Set<AvatarImage> = new Set();
+
     constructor(k: AvatarStructure, _arg_2: AssetAliasCollection, _arg_3: AvatarFigureContainer, _arg_4: string, _arg_5: EffectAssetDownloadManager, _arg_6: IAvatarEffectListener = null)
     {
+        AvatarImage.LIVE.add(this);
         this._canvasOffsets = [];
         this._actions = [];
         this._cachedBodyParts = [];
@@ -103,6 +107,8 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
 
     public dispose(): void
     {
+        AvatarImage.LIVE.delete(this);
+
         if(this._disposed) return;
 
         this._structure = null;

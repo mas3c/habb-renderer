@@ -2,6 +2,7 @@ import { IAssetManager, IAvatarFigureContainer, IAvatarImageListener, INitroEven
 import { EventDispatcher } from '../../core';
 import { AvatarRenderEvent, AvatarRenderLibraryEvent, NitroEvent } from '../../events';
 import { AvatarAssetDownloadLibrary } from './AvatarAssetDownloadLibrary';
+import { AvatarImage } from './AvatarImage';
 import { AvatarStructure } from './AvatarStructure';
 
 export class AvatarAssetDownloadManager extends EventDispatcher
@@ -10,6 +11,11 @@ export class AvatarAssetDownloadManager extends EventDispatcher
     public static LIBRARY_LOADED: string = 'AADM_LIBRARY_LOADED';
 
     private static MAX_DOWNLOADS: number = 2;
+
+    // La ropa que no lleva ningún avatar vivo (en sala o en una ventana) durante 2 min se libera:
+    // antes cada prenda vista se quedaba en memoria para siempre (hasta 1,5 GB con toda la ropa).
+    private static PURGE_INTERVAL_MS: number = 60000;
+    private static PURGE_UNUSED_MS: number = 120000;
 
     private _assets: IAssetManager;
     private _structure: AvatarStructure;
@@ -23,6 +29,8 @@ export class AvatarAssetDownloadManager extends EventDispatcher
     private _currentDownloads: AvatarAssetDownloadLibrary[];
     private _libraryNames: string[];
     private _isReady: boolean;
+    private _libraries: AvatarAssetDownloadLibrary[] = [];
+    private _lastNeeded: Map<AvatarAssetDownloadLibrary, number> = new Map();
 
     constructor(assets: IAssetManager, structure: AvatarStructure)
     {
@@ -47,6 +55,52 @@ export class AvatarAssetDownloadManager extends EventDispatcher
         this.loadFigureMap();
 
         this._structure.renderManager.events.addEventListener(AvatarRenderEvent.AVATAR_RENDER_READY, this.onAvatarRenderReady);
+
+        setInterval(() => this.purge(), AvatarAssetDownloadManager.PURGE_INTERVAL_MS);
+    }
+
+    private purge(): void
+    {
+        if(!this._isReady) return;
+
+        const now = Date.now();
+        const needed = new Set<AvatarAssetDownloadLibrary>();
+        const add = (libraries: AvatarAssetDownloadLibrary[]) =>
+        {
+            if(libraries) for(const library of libraries) library && needed.add(library);
+        };
+
+        for(const image of AvatarImage.LIVE) add(this.getAvatarFigureLibraries(image.getFigure()));
+
+        for(const part of this._missingMandatoryLibs) add(this._figureMap.get(part));
+
+        for(const libraries of this._incompleteFigures.values()) add(libraries);
+
+        add(this._pendingDownloadQueue);
+        add(this._currentDownloads);
+
+        let purged = 0;
+
+        for(const library of this._libraries)
+        {
+            if(!library.isLoaded) continue;
+
+            if(needed.has(library) || !this._lastNeeded.has(library))
+            {
+                this._lastNeeded.set(library, now);
+                continue;
+            }
+
+            if((now - this._lastNeeded.get(library)) < AvatarAssetDownloadManager.PURGE_UNUSED_MS) continue;
+
+            this._lastNeeded.delete(library);
+
+            if(this._assets.removeCollection(library.libraryName)) purged++;
+
+            library.markUnloaded();
+        }
+
+        if(purged) NitroLogger.log('Purged avatar libraries', purged);
     }
 
     private loadFigureMap(): void
@@ -103,6 +157,8 @@ export class AvatarAssetDownloadManager extends EventDispatcher
             this._libraryNames.push(id);
 
             const downloadLibrary = new AvatarAssetDownloadLibrary(id, revision, this._assets, NitroConfiguration.getValue<string>('avatar.asset.url'));
+
+            this._libraries.push(downloadLibrary);
 
             downloadLibrary.addEventListener(AvatarRenderLibraryEvent.DOWNLOAD_COMPLETE, this.onLibraryLoaded);
 
@@ -226,6 +282,11 @@ export class AvatarAssetDownloadManager extends EventDispatcher
 
     private getAvatarFigurePendingLibraries(container: IAvatarFigureContainer): AvatarAssetDownloadLibrary[]
     {
+        return this.getAvatarFigureLibraries(container, true);
+    }
+
+    private getAvatarFigureLibraries(container: IAvatarFigureContainer, onlyPending: boolean = false): AvatarAssetDownloadLibrary[]
+    {
         const pendingLibraries: AvatarAssetDownloadLibrary[] = [];
 
         if(!container || !this._structure) return pendingLibraries;
@@ -257,7 +318,7 @@ export class AvatarAssetDownloadManager extends EventDispatcher
 
                 for(const library of existing)
                 {
-                    if(!library || library.isLoaded) continue;
+                    if(!library || (onlyPending && library.isLoaded)) continue;
 
                     if(pendingLibraries.indexOf(library) >= 0) continue;
 

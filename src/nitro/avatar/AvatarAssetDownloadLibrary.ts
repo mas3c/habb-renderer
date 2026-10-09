@@ -60,6 +60,12 @@ export class AvatarAssetDownloadLibrary extends EventDispatcher implements IAvat
         this.dispatchEvent(new AvatarRenderLibraryEvent(AvatarRenderLibraryEvent.DOWNLOAD_COMPLETE, this));
     }
 
+    /** Tras liberar su colección: la próxima vez que haga falta se vuelve a descargar. */
+    public markUnloaded(): void
+    {
+        if(this._state === AvatarAssetDownloadLibrary.LOADED) this._state = AvatarAssetDownloadLibrary.NOT_LOADED;
+    }
+
     public get libraryName(): string
     {
         return this._libraryName;

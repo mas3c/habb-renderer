@@ -14,6 +14,9 @@ export class AssetManager implements IAssetManager
 
     private _textures: Map<string, Texture<Resource>> = new Map();
     private _collections: Map<string, IGraphicAssetCollection> = new Map();
+    // nombre de asset -> colección que lo tiene. getAsset recorría TODAS las colecciones en cada
+    // consulta (cada pieza de cada avatar al pintarlo) y se volvía más lento cuanta más ropa se veía.
+    private _assetIndex: Map<string, IGraphicAssetCollection> = new Map();
 
     public getTexture(name: string): Texture<Resource>
     {
@@ -37,6 +40,17 @@ export class AssetManager implements IAssetManager
     {
         if(!name) return null;
 
+        const indexed = this._assetIndex.get(name);
+
+        if(indexed)
+        {
+            const asset = indexed.getAsset(name);
+
+            if(asset) return asset;
+
+            this._assetIndex.delete(name);
+        }
+
         for(const collection of this._collections.values())
         {
             if(!collection) continue;
@@ -44,6 +58,8 @@ export class AssetManager implements IAssetManager
             const existing = collection.getAsset(name);
 
             if(!existing) continue;
+
+            this._assetIndex.set(name, collection);
 
             return existing;
         }
@@ -76,6 +92,39 @@ export class AssetManager implements IAssetManager
         }
 
         return collection;
+    }
+
+    /** Libera una colección (memoria y GPU). Solo destruye las texturas de su propia imagen. */
+    public removeCollection(name: string): boolean
+    {
+        const collection = this._collections.get(name);
+
+        if(!collection) return false;
+
+        this._collections.delete(name);
+
+        for(const [ assetName, owner ] of this._assetIndex) if(owner === collection) this._assetIndex.delete(assetName);
+
+        const baseTexture = collection.baseTexture;
+
+        for(const [ textureName, texture ] of collection.textures)
+        {
+            if(this._textures.get(textureName) === texture) this._textures.delete(textureName);
+        }
+
+        collection.dispose();
+
+        if(baseTexture)
+        {
+            for(const texture of collection.textures.values())
+            {
+                if(texture && (texture.baseTexture === baseTexture)) texture.destroy(false);
+            }
+
+            baseTexture.destroy();
+        }
+
+        return true;
     }
 
     public async downloadAsset(url: string): Promise<boolean>
