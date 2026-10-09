@@ -1,4 +1,4 @@
-﻿import { Point, Rectangle, RenderTexture, Sprite } from 'pixi.js';
+﻿import { Point, Rectangle, RenderTexture, Sprite, Texture } from 'pixi.js';
 import { IVector3D, NitroLogger, Vector3d } from '../../../../../../../api';
 import { PlaneTextureCache, TextureUtils } from '../../../../../../../pixi-proxy';
 import { Randomizer } from '../../utils';
@@ -152,7 +152,7 @@ export class PlaneMaterialCellMatrix
         {
             if(this._cachedBitmapData)
             {
-                if(this._cachedBitmapData.baseTexture && (this._cachedBitmapData.width === width) && (this._cachedBitmapData.height === height) && Vector3d.isEqual(this._cachedBitmapNormal, normal))
+                if(this._cachedBitmapData.source && (this._cachedBitmapData.width === width) && (this._cachedBitmapData.height === height) && Vector3d.isEqual(this._cachedBitmapNormal, normal))
                 {
                     if(canvas)
                     {
@@ -283,12 +283,16 @@ export class PlaneMaterialCellMatrix
             bounds = new Rectangle(0, (this._cachedBitmapData.height - this._cachedBitmapHeight), this._cachedBitmapData.width, this._cachedBitmapHeight);
         }
 
-        const texture = new RenderTexture(this._cachedBitmapData.baseTexture, bounds);
+        // Pixi 8: un recorte de la misma fuente es una Texture con frame (antes new RenderTexture(base, frame))
+        const texture = new Texture({ source: this._cachedBitmapData.source, frame: bounds });
         const sprite = new Sprite(texture);
 
         sprite.position.set(0, offsetY);
 
         TextureUtils.writeToRenderTexture(sprite, canvas, false);
+
+        sprite.destroy();
+        texture.destroy(false);
     }
 
     private getColumnsWidth(columns: RenderTexture[]): number

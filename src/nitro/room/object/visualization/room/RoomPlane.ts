@@ -1,4 +1,4 @@
-import { Matrix, Point, RenderTexture, Renderer, Sprite, Texture } from 'pixi.js';
+import { BufferImageSource, Matrix, Point, RenderTexture, Sprite, Texture } from 'pixi.js';
 import { IRoomGeometry, IRoomPlane, IVector3D, Vector3d } from '../../../../../api';
 import { PixiApplicationProxy, PlaneTextureCache } from '../../../../../pixi-proxy';
 import { ColorConverter } from '../../../../../room';
@@ -873,16 +873,19 @@ export class RoomPlane implements IRoomPlane
             const maskBlue = maskPixels[i + 2];
             const maskAlpha = maskPixels[i + 3];
 
-            if(!maskRed && !maskGreen && !maskBlue) canvasPixels[i + 3] = 0;
+            // transparente del todo (también el color: con alfa premultiplicado un color con alfa 0 sumaría luz)
+            if(!maskRed && !maskGreen && !maskBlue) canvasPixels[i] = canvasPixels[i + 1] = canvasPixels[i + 2] = canvasPixels[i + 3] = 0;
         }
 
-        const canvaGLTexture = canvas.baseTexture._glTextures['1']?.texture;
-        const gl = (PixiApplicationProxy.instance.renderer as Renderer)?.gl;
+        // Pixi 6 escribía estos píxeles a mano en la textura WebGL del plano; en Pixi 8 eso descuadra qué textura cree
+        // Pixi que está activa. Se suben como búfer y se pintan sobre el plano por el camino normal.
+        const source = new BufferImageSource({ resource: canvasPixels, width: canvas.source.pixelWidth, height: canvas.source.pixelHeight, resolution: canvas.source.resolution });
+        const texture = new Texture({ source });
+        const sprite = new Sprite(texture);
 
-        if(!canvaGLTexture || !gl) return;
+        this._textureCache.writeToRenderTexture(sprite, canvas, true);
 
-        gl.bindTexture(gl.TEXTURE_2D, canvaGLTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width, canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, canvasPixels);
-        gl.bindTexture(gl.TEXTURE_2D, null);
+        sprite.destroy();
+        texture.destroy(true);
     }
 }

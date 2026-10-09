@@ -82,10 +82,9 @@ export class AvatarAura
         {
             case 'OutlineFilter': return [ new OutlineFilter(1, c) ];
             case 'ThickOutlineFilter': return [ new OutlineFilter(2, c) ];
-            // Hobbaz usa pixi-filters 5 con offset {x, y}; la 4 (la de Pixi 6) pide ángulo y
-            // distancia: offset (2.8, 2.8) = 45° a 2.8·√2 px, y (3.5, 3.5) = 45° a 3.5·√2 px
-            case 'DropShadowFilter': return [ new DropShadowFilter({ color: c, quality: 20, blur: 0, alpha: 0.6, rotation: 45, distance: (2.8 * Math.SQRT2) }) ];
-            case 'SoftShadowFilter': return [ new DropShadowFilter({ color: c, quality: 5, blur: 3, alpha: 0.55, rotation: 45, distance: (3.5 * Math.SQRT2) }) ];
+            // pixi-filters 6 vuelve al offset {x, y} de Hobbaz (la 4, la de Pixi 6, pedía ángulo 45° y distancia ·√2)
+            case 'DropShadowFilter': return [ new DropShadowFilter({ color: c, quality: 20, blur: 0, alpha: 0.6, offset: { x: 2.8, y: 2.8 } }) ];
+            case 'SoftShadowFilter': return [ new DropShadowFilter({ color: c, quality: 5, blur: 3, alpha: 0.55, offset: { x: 3.5, y: 3.5 } }) ];
             case 'GlowFilter': return [ new GlowFilter({ color: c, distance: 4, quality: 1 }) ];
             case 'InnerGlowFilter': return [ new GlowFilter({ color: c, distance: 6, outerStrength: 0, innerStrength: 3, quality: 0.5 }) ];
             case 'BigGlowFilter': return [ new GlowFilter({ color: c, distance: 8, outerStrength: 3, quality: 0.5 }) ];

@@ -72,12 +72,16 @@ export class Rasterizer
         matrix.scale(-1, 1);
         matrix.translate(k.width, 0);
 
+        const sprite = new Sprite(k);
+
         PixiApplicationProxy.instance.renderer.render({
-            container: new Sprite(k),
+            container: sprite,
             target: renderTexture,
             clear: true,
             transform: matrix
         });
+
+        sprite.destroy();
 
         return renderTexture;
     }
@@ -91,17 +95,13 @@ export class Rasterizer
         matrix.scale(1, -1);
         matrix.translate(0, k.height);
 
-        const graphic = new Graphics();
+        // como getFlipHBitmapData: en Pixi 8 el relleno con textura de Graphics se ajusta a la forma por defecto
+        const sprite = new Sprite(k);
+        const texture = TextureUtils.createAndWriteRenderTexture(k.width, k.height, sprite, matrix);
 
-        graphic
-            .beginTextureFill({
-                texture: k,
-                matrix
-            })
-            .drawRect(0, 0, k.width, k.height)
-            .endFill();
+        sprite.destroy();
 
-        return TextureUtils.generateTexture(graphic);
+        return texture;
     }
 
     public static getFlipHVBitmapData(k: Texture): Texture
@@ -113,16 +113,12 @@ export class Rasterizer
         matrix.scale(-1, -1);
         matrix.translate(k.width, k.height);
 
-        const graphic = new Graphics();
+        // como getFlipHBitmapData: en Pixi 8 el relleno con textura de Graphics se ajusta a la forma por defecto
+        const sprite = new Sprite(k);
+        const texture = TextureUtils.createAndWriteRenderTexture(k.width, k.height, sprite, matrix);
 
-        graphic
-            .beginTextureFill({
-                texture: k,
-                matrix
-            })
-            .drawRect(0, 0, k.width, k.height)
-            .endFill();
+        sprite.destroy();
 
-        return TextureUtils.generateTexture(graphic);
+        return texture;
     }
 }

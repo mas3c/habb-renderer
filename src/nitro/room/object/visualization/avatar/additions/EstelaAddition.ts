@@ -1,4 +1,4 @@
-import { Texture } from 'pixi.js';
+import { CanvasSource, Texture } from 'pixi.js';
 import { IRoomGeometry, IRoomObjectSprite } from '../../../../../../api';
 import { AvatarEstela } from '../AvatarEstela';
 import { AvatarVisualization } from '../AvatarVisualization';
@@ -58,7 +58,7 @@ export class EstelaAddition implements IAvatarAddition
         this._lienzo = document.createElement('canvas');
         this._lienzo.width = this.ancho;
         this._lienzo.height = this.alto;
-        this._textura = Texture.from(this._lienzo);
+        this._textura = new Texture({ source: new CanvasSource({ resource: this._lienzo }) });
     }
 
     private pintar(sprite: IRoomObjectSprite): boolean

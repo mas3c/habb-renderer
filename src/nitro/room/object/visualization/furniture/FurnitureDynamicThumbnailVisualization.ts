@@ -1,4 +1,4 @@
-import { Texture } from 'pixi.js';
+import { ImageSource, Texture } from 'pixi.js';
 import { IsometricImageFurniVisualization } from './IsometricImageFurniVisualization';
 
 export class FurnitureDynamicThumbnailVisualization extends IsometricImageFurniVisualization
@@ -32,9 +32,7 @@ export class FurnitureDynamicThumbnailVisualization extends IsometricImageFurniV
 
                     image.onload = () =>
                     {
-                        const texture = Texture.from(image);
-
-                        texture.source.scaleMode = 'linear';
+                        const texture = new Texture({ source: new ImageSource({ resource: image, scaleMode: 'linear' }) });
 
                         this.setThumbnailImages(texture);
                     };

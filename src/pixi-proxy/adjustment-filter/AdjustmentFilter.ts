@@ -1,4 +1,5 @@
-import { Filter, FilterSystem, RenderTexture } from 'pixi.js';
+import { FilterSystem, RenderSurface, Texture } from 'pixi.js';
+import { NitroFilter } from '../NitroFilter';
 
 interface AdjustmentFilterOptions
 {
@@ -12,7 +13,7 @@ interface AdjustmentFilterOptions
     alpha: number;
 }
 
-export class AdjustmentFilter extends Filter
+export class AdjustmentFilter extends NitroFilter
 {
     /** The amount of luminance */
     public gamma = 1;
@@ -103,7 +104,7 @@ export class AdjustmentFilter extends Filter
      * Override existing apply method in PIXI.Filter
      * @ignore
      */
-    apply(filterManager: FilterSystem, input: RenderTexture, output: RenderTexture, clear: CLEAR_MODES): void
+    apply(filterManager: FilterSystem, input: Texture, output: RenderSurface, clear: boolean): void
     {
         this.uniforms.gamma = Math.max(this.gamma, 0.0001);
         this.uniforms.saturation = this.saturation;

@@ -1,4 +1,4 @@
-import { Texture } from 'pixi.js';
+import { CanvasSource, Texture } from 'pixi.js';
 import { NitroConfiguration } from '../../../../../../api';
 
 /**
@@ -155,7 +155,7 @@ export class HabbiconAssets
         fc.shadowColor = 'transparent';
         fc.drawImage(icono, margen, margen);
 
-        const textura = Texture.from(final);
+        const textura = new Texture({ source: new CanvasSource({ resource: final }) });
 
         HabbiconAssets._texturas.set(clave, textura);
 

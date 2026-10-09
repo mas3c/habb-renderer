@@ -198,7 +198,7 @@ export class LandscapeRasterizer extends PlaneRasterizer
 
         if(graphic && (graphic !== canvas))
         {
-            graphic = new RenderTexture(graphic.baseTexture);
+            graphic = new RenderTexture({ source: graphic.source });
 
             if(!graphic) return null;
         }

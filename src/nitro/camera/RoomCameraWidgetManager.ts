@@ -1,4 +1,4 @@
-import { ColorMatrix, ColorMatrixFilter, Texture } from 'pixi.js';
+import { ColorMatrix, ColorMatrixFilter, ImageSource, Texture } from 'pixi.js';
 import { IEventDispatcher, IRoomCameraWidgetEffect, IRoomCameraWidgetManager, IRoomCameraWidgetSelectedEffect, NitroConfiguration } from '../../api';
 import { EventDispatcher } from '../../core';
 import { RoomCameraWidgetManagerEvent } from '../../events';
@@ -39,7 +39,12 @@ export class RoomCameraWidgetManager implements IRoomCameraWidgetManager
             }
             else
             {
-                cameraEffect.texture = Texture.from(imagesUrl + effect.name + '.png');
+                // Pixi 8 ya no descarga una URL con Texture.from: se baja la imagen y se crea al cargar
+                const image = new Image();
+
+                image.crossOrigin = 'anonymous';
+                image.onload = () => (cameraEffect.texture = new Texture({ source: new ImageSource({ resource: image }) }));
+                image.src = (imagesUrl + effect.name + '.png');
                 cameraEffect.blendMode = effect.blendMode;
             }
 

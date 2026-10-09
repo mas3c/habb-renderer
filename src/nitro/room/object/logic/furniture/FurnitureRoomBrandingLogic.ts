@@ -1,6 +1,6 @@
-import { Texture, TextureSource } from 'pixi.js';
+import { BufferImageSource, ImageSource, Texture } from 'pixi.js';
 import { decompressFrames, parseGIF } from 'gifuct-js';
-import { GetAssetManager, IAssetData, IRoomGeometry, MapDataType, MouseEventType, RoomObjectVariable, RoomWidgetEnumItemExtradataParameter } from '../../../../../api';
+import { GetAssetManager, IAssetData, NitroBundle, IRoomGeometry, MapDataType, MouseEventType, RoomObjectVariable, RoomWidgetEnumItemExtradataParameter } from '../../../../../api';
 import { RoomObjectRoomAdEvent, RoomSpriteMouseEvent } from '../../../../../events';
 import { RoomObjectUpdateMessage } from '../../../../../room';
 import { Nitro } from '../../../../Nitro';
@@ -203,9 +203,9 @@ export class FurnitureRoomBrandingLogic extends FurnitureLogic
                             }
                         }
 
-                        const baseTexture = TextureSource.fromBuffer(frame, width, height);
+                        const baseTexture = new BufferImageSource({ resource: frame, width, height });
 
-                        textures.push(new Texture(baseTexture));
+                        textures.push(new Texture({ source: baseTexture }));
                         durations.push(frames[ind].delay);
                     }
 
@@ -238,19 +238,12 @@ export class FurnitureRoomBrandingLogic extends FurnitureLogic
 
                         if(!resp || !resp.ok) throw new Error('proxy status ' + (resp ? resp.status : '?'));
 
-                        const blob = await resp.blob();
-                        const objectUrl = URL.createObjectURL(blob);
-                        const baseTexture = TextureSource.from(objectUrl);
+                        const buffer = await resp.arrayBuffer();
+                        // ya decodificada: la textura nace válida (Pixi 8 no carga URLs por su cuenta)
+                        const baseTexture = new ImageSource({ resource: await NitroBundle.decodeImage(new Uint8Array(buffer)) });
 
-                        const register = () =>
-                        {
-                            asset.setTexture(imageUrl, new Texture(baseTexture));
-                            URL.revokeObjectURL(objectUrl);
-                            this.processUpdateMessage(new ObjectAdUpdateMessage(ObjectAdUpdateMessage.IMAGE_LOADED));
-                        };
-
-                        if(baseTexture.valid) register();
-                        else baseTexture.once('update', () => register());
+                        asset.setTexture(imageUrl, new Texture({ source: baseTexture }));
+                        this.processUpdateMessage(new ObjectAdUpdateMessage(ObjectAdUpdateMessage.IMAGE_LOADED));
                     }
                     catch (err)
                     {

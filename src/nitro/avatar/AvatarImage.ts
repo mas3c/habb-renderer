@@ -1,4 +1,4 @@
-import { ColorMatrixFilter, Container, Rectangle, RenderTexture, Sprite, Texture } from 'pixi.js';
+import { CanvasSource, ColorMatrixFilter, Container, Rectangle, RenderTexture, Sprite, Texture } from 'pixi.js';
 import { AdvancedMap, AvatarAction, AvatarDirectionAngle, AvatarScaleType, AvatarSetType, IActionDefinition, IActiveActionData, IAdvancedMap, IAnimationLayerData, IAvatarDataContainer, IAvatarEffectListener, IAvatarFigureContainer, IAvatarImage, IGraphicAsset, IPartColor, ISpriteDataContainer } from '../../api';
 import { GetTickerTime, NitroContainer, NitroSprite, PaletteMapFilter, PixiApplicationProxy, TextureUtils } from '../../pixi-proxy';
 import { ActiveActionData } from './actions';
@@ -471,13 +471,17 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
 
         textureCtx.putImageData(textureImageData, 0, 0);
 
-        const newTexture = new Sprite(Texture.from(textureCanvas));
+        const canvasTexture = new Texture({ source: new CanvasSource({ resource: textureCanvas }) });
+        const newTexture = new Sprite(canvasTexture);
 
         PixiApplicationProxy.instance.renderer.render({
             container: newTexture,
             target: texture,
             clear: true
         });
+
+        newTexture.destroy();
+        canvasTexture.destroy(true);
 
         return texture;
     }

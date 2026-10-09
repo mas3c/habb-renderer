@@ -1,4 +1,4 @@
-import { NitroBaseTexture } from './NitroBaseTexture';
+import { BufferImageSource } from 'pixi.js';
 import { NitroFilter } from './NitroFilter';
 
 const vertex = `
@@ -46,7 +46,7 @@ export class PaletteMapFilter extends NitroFilter
     public static readonly CHANNEL_BLUE = 2;
     public static readonly CHANNEL_ALPHA = 3;
 
-    private _lut: NitroBaseTexture;
+    private _lut: BufferImageSource;
     private _channel: number;
 
     constructor(palette: number[], channel = PaletteMapFilter.CHANNEL_RED)
@@ -57,7 +57,8 @@ export class PaletteMapFilter extends NitroFilter
 
         lut = this.getLutForPalette(palette);
 
-        this._lut = NitroBaseTexture.fromBuffer(Uint8Array.from(lut), lut.length / 4, 1, { mipmap: 0, scaleMode: 0 });
+        // tabla de colores tal cual (sin premultiplicar: el shader solo lee su RGB) y sin suavizado entre entradas
+        this._lut = new BufferImageSource({ resource: Uint8Array.from(lut), width: (lut.length / 4), height: 1, scaleMode: 'nearest', alphaMode: 'no-premultiply-alpha' });
 
         this.uniforms.lut = this._lut;
         this.uniforms.channel = this._channel;
@@ -82,7 +83,7 @@ export class PaletteMapFilter extends NitroFilter
         return lut;
     }
 
-    public get lut(): NitroBaseTexture
+    public get lut(): BufferImageSource
     {
         return this._lut;
     }

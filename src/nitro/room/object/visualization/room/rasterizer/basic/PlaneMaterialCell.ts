@@ -86,7 +86,7 @@ export class PlaneMaterialCell
         return 0;
     }
 
-    public render(normal: IVector3D, textureOffsetX: number, textureOffsetY: number): Sprite
+    public render(normal: IVector3D, textureOffsetX: number, textureOffsetY: number): TilingSprite
     {
         if(!this._texture) return null;
 
@@ -94,7 +94,7 @@ export class PlaneMaterialCell
 
         if(!texture) return null;
 
-        const bitmap = new TilingSprite(texture, texture.width, texture.height);
+        const bitmap = new TilingSprite({ texture, width: texture.width, height: texture.height });
 
         if((textureOffsetX !== 0) || (textureOffsetY !== 0))
         {
@@ -104,7 +104,7 @@ export class PlaneMaterialCell
 
             bitmap.tilePosition.set((textureOffsetX % texture.width), (textureOffsetY % texture.height));
 
-            bitmap.uvRespectAnchor = true;
+            bitmap.applyAnchorToTexture = true;
 
             if(textureOffsetX)
             {

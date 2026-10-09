@@ -1,4 +1,4 @@
-import { Container, ExtractSystem, Matrix, Rectangle, RenderTexture, Renderer, SCALE_MODE, Sprite, Texture, TextureSource } from 'pixi.js';
+import { Container, ExtractSystem, ImageSource, Matrix, Rectangle, RenderTexture, Renderer, SCALE_MODE, Sprite, Texture, TextureSource } from 'pixi.js';
 import { PixiApplicationProxy } from './PixiApplicationProxy';
 
 export class TextureUtils
@@ -33,7 +33,7 @@ export class TextureUtils
     {
         if(!image) return null;
 
-        return Texture.from(image);
+        return new Texture({ source: new ImageSource({ resource: image }) });
     }
 
     // En Pixi 8 extract.image() y base64() devuelven promesas; canvas() sigue siendo síncrono. Se sacan del canvas
