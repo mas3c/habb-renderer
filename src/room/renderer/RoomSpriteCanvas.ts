@@ -1,4 +1,4 @@
-import { Container, Graphics, Matrix, Point, Rectangle, RenderTexture, Sprite } from 'pixi.js';
+import { Container, Matrix, Point, Rectangle, RenderTexture, Sprite } from 'pixi.js';
 import { IRoomCanvasMouseListener, IRoomGeometry, IRoomObject, IRoomObjectSprite, IRoomObjectSpriteVisualization, IRoomRenderingCanvas, IRoomSpriteCanvasContainer, IRoomSpriteMouseEvent, MouseEventType, RoomObjectSpriteData, RoomObjectSpriteType, Vector3d } from '../../api';
 import { RoomSpriteMouseEvent } from '../../events';
 import { Nitro } from '../../nitro/Nitro';
@@ -20,7 +20,6 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
     private _master: Container;
     private _display: Container;
-    private _mask: Graphics;
 
     private _sortableSprites: SortableSprite[];
     private _spriteCount: number;
@@ -82,7 +81,6 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         this._master = null;
         this._display = null;
-        this._mask = null;
 
         this._sortableSprites = [];
         this._spriteCount = 0;
@@ -152,7 +150,6 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
             this._geometry = null;
         }
 
-        if(this._mask) this._mask = null;
 
         if(this._objectCache)
         {
@@ -212,29 +209,11 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         width = width < 1 ? 1 : width;
         height = height < 1 ? 1 : height;
 
-        if(this._usesMask)
-        {
-            if(!this._mask)
-            {
-                this._mask = new Graphics()
-                    .rect(0, 0, width, height)
-                    .fill(0xFF0000);
-
-                if(this._master)
-                {
-                    this._master.addChild(this._mask);
-
-                    if(this._display) this._display.mask = this._mask;
-                }
-            }
-            else
-            {
-                this._mask
-                    .clear()
-                    .rect(0, 0, width, height)
-                    .fill(0xFF0000);
-            }
-        }
+        // Antes una máscara rectangular sobre el display. Pixi 6 la resolvía con un recorte barato (scissor); Pixi 8
+        // la hace con stencil: dos dibujados a pantalla completa más cada fotograma. El lienzo de la sala va en (0, 0)
+        // y del tamaño de la pantalla (la pantalla ya recorta), y las vistas previas sacan su imagen de los límites
+        // del master: boundsArea da ese mismo recorte sin dibujar nada.
+        if(this._master) this._master.boundsArea = (this._usesMask ? new Rectangle(0, 0, width, height) : null);
 
         if(this._master)
         {
@@ -269,29 +248,11 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
     public setMask(flag: boolean): void
     {
-        if(flag && !this._usesMask)
-        {
-            this._usesMask = true;
+        if(flag === this._usesMask) return;
 
-            if(this._mask && (this._mask.parent !== this._master))
-            {
-                this._master.addChild(this._mask);
+        this._usesMask = flag;
 
-                this._display.mask = this._mask;
-            }
-        }
-
-        else if(!flag && this._usesMask)
-        {
-            this._usesMask = false;
-
-            if(this._mask && (this._mask.parent === this._master))
-            {
-                this._master.removeChild(this._mask);
-
-                this._display.mask = null;
-            }
-        }
+        if(this._master) this._master.boundsArea = (flag ? new Rectangle(0, 0, this._width, this._height) : null);
     }
 
     public setScale(scale: number, point: Point = null, offsetPoint: Point = null, override: boolean = false, asDelta: boolean = false): void
@@ -1029,8 +990,6 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         this._screenOffsetY = 0;
         this.render(-1, true);
 
-        this._display.mask = null;
-
         const bounds = this._display.getBounds();
 
         const renderTexture = RenderTexture.create({
@@ -1044,8 +1003,6 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
             clear: true,
             transform: new Matrix(1, 0, 0, 1, -(bounds.x), -(bounds.y))
         });
-
-        this._display.mask = this._mask;
 
         this._noSpriteVisibilityChecking = false;
         this.setScale(k, null, null, true);
