@@ -79,6 +79,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     // aura (Hobbaz): filtros de Pixi sobre el sprite del avatar; FIGURE_AURA la describe
     private _aura: AvatarAura = null;
     private _auraSpec: string = '';
+    // Como Hobbaz: el aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
+    // AvatarLogic pone al pasar por encima). Así como mucho hay una en pantalla y no 30 filtros.
+    private _auraVisible: boolean = false;
     private _needsUpdate: boolean;
     private _geometryUpdateCounter: number;
 
@@ -167,7 +170,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         // los colores y el pulso del aura cambian en cada fotograma, aunque el avatar no se mueva:
         // basta con tocar los filtros, el lienzo los repinta
-        if(this._aura && this._aura.animada) this._aura.tick(time);
+        if(this._aura && this._aura.animada && this._auraVisible) this._aura.tick(time);
 
         this.animarEstela(geometry);
 
@@ -301,7 +304,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                     sprite.texture = avatarImage;
 
                     // el aura (o nada); el resaltado de Nitro ya va pintado en la propia imagen
-                    const filtros = (this._aura ? this._aura.filters : AvatarVisualization.SIN_FILTROS);
+                    const filtros = ((this._aura && this._auraVisible) ? this._aura.filters : AvatarVisualization.SIN_FILTROS);
 
                     if(sprite.filters !== filtros) sprite.filters = filtros;
                 }
@@ -816,6 +819,15 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             this._aura = AvatarAura.crear(auraSpec);
 
             needsUpdate = true;
+        }
+
+        const auraVisible = (model.getValue<number>(RoomObjectVariable.FIGURE_HIGHLIGHT) > 0);
+
+        if(auraVisible !== this._auraVisible)
+        {
+            this._auraVisible = auraVisible;
+
+            if(this._aura) needsUpdate = true;
         }
 
         // estela al andar: una addition con su lienzo; se rehace si cambia
