@@ -1,6 +1,6 @@
-import { Spritesheet, Texture, TextureSource } from 'pixi.js';
+import { ImageSource, Spritesheet, Texture, TextureSource } from 'pixi.js';
 import { NitroLogger } from '../common';
-import { ArrayBufferToBase64, NitroBundle } from '../utils';
+import { NitroBundle } from '../utils';
 import { GraphicAssetCollection } from './GraphicAssetCollection';
 import { IAssetData } from './IAssetData';
 import { IAssetManager } from './IAssetManager';
@@ -117,7 +117,7 @@ export class AssetManager implements IAssetManager
         {
             for(const texture of collection.textures.values())
             {
-                if(texture && (texture.baseTexture === baseTexture)) texture.destroy(false);
+                if(texture && (texture.source === baseTexture)) texture.destroy(false);
             }
 
             baseTexture.destroy();
@@ -166,33 +166,10 @@ export class AssetManager implements IAssetManager
                     case 'image/jpeg':
                     case 'image/gif': {
                         const buffer = await response.arrayBuffer();
-                        const base64 = ArrayBufferToBase64(buffer);
-                        const baseTexture = TextureSource.from(
-                            `data:${ contentType };base64,${ base64 }`
-                        );
+                        // ya decodificada: en Pixi 8 la textura nace válida, sin esperar a ningún evento
+                        const baseTexture = new ImageSource({ resource: await NitroBundle.decodeImage(new Uint8Array(buffer)) });
 
-                        const createAsset = async () =>
-                        {
-                            const texture = new Texture(baseTexture);
-                            this.setTexture(url, texture);
-                        };
-
-                        if(baseTexture.valid)
-                        {
-                            await createAsset();
-                        }
-                        else
-                        {
-                            await new Promise<void>((resolve, reject) =>
-                            {
-                                baseTexture.once('update', async () =>
-                                {
-                                    await createAsset();
-
-                                    return resolve();
-                                });
-                            });
-                        }
+                        this.setTexture(url, new Texture({ source: baseTexture }));
                         break;
                     }
                 }
@@ -219,31 +196,11 @@ export class AssetManager implements IAssetManager
             return;
         }
 
-        const createAsset = async () =>
-        {
-            const spritesheet = new Spritesheet(baseTexture, spritesheetData);
+        const spritesheet = new Spritesheet(baseTexture, spritesheetData);
 
-            await spritesheet.parse();
+        await spritesheet.parse();
 
-            this.createCollection(data, spritesheet);
-        };
-
-        if(baseTexture.valid)
-        {
-            await createAsset();
-        }
-        else
-        {
-            await new Promise<void>((resolve, reject) =>
-            {
-                baseTexture.once('update', async () =>
-                {
-                    await createAsset();
-
-                    return resolve();
-                });
-            });
-        }
+        this.createCollection(data, spritesheet);
     }
 
     public get collections(): Map<string, IGraphicAssetCollection>

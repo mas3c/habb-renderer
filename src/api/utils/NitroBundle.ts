@@ -1,4 +1,4 @@
-import { TextureSource } from 'pixi.js';
+import { ImageSource, TextureSource } from 'pixi.js';
 import { Data, inflate } from 'pako';
 import { BinaryReader } from './BinaryReader';
 
@@ -33,7 +33,7 @@ export class NitroBundle
             }
             else
             {
-                bundle._baseTexture = new TextureSource(await NitroBundle.decodeImage(decompressed));
+                bundle._baseTexture = new ImageSource({ resource: await NitroBundle.decodeImage(decompressed) });
             }
 
             fileCount--;
@@ -61,7 +61,7 @@ export class NitroBundle
         return inflate((data as Data));
     }
 
-    private static async decodeImage(data: Uint8Array): Promise<HTMLImageElement>
+    public static async decodeImage(data: Uint8Array): Promise<HTMLImageElement>
     {
         const url = URL.createObjectURL(new Blob([ data ], { type: 'image/png' }));
         const image = new Image();

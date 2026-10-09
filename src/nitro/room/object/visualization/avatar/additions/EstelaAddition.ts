@@ -94,7 +94,7 @@ export class EstelaAddition implements IAvatarAddition
         this._anclaY = pantalla ? Math.floor(pantalla.y) : null;
 
         this._estela.pintar(ctx, (this.piesX + fx), (this.piesY + fy), sitio.x, sitio.y, sitio.z, ahora, this._escala);
-        this._textura.baseTexture.update();
+        this._textura.source.update();
 
         sprite.visible = true;
         sprite.texture = this._textura;

@@ -47,7 +47,7 @@ export class FurnitureYoutubeVisualization extends FurnitureDynamicThumbnailVisu
 
         const sprite = new NitroSprite(conMarco);
 
-        sprite.transform.setFromMatrix(matrix);
+        sprite.setFromMatrix(matrix);
 
         return TextureUtils.generateTexture(sprite);
     }

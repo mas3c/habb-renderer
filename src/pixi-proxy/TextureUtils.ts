@@ -15,6 +15,20 @@ export class TextureUtils
         }) as RenderTexture;
     }
 
+    // Pixi 8 quitó Texture.clone(): misma fuente, recortes copiados
+    public static cloneTexture(texture: Texture): Texture
+    {
+        if(!texture) return null;
+
+        return new Texture({
+            source: texture.source,
+            frame: texture.frame.clone(),
+            orig: texture.orig.clone(),
+            trim: texture.trim ? texture.trim.clone() : undefined,
+            rotate: texture.rotate
+        });
+    }
+
     public static generateTextureFromImage(image: HTMLImageElement): Texture
     {
         if(!image) return null;

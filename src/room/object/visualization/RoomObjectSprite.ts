@@ -1,5 +1,6 @@
 import { Container, Filter, Texture } from 'pixi.js';
 import { AlphaTolerance, IRoomObjectSprite, RoomObjectSpriteType } from '../../../api';
+import { NitroBlendMode } from '../../../pixi-proxy';
 
 export class RoomObjectSprite implements IRoomObjectSprite
 {
@@ -54,7 +55,7 @@ export class RoomObjectSprite implements IRoomObjectSprite
         this._direction = 0;
 
         this._alpha = 255;
-        this._blendMode = BLEND_MODES.NORMAL;
+        this._blendMode = NitroBlendMode.NORMAL;
         this._color = 0xFFFFFF;
         this._relativeDepth = 0;
         this._varyingDepth = false;

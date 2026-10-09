@@ -146,7 +146,7 @@ export class IsometricImageFurniVisualization extends FurnitureAnimatedVisualiza
 
         const sprite = new NitroSprite(texture);
 
-        sprite.transform.setFromMatrix(matrix);
+        sprite.setFromMatrix(matrix);
 
         return TextureUtils.generateTexture(sprite);
     }

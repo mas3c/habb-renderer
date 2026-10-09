@@ -379,15 +379,14 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
 
         if(this._avatarSpriteData)
         {
-            if(!container.filters) container.filters = [];
-
-            if(this._avatarSpriteData.colorTransform) container.filters.push(this._avatarSpriteData.colorTransform);
+            // Pixi 8: la lista de filtros es de solo lectura; se reasigna
+            if(this._avatarSpriteData.colorTransform) container.filters = [ ...(container.filters ?? []), this._avatarSpriteData.colorTransform ];
 
             if(this._avatarSpriteData.paletteIsGrayscale)
             {
                 this.convertToGrayscale(container);
 
-                container.filters.push(new PaletteMapFilter(this._avatarSpriteData.reds, PaletteMapFilter.CHANNEL_RED));
+                container.filters = [ ...(container.filters ?? []), new PaletteMapFilter(this._avatarSpriteData.reds, PaletteMapFilter.CHANNEL_RED) ];
             }
         }
 
@@ -404,8 +403,9 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
                 clear: true
             });
 
+            // el mapa de clic (ExtendedSprite) es de la imagen anterior
             //@ts-ignore
-            this._reusableTexture.baseTexture.hitMap = null;
+            this._reusableTexture.source.hitMap = null;
         }
         else
         {
@@ -621,7 +621,7 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
 
         if(existing)
         {
-            if(!existing.valid)
+            if(existing.destroyed || !existing.source)
             {
                 this._fullImageCache.remove(k);
 
@@ -1055,7 +1055,7 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
 
         colorFilter.matrix = [_local_3, _local_4, _local_5, 0, 0, _local_3, _local_4, _local_5, 0, 0, _local_3, _local_4, _local_5, 0, 0, 0, 0, 0, 1, 0];
 
-        container.filters.push(colorFilter);
+        container.filters = [ ...(container.filters ?? []), colorFilter ];
 
         return container;
     }

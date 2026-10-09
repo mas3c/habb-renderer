@@ -1,3 +1,4 @@
+import { NitroBlendMode } from '../../pixi-proxy';
 
 export class SpriteUtilities
 {
@@ -8,12 +9,12 @@ export class SpriteUtilities
 
     public static inkToBlendMode(ink: string | number): number
     {
-        if(ink == 'ADD' || ink == 33) return BLEND_MODES.ADD;
+        if(ink == 'ADD' || ink == 33) return NitroBlendMode.ADD;
 
-        if(ink == 'SUBTRACT') return BLEND_MODES.SUBTRACT;
+        if(ink == 'SUBTRACT') return NitroBlendMode.SUBTRACT;
 
-        if(ink == 'DARKEN') return BLEND_MODES.DARKEN;
+        if(ink == 'DARKEN') return NitroBlendMode.DARKEN;
 
-        return BLEND_MODES.NORMAL;
+        return NitroBlendMode.NORMAL;
     }
 }

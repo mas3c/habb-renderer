@@ -2,7 +2,7 @@ import { ColorMatrix, ColorMatrixFilter, Texture } from 'pixi.js';
 import { IEventDispatcher, IRoomCameraWidgetEffect, IRoomCameraWidgetManager, IRoomCameraWidgetSelectedEffect, NitroConfiguration } from '../../api';
 import { EventDispatcher } from '../../core';
 import { RoomCameraWidgetManagerEvent } from '../../events';
-import { NitroContainer, NitroSprite, TextureUtils } from '../../pixi-proxy';
+import { NitroBlendMode, NitroContainer, NitroSprite, TextureUtils } from '../../pixi-proxy';
 import { RoomCameraWidgetEffect } from './RoomCameraWidgetEffect';
 
 export class RoomCameraWidgetManager implements IRoomCameraWidgetManager
@@ -71,15 +71,13 @@ export class RoomCameraWidgetManager implements IRoomCameraWidgetManager
                 filter.matrix = effect.colorMatrix;
                 filter.alpha = selectedEffect.alpha;
 
-                if(!sprite.filters) sprite.filters = [];
-
-                sprite.filters.push(filter);
+                sprite.filters = [ ...(sprite.filters ?? []), filter ];
             }
             else
             {
                 const effectSprite = new NitroSprite(effect.texture);
                 effectSprite.alpha = selectedEffect.alpha;
-                effectSprite.blendMode = effect.blendMode;
+                effectSprite.blendMode = NitroBlendMode.toPixi(effect.blendMode);
 
                 container.addChild(effectSprite);
             }

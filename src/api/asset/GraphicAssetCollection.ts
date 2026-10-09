@@ -1,4 +1,4 @@
-import { Spritesheet, Texture, TextureSource } from 'pixi.js';
+import { Rectangle, Spritesheet, Texture, TextureSource } from 'pixi.js';
 import { GetTickerTime } from '../../pixi-proxy';
 import { GraphicAsset } from './GraphicAsset';
 import { GraphicAssetPalette } from './GraphicAssetPalette';
@@ -30,7 +30,7 @@ export class GraphicAssetCollection implements IGraphicAssetCollection
         this._referenceCount = 0;
         this._referenceTimestamp = GetTickerTime();
         this._name = data.name;
-        this._baseTexture = ((spritesheet && spritesheet.baseTexture) || null);
+        this._baseTexture = ((spritesheet && spritesheet.textureSource) || null);
         this._data = data;
         this._textures = new Map();
         this._assets = new Map();
@@ -281,9 +281,15 @@ export class GraphicAssetCollection implements IGraphicAssetCollection
 
         if(override)
         {
-            existingTexture.baseTexture = texture.baseTexture;
-            existingTexture.frame = texture.frame;
-            existingTexture.trim = texture.trim;
+            // Pixi 8: frame y trim son de solo lectura (se copian); cambiar la fuente ya recalcula las UV
+            existingTexture.source = texture.source;
+            existingTexture.frame.copyFrom(texture.frame);
+
+            if(texture.trim)
+            {
+                if(existingTexture.trim) existingTexture.trim.copyFrom(texture.trim);
+                else (existingTexture as { trim: Rectangle }).trim = texture.trim.clone();
+            }
 
             existingTexture.updateUvs();
 

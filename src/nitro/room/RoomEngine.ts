@@ -153,7 +153,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
         this.events.addEventListener(RoomContentLoader.LOADER_READY, this.onRoomContentLoaderReadyEvent);
 
-        GetTicker().add(this.update, this);
+        GetTicker().add(this.onTicker, this);
 
         document.addEventListener('visibilitychange', this.runVisibilityUpdate);
     }
@@ -169,7 +169,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
         document.removeEventListener('visibilitychange', this.runVisibilityUpdate);
 
-        GetTicker().remove(this.update, this);
+        GetTicker().remove(this.onTicker, this);
 
         if(this._roomObjectEventHandler) this._roomObjectEventHandler.dispose();
 
@@ -1017,12 +1017,12 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     {
         if(flag)
         {
-            GetTicker().remove(this.update, this);
+            GetTicker().remove(this.onTicker, this);
         }
         else
         {
-            GetTicker().remove(this.update, this);
-            GetTicker().add(this.update, this);
+            GetTicker().remove(this.onTicker, this);
+            GetTicker().add(this.onTicker, this);
         }
     }
 
@@ -1034,6 +1034,12 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     public runVisibilityUpdate(): void
     {
         if(!document.hidden) this.update(1, true);
+    }
+
+    // Pixi 8 pasa el Ticker al callback (Pixi 6 pasaba el delta); update() saca el tiempo de GetTickerTime() igualmente.
+    private onTicker(): void
+    {
+        this.update(0);
     }
 
     public update(time: number, update: boolean = false): void

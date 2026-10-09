@@ -1,10 +1,11 @@
+import { NitroBlendMode } from '../../../../../pixi-proxy';
 
 export class LayerData
 {
     public static DEFAULT_COUNT: number = 0;
     public static DEFAULT_DIRECTION: number = 0;
     public static DEFAULT_TAG: string = '';
-    public static DEFAULT_INK: number = BLEND_MODES.NORMAL;
+    public static DEFAULT_INK: number = NitroBlendMode.NORMAL;
     public static DEFAULT_ALPHA: number = 255;
     public static DEFAULT_IGNORE_MOUSE: boolean = false;
     public static DEFAULT_XOFFSET: number = 0;

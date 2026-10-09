@@ -128,7 +128,7 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
             {
                 for(const texture of collection.textures.values())
                 {
-                    if(texture && (texture.baseTexture === baseTexture)) texture.destroy(false);
+                    if(texture && (texture.source === baseTexture)) texture.destroy(false);
                 }
 
                 baseTexture.destroy();
@@ -592,31 +592,11 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
             return;
         }
 
-        const createAsset = async () =>
-        {
-            const spritesheet = new Spritesheet(baseTexture, spritesheetData);
+        const spritesheet = new Spritesheet(baseTexture, spritesheetData);
 
-            await spritesheet.parse();
+        await spritesheet.parse();
 
-            this.createCollection(data, spritesheet);
-        };
-
-        if(baseTexture.valid)
-        {
-            await createAsset();
-        }
-        else
-        {
-            await new Promise<void>((resolve, reject) =>
-            {
-                baseTexture.once('update', async () =>
-                {
-                    await createAsset();
-
-                    return resolve();
-                });
-            });
-        }
+        this.createCollection(data, spritesheet);
     }
 
     public setAssetAliasName(name: string, originalName: string): void

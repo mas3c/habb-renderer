@@ -1,8 +1,8 @@
-import { Application, ApplicationOptions, TextureSource } from 'pixi.js';
+import { Application, ApplicationOptions, TextureSource, WebGLRenderer } from 'pixi.js';
 import { IAvatarRenderManager, IEventDispatcher, ILinkEventTracker, INitroCommunicationManager, INitroCore, INitroLocalizationManager, IRoomCameraWidgetManager, IRoomEngine, IRoomManager, IRoomSessionManager, ISessionDataManager, ISoundManager, NitroConfiguration, NitroLogger } from '../api';
 import { ConfigurationEvent, EventDispatcher, NitroCore } from '../core';
 import { NitroEvent, RoomEngineEvent } from '../events';
-import { GetTicker, PixiApplicationProxy } from '../pixi-proxy';
+import { GetTicker, NitroBlendMode, PixiApplicationProxy } from '../pixi-proxy';
 import { RoomManager } from '../room';
 import { AvatarRenderManager } from './avatar';
 import { RoomCameraWidgetManager } from './camera';
@@ -108,7 +108,16 @@ export class Nitro implements INitro
             textureGCMaxIdle: 3600
         };
 
-        instance.ready = instance._application.init(options);
+        instance.ready = instance._application.init(options).then(() =>
+        {
+            const renderer = instance._application.renderer as WebGLRenderer;
+            const subtract = () => NitroBlendMode.registerSubtract(renderer.gl, (renderer.state as unknown as { blendModesMap: Record<string, number[]> })?.blendModesMap);
+
+            subtract();
+
+            // al recuperar el contexto Pixi rehace su tabla de mezclas
+            renderer.runners?.contextChange?.add({ contextChange: subtract });
+        });
 
         canvas.addEventListener('webglcontextlost', () => instance.events.dispatchEvent(new NitroEvent(Nitro.WEBGL_CONTEXT_LOST)));
     }

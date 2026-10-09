@@ -1,5 +1,5 @@
-import { Renderer, Sprite, Texture } from 'pixi.js';
-import { PixiApplicationProxy, TextureUtils } from '../../pixi-proxy';
+import { BufferImageSource, Sprite, Texture } from 'pixi.js';
+import { TextureUtils } from '../../pixi-proxy';
 
 export class GraphicAssetPalette
 {
@@ -24,8 +24,9 @@ export class GraphicAssetPalette
 
     public applyPalette(texture: Texture): Texture
     {
-        const renderTexture = TextureUtils.createAndWriteRenderTexture(texture.width, texture.height, new Sprite(texture));
-        const pixels = TextureUtils.getPixels(renderTexture);
+        // Pixi 8 devuelve los píxeles sin premultiplicar; se cambian por la paleta y se sube un búfer nuevo
+        // (en Pixi 6 se escribía a mano en la textura WebGL de un render texture).
+        const pixels = TextureUtils.getPixels(new Sprite(texture));
 
         for(let i = 0; i < pixels.length; i += 4)
         {
@@ -38,14 +39,13 @@ export class GraphicAssetPalette
             pixels[i + 2] = paletteColor[2];
         }
 
-        const canvaGLTexture = renderTexture.baseTexture._glTextures['1']?.texture;
-        const gl = (PixiApplicationProxy.instance.renderer as Renderer)?.gl;
-
-        gl.bindTexture(gl.TEXTURE_2D, canvaGLTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, renderTexture.width, renderTexture.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-        return renderTexture;
+        return new Texture({
+            source: new BufferImageSource({
+                resource: new Uint8Array(pixels),
+                width: texture.frame.width,
+                height: texture.frame.height
+            })
+        });
     }
 
     public get primaryColor(): number

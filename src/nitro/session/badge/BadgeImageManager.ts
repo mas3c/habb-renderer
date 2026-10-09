@@ -98,7 +98,7 @@ export class BadgeImageManager implements IDisposable
 
         const existing = this._assets.getTexture(url);
 
-        if(existing) return existing.clone();
+        if(existing) return TextureUtils.cloneTexture(existing);
 
         if(type === BadgeImageManager.NORMAL_BADGE)
         {
@@ -116,7 +116,7 @@ export class BadgeImageManager implements IDisposable
 
                     const texture = this._assets.getTexture(url);
 
-                    if(texture && this._sessionDataManager) this._sessionDataManager.events.dispatchEvent(new BadgeImageReadyEvent(badgeName, texture.clone()));
+                    if(texture && this._sessionDataManager) this._sessionDataManager.events.dispatchEvent(new BadgeImageReadyEvent(badgeName, TextureUtils.cloneTexture(texture)));
                 })
                 .catch(err =>
                 {
@@ -143,7 +143,7 @@ export class BadgeImageManager implements IDisposable
 
         if(!existing) return null;
 
-        return existing.clone();
+        return TextureUtils.cloneTexture(existing);
     }
 
     public getBadgeUrl(badge: string, type: string = BadgeImageManager.NORMAL_BADGE): string

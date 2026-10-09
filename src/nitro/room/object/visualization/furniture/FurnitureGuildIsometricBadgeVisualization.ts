@@ -71,7 +71,7 @@ export class FurnitureGuildIsometricBadgeVisualization extends IsometricImageFur
 
         const sprite = new NitroSprite(texture);
 
-        sprite.transform.setFromMatrix(matrix);
+        sprite.setFromMatrix(matrix);
 
         sprite.position.set(0);
 

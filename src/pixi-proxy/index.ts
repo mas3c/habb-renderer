@@ -7,6 +7,7 @@ export * from './GetTickerTime';
 export * from './INitroPoint';
 export * from './NitroAlphaFilter';
 export * from './NitroBaseTexture';
+export * from './NitroBlendMode';
 export * from './NitroContainer';
 export * from './NitroFilter';
 export * from './NitroPoint';

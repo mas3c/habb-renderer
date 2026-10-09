@@ -1,6 +1,6 @@
 ﻿import { Point, RenderTexture, Texture } from 'pixi.js';
 import { IAssetPlaneMaterial, IAssetPlaneMaterialCellColumn, IAssetPlaneTexture, IAssetPlaneVisualization, IAssetPlaneVisualizationData, IAssetPlaneVisualizationLayer, IGraphicAsset, IGraphicAssetCollection, IRoomGeometry, IVector3D, Vector3d } from '../../../../../../../api';
-import { PlaneTextureCache } from '../../../../../../../pixi-proxy';
+import { PlaneTextureCache, TextureUtils } from '../../../../../../../pixi-proxy';
 import { Rasterizer, RoomGeometry } from '../../../../../../../room';
 import { PlaneBitmapData } from '../../utils';
 import { IPlaneRasterizer } from '../IPlaneRasterizer';
@@ -255,7 +255,7 @@ export class PlaneRasterizer implements IPlaneRasterizer
                                     }
                                     else
                                     {
-                                        newTexture = newTexture.clone();
+                                        newTexture = TextureUtils.cloneTexture(newTexture);
                                     }
 
                                     plane.addBitmap(newTexture, normalMinX, normalMaxX, normalMinY, normalMaxY, assetName);

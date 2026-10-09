@@ -2,7 +2,7 @@ import { Container, Graphics, Matrix, Point, Rectangle, RenderTexture, Sprite } 
 import { IRoomCanvasMouseListener, IRoomGeometry, IRoomObject, IRoomObjectSprite, IRoomObjectSpriteVisualization, IRoomRenderingCanvas, IRoomSpriteCanvasContainer, IRoomSpriteMouseEvent, MouseEventType, RoomObjectSpriteData, RoomObjectSpriteType, Vector3d } from '../../api';
 import { RoomSpriteMouseEvent } from '../../events';
 import { Nitro } from '../../nitro/Nitro';
-import { GetTicker, NitroContainer, NitroSprite, PixiApplicationProxy } from '../../pixi-proxy';
+import { GetTicker, NitroBlendMode, NitroContainer, NitroSprite, PixiApplicationProxy } from '../../pixi-proxy';
 import { RoomEnterEffect, RoomGeometry, RoomRotatingEffect, RoomShakingEffect } from '../utils';
 import { RoomObjectCache, RoomObjectCacheItem } from './cache';
 import { ExtendedSprite, ObjectMouseData, SortableSprite } from './utils';
@@ -507,7 +507,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
             if(!sprite || !sprite.visible) continue;
 
             const texture = sprite.texture;
-            const baseTexture = texture && texture.baseTexture;
+            const baseTexture = texture && texture.source;
 
             if(!texture || !baseTexture) continue;
 
@@ -633,7 +633,9 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
             if(extendedSprite.tint !== objectSprite.color) extendedSprite.tint = objectSprite.color;
 
-            if(extendedSprite.blendMode !== objectSprite.blendMode) extendedSprite.blendMode = objectSprite.blendMode;
+            const blendMode = NitroBlendMode.toPixi(objectSprite.blendMode);
+
+            if(extendedSprite.blendMode !== blendMode) extendedSprite.blendMode = blendMode;
 
             if(extendedSprite.texture !== objectSprite.texture) extendedSprite.setTexture(objectSprite.texture);
 
@@ -703,7 +705,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         extendedSprite.name = sprite.name;
         extendedSprite.varyingDepth = sprite.varyingDepth;
         extendedSprite.clickHandling = sprite.clickHandling;
-        extendedSprite.blendMode = sprite.blendMode;
+        extendedSprite.blendMode = NitroBlendMode.toPixi(sprite.blendMode);
         extendedSprite.filters = sprite.filters;
 
         extendedSprite.setTexture(sprite.texture);

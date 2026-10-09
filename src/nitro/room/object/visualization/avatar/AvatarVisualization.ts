@@ -4,6 +4,7 @@ import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
 import { AvatarAura } from './AvatarAura';
 import { AvatarVisualizationData } from './AvatarVisualizationData';
+import { NitroBlendMode } from '../../../../../pixi-proxy';
 
 export class AvatarVisualization extends RoomObjectSpriteVisualization implements IAvatarImageListener, IAvatarEffectListener
 {
@@ -448,8 +449,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                             sprite.relativeDepth = (AvatarVisualization.AVATAR_SPRITE_DEFAULT_DEPTH - ((0.001 * this.totalSprites) * offsetZ));
                         }
 
-                        if(spriteData.ink === 33) sprite.blendMode = BLEND_MODES.ADD;
-                        else sprite.blendMode = BLEND_MODES.NORMAL;
+                        if(spriteData.ink === 33) sprite.blendMode = NitroBlendMode.ADD;
+                        else sprite.blendMode = NitroBlendMode.NORMAL;
                     }
 
                     _local_21++;

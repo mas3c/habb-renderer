@@ -385,7 +385,7 @@ export class AvatarImageCache
                     {
                         const texture = asset.texture;
 
-                        if(!texture || !texture.valid || !texture.baseTexture)
+                        if(!texture || texture.destroyed || !texture.source)
                         {
                             isCacheable = false;
                         }
@@ -511,11 +511,11 @@ export class AvatarImageCache
             const sprite = new NitroSprite(texture);
 
             sprite.tint = color;
-            sprite.transform.setFromMatrix(this._matrix);
+            sprite.setFromMatrix(this._matrix);
 
             container.addChild(sprite);
         }
 
-        return new ImageData(null, container.getLocalBounds(), point, isFlipped, null, container);
+        return new ImageData(null, container.getLocalBounds().rectangle, point, isFlipped, null, container);
     }
 }

@@ -1,6 +1,6 @@
 import { Point, Rectangle, RenderTexture } from 'pixi.js';
 import { IGraphicAssetCollection, IObjectVisualizationData, IRoomGeometry, IRoomObjectController, IRoomObjectSprite, IRoomObjectSpriteVisualization, RoomObjectSpriteData } from '../../../api';
-import { NitroContainer, NitroSprite, TextureUtils } from '../../../pixi-proxy';
+import { NitroBlendMode, NitroContainer, NitroSprite, TextureUtils } from '../../../pixi-proxy';
 import { RoomObjectSprite } from './RoomObjectSprite';
 
 export class RoomObjectSpriteVisualization implements IRoomObjectSpriteVisualization
@@ -164,7 +164,7 @@ export class RoomObjectSpriteVisualization implements IRoomObjectSpriteVisualiza
                 sprite.tint = objectSprite.color;
                 sprite.x = objectSprite.offsetX;
                 sprite.y = objectSprite.offsetY;
-                sprite.blendMode = objectSprite.blendMode;
+                sprite.blendMode = NitroBlendMode.toPixi(objectSprite.blendMode);
                 sprite.filters = objectSprite.filters;
 
                 if(objectSprite.flipH) sprite.scale.x = -1;

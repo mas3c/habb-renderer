@@ -39,13 +39,6 @@ export class ExtendedSprite extends Sprite
         return true;
     }
 
-    public calculateVertices(): void
-    {
-        if(!this.texture.orig) return;
-
-        super.calculateVertices();
-    }
-
     public setTexture(texture: Texture): void
     {
         if(!texture) texture = Texture.EMPTY;
@@ -72,17 +65,17 @@ export class ExtendedSprite extends Sprite
 
         if(!(sprite instanceof Sprite)) return false;
 
-        if((sprite.texture === Texture.EMPTY) || (sprite.blendMode !== BLEND_MODES.NORMAL)) return;
+        if((sprite.texture === Texture.EMPTY) || (sprite.blendMode !== 'normal')) return;
 
         const texture = sprite.texture;
-        const baseTexture = texture.baseTexture;
+        const baseTexture = texture && texture.source;
 
-        if(!texture || !baseTexture || !baseTexture.valid) return false;
+        if(!texture || !baseTexture || baseTexture.destroyed || !baseTexture.width) return false;
 
         const x = (point.x * sprite.scale.x);
         const y = (point.y * sprite.scale.y);
 
-        if(!sprite.getLocalBounds().contains(x, y)) return false;
+        if(!sprite.getLocalBounds().rectangle.contains(x, y)) return false;
 
         //@ts-ignore
         if(!baseTexture.hitMap)
@@ -105,7 +98,7 @@ export class ExtendedSprite extends Sprite
         dx = (Math.round(dx) * baseTexture.resolution);
         dy = (Math.round(dy) * baseTexture.resolution);
 
-        const ind = (dx + dy * baseTexture.realWidth);
+        const ind = (dx + dy * baseTexture.pixelWidth);
         const ind1 = ind % 32;
         const ind2 = ind / 32 | 0;
 
@@ -116,11 +109,11 @@ export class ExtendedSprite extends Sprite
     {
         if(!baseTexture) return false;
 
-        const texture = new Texture(baseTexture);
+        const texture = new Texture({ source: baseTexture });
         const sprite = new Sprite(texture);
         const pixels = TextureUtils.getPixels(sprite);
-        const width = baseTexture.width;
-        const height = baseTexture.height;
+        const width = baseTexture.pixelWidth;
+        const height = baseTexture.pixelHeight;
         const hitmap = new Uint32Array(Math.ceil(width * height / 32));
         const threshold = AlphaTolerance.MATCH_OPAQUE_PIXELS;
 

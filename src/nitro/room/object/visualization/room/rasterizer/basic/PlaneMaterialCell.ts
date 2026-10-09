@@ -171,7 +171,7 @@ export class PlaneMaterialCell
 
                         const sprite = new Sprite(assetTexture);
 
-                        sprite.transform.setFromMatrix(flipMatrix);
+                        sprite.setFromMatrix(flipMatrix);
 
                         bitmap.addChild(sprite);
                     }
