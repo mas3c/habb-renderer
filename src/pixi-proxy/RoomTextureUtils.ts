@@ -16,6 +16,10 @@ export class PlaneTextureCache
     {
         this.RENDER_TEXTURE_POOL.forEach(renderTexture => renderTexture?.destroy(true));
 
+        // Las de los planos (paredes y suelo) no van al pool: sin esto cada sala visitada dejaba
+        // sus texturas en la GPU para siempre. Destruir dos veces la misma no hace nada.
+        for(const renderTexture of this.RENDER_TEXTURE_CACHE) renderTexture?.destroy(true);
+
         this.RENDER_TEXTURE_POOL.clear();
         this.RENDER_TEXTURE_CACHE = [];
     }

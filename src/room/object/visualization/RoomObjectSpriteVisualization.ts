@@ -65,7 +65,7 @@ export class RoomObjectSpriteVisualization implements IRoomObjectSpriteVisualiza
         }
 
         this._object = null;
-        this._asset = null;
+        this.asset = null;
     }
 
     public getSprite(index: number): IRoomObjectSprite

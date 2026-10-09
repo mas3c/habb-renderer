@@ -29,6 +29,8 @@ export class GraphicAssetCollection implements IGraphicAssetCollection
     {
         if(!data) throw new Error('invalid_collection');
 
+        this._referenceCount = 0;
+        this._referenceTimestamp = GetTickerTime();
         this._name = data.name;
         this._baseTexture = ((spritesheet && spritesheet.baseTexture) || null);
         this._data = data;
@@ -85,8 +87,6 @@ export class GraphicAssetCollection implements IGraphicAssetCollection
         {
             this._referenceCount = 0;
             this._referenceTimestamp = GetTickerTime();
-
-            this.disposePaletteAssets(false);
         }
     }
 

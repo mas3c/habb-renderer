@@ -106,7 +106,7 @@ export class AssetManager implements IAssetManager
                 {
                     case 'application/octet-stream': {
                         const buffer = await response.arrayBuffer();
-                        const nitroBundle = new NitroBundle(buffer);
+                        const nitroBundle = await NitroBundle.from(buffer);
 
                         await this.processAsset(
                             nitroBundle.baseTexture,

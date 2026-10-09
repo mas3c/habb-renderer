@@ -21,5 +21,6 @@ export interface IGraphicAssetCollection
     referenceTimestamp: number;
     name: string;
     baseTexture: BaseTexture;
+    textures: Map<string, Texture<Resource>>;
     data: IAssetData;
 }

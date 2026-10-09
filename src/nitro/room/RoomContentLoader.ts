@@ -3,6 +3,7 @@ import { Spritesheet } from '@pixi/spritesheet';
 import { FurnitureType, GetAssetManager, GraphicAssetCollection, GraphicAssetGifCollection, IAssetData, IEventDispatcher, IFurnitureData, IFurnitureDataListener, IGraphicAssetCollection, IGraphicAssetGifCollection, IPetColorResult, IRoomContentListener, IRoomContentLoader, IRoomObject, ISessionDataManager, NitroBundle, NitroConfiguration, NitroLogger, RoomObjectCategory, RoomObjectUserType, RoomObjectVariable, RoomObjectVisualizationType } from '../../api';
 import { NitroEvent } from '../../events';
 import { RoomContentLoadedEvent } from '../../events/room/RoomContentLoadedEvent';
+import { GetTickerTime } from '../../pixi-proxy';
 import { PetColorResult } from './PetColorResult';
 
 export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLoader
@@ -16,6 +17,11 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
     private static SELECTION_ARROW: string = 'selection_arrow';
 
     public static LOADER_READY: string = 'RCL_LOADER_READY';
+    // Un furni que no está en ninguna sala (ni en la vista previa del catálogo) se libera pasado
+    // este tiempo: antes se quedaba en memoria para siempre y cada sala visitada sumaba.
+    private static PURGE_INTERVAL_MS: number = 30000;
+    private static PURGE_UNUSED_MS: number = 60000;
+
     public static MANDATORY_LIBRARIES: string[] = [RoomContentLoader.PLACE_HOLDER, RoomContentLoader.PLACE_HOLDER_WALL, RoomContentLoader.PLACE_HOLDER_PET, RoomContentLoader.ROOM, RoomContentLoader.TILE_CURSOR, RoomContentLoader.SELECTION_ARROW];
 
     private _stateEvents: IEventDispatcher;
@@ -41,6 +47,7 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
     private _objectOriginalNames: Map<string, string>;
 
     private _pendingContentTypes: string[];
+    private _purgeInterval: ReturnType<typeof setInterval>;
     private _dataInitialized: boolean;
 
     constructor()
@@ -68,6 +75,7 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         this._objectOriginalNames = new Map();
 
         this._pendingContentTypes = [];
+        this._purgeInterval = null;
         this._dataInitialized = false;
     }
 
@@ -78,11 +86,59 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         this.setFurnitureData();
 
         for(const [index, name] of NitroConfiguration.getValue<string[]>('pet.types').entries()) this._pets[name] = index;
+
+        this._purgeInterval = setInterval(() => this.purge(), RoomContentLoader.PURGE_INTERVAL_MS);
     }
 
     public dispose(): void
     {
+        if(this._purgeInterval) clearInterval(this._purgeInterval);
 
+        this._purgeInterval = null;
+    }
+
+    public purge(): void
+    {
+        const now = GetTickerTime();
+        let purged = 0;
+
+        for(const [name, collection] of this._collections.entries())
+        {
+            if(!collection || (collection.referenceCount > 0)) continue;
+
+            if((now - collection.referenceTimestamp) < RoomContentLoader.PURGE_UNUSED_MS) continue;
+
+            if(RoomContentLoader.MANDATORY_LIBRARIES.indexOf(name) >= 0) continue;
+
+            if(GetAssetManager().getCollection(name) === collection) continue;
+
+            this._collections.delete(name);
+            this._events.delete(name);
+
+            const pending = this._pendingContentTypes.indexOf(name);
+
+            if(pending >= 0) this._pendingContentTypes.splice(pending, 1);
+
+            const baseTexture = collection.baseTexture;
+
+            collection.dispose();
+
+            // Solo las texturas de su propia imagen: addAsset también mete ajenas (placas de grupo,
+            // anuncios) que siguen vivas en sus gestores.
+            if(baseTexture)
+            {
+                for(const texture of collection.textures.values())
+                {
+                    if(texture && (texture.baseTexture === baseTexture)) texture.destroy(false);
+                }
+
+                baseTexture.destroy();
+            }
+
+            purged++;
+        }
+
+        if(purged) NitroLogger.log('Purged room content', purged, 'remaining', this._collections.size);
     }
 
     public setSessionDataManager(sessionData: ISessionDataManager): void
@@ -504,7 +560,7 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
             switch(contentType)
             {
                 case 'application/octet-stream': {
-                    const nitroBundle = new NitroBundle(await response.arrayBuffer());
+                    const nitroBundle = await NitroBundle.from(await response.arrayBuffer());
 
                     await this.processAsset(nitroBundle.baseTexture, (nitroBundle.jsonFile as IAssetData));
 

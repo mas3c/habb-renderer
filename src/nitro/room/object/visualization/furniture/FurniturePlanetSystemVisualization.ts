@@ -31,6 +31,8 @@ export class FurniturePlanetSystemVisualization extends FurnitureAnimatedVisuali
 
         this._planetIndex = null;
         this._planetNameIndex = null;
+
+        super.dispose();
     }
 
     protected updateAnimation(scale: number): number

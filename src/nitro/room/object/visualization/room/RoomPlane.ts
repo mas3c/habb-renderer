@@ -530,7 +530,7 @@ export class RoomPlane implements IRoomPlane
                 {
                     if((this._width !== this._bitmapData.width) || (this._height !== this._bitmapData.height))
                     {
-                        this._bitmapData.destroy();
+                        this._bitmapData.destroy(true);
 
                         this._bitmapData = null;
 
@@ -542,7 +542,7 @@ export class RoomPlane implements IRoomPlane
                     {
                         if((this._width < 1) || (this._height < 1))
                         {
-                            this._bitmapData.destroy();
+                            this._bitmapData.destroy(true);
 
                             this._bitmapData = null;
 
