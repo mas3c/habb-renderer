@@ -86,7 +86,13 @@ export class Nitro implements INitro
 
         const canvas = document.createElement('canvas');
 
+        // Lienzo OPACO, como Hobbaz (Pixi 8) y Hartico: Pixi 6 crea el contexto con alfa por defecto
+        // y entonces el navegador y Windows lo mezclan con lo de detrás; al arrastrar la sala, cuando
+        // la gráfica lo saca por un plano de superposición, salían tonos negros en el monitor que una
+        // captura (OBS) no veía. La sala ya pinta su propio fondo negro, así que no cambia la imagen.
         const instance = new this(new NitroCore(), {
+            useContextAlpha: false,
+            backgroundAlpha: 1,
             autoDensity: false,
             width: window.innerWidth,
             height: window.innerHeight,
