@@ -109,4 +109,22 @@ export class Plane
     {
         return this.getPlaneVisualization(this._lastSize).getLayers();
     }
+
+    // todas sus capas son de material estático (las animadas o aleatorias dibujan distinto en cada plano)
+    public get hasStaticMaterials(): boolean
+    {
+        for(const visualization of this._planeVisualizations.values())
+        {
+            for(const layer of visualization.getLayers())
+            {
+                if(!layer) continue;
+
+                if(!(layer instanceof PlaneVisualizationLayer)) return false;
+
+                if(layer.material && !layer.material.isStatic) return false;
+            }
+        }
+
+        return true;
+    }
 }

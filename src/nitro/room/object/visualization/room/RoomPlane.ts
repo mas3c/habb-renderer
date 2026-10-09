@@ -44,6 +44,7 @@ export class RoomPlane implements IRoomPlane
     private _textureMaxX: number;
     private _textureMaxY: number;
     private _activeTexture: PlaneBitmapData;
+    private _sharedKey: string = null;
     private _useMask: boolean;
     private _bitmapMasks: RoomPlaneBitmapMask[];
     private _rectangleMasks: RoomPlaneRectangleMask[];
@@ -245,6 +246,7 @@ export class RoomPlane implements IRoomPlane
 
     public dispose(): void
     {
+        this.releaseSharedPlane();
         this._activeTexture = null;
         this._location = null;
         this._origin = null;
@@ -522,6 +524,28 @@ export class RoomPlane implements IRoomPlane
 
         if(geometryChanged || this.needsNewTexture(geometry, timeSinceStartMs))
         {
+            // Va a dibujar: primero suelta la textura compartida (nunca se pinta encima de la que usan otros planos)
+            if(this._sharedKey) this.releaseSharedPlane();
+
+            const sharedKey = this.sharedPlaneKey(geometry);
+            const shared = sharedKey ? this._textureCache.SHARED_PLANES.get(sharedKey) : null;
+
+            if(shared && shared.bitmap && !shared.bitmap.destroyed && shared.bitmap.source)
+            {
+                if(this._bitmapData) this._bitmapData.destroy(true);
+
+                shared.refs++;
+
+                this._sharedKey = sharedKey;
+                this._bitmapData = shared.bitmap;
+                this._activeTexture = (shared.active as PlaneBitmapData);
+                this._bitmapMasksOld = [];
+                this._rectangleMasksOld = [];
+                this._maskChanged = false;
+
+                return true;
+            }
+
             if(!this._bitmapData || (this._width !== this._bitmapData.width) || (this._height !== this._bitmapData.height))
             {
                 if(this._bitmapData)
@@ -571,6 +595,13 @@ export class RoomPlane implements IRoomPlane
             if(texture)
             {
                 this.renderTexture(geometry, texture);
+
+                // dibujo estático y sin máscaras: queda a disposición de los planos idénticos
+                if(sharedKey && this._activeTexture && (this._activeTexture.timeStamp < 0) && !this._bitmapMasks.length && !this._rectangleMasks.length)
+                {
+                    this._textureCache.SHARED_PLANES.set(sharedKey, { bitmap: this._bitmapData, active: this._activeTexture, refs: 1 });
+                    this._sharedKey = sharedKey;
+                }
             }
             else
             {
@@ -583,6 +614,35 @@ export class RoomPlane implements IRoomPlane
         }
 
         return false;
+    }
+
+    // Lo que decide el dibujo final del plano: forma en pantalla (esquinas ya redondeadas y relativas), material
+    // estático, textura y su desplazamiento. Sin máscaras (ventanas) ni paisajes animados, que son de cada plano.
+    private sharedPlaneKey(geometry: IRoomGeometry): string
+    {
+        if(!geometry || !this._canBeVisible || (this._type === RoomPlane.TYPE_LANDSCAPE) || (this._width < 1) || (this._height < 1)) return null;
+
+        if(this._bitmapMasks.length || this._rectangleMasks.length || !this._cornerA) return null;
+
+        if(!this._rasterizer || !this._rasterizer.isStaticPlane || !this._rasterizer.isStaticPlane(this._id)) return null;
+
+        const r = (n: number) => (Math.round(n * 1000) / 1000);
+        const normal = geometry.getCoordinatePosition(this._normal);
+        const c = [ this._cornerA, this._cornerB, this._cornerC, this._cornerD ].map(p => `${ p.x },${ p.y }`).join(';');
+
+        return `${ this._type }|${ this._id }|${ this._hasTexture ? 1 : 0 }|${ r(geometry.scale) }|${ r(normal.x) },${ r(normal.y) },${ r(normal.z) }|${ this._leftSide.length }x${ this._rightSide.length }|${ r(this._textureOffsetX) },${ r(this._textureOffsetY) },${ r(this._textureMaxX) },${ r(this._textureMaxY) }|${ c }`;
+    }
+
+    // deja de usar la textura compartida (la última referencia la destruye); el plano dibujará una propia
+    public releaseSharedPlane(): void
+    {
+        if(!this._sharedKey) return;
+
+        this._textureCache?.releaseSharedPlane(this._sharedKey);
+
+        this._sharedKey = null;
+        this._bitmapData = null;
+        this._activeTexture = null;
     }
 
     private updateCorners(geometry: IRoomGeometry): void

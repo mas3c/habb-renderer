@@ -91,4 +91,10 @@ export class PlaneMaterial
 
         return cellMatrix.render(planeId, textureCache, canvas, width, height, normal, useTexture, offsetX, offsetY, topAlign);
     }
+
+    // sin celdas aleatorias: el resultado no depende de la semilla del plano (se puede compartir entre planos)
+    public get isStatic(): boolean
+    {
+        return (!this._planeMaterialItems || this._planeMaterialItems.every(item => (!item || item.isStatic)));
+    }
 }

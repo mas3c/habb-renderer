@@ -156,6 +156,14 @@ export class PlaneRasterizer implements IPlaneRasterizer
         return this._materials.get(materialId);
     }
 
+    // ¿se puede compartir el dibujo de este material entre planos? (mismo fallback que render)
+    public isStaticPlane(id: string): boolean
+    {
+        const plane = (this.getPlane(id) || this.getPlane(PlaneRasterizer.DEFAULT));
+
+        return (!!plane && plane.hasStaticMaterials);
+    }
+
     protected getPlane(planeId: string): Plane
     {
         return this._planes.get(planeId);

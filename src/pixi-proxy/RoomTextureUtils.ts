@@ -8,6 +8,25 @@ export class PlaneTextureCache
     public RENDER_TEXTURE_POOL: Map<string, RenderTexture> = new Map();
     public RENDER_TEXTURE_CACHE: RenderTexture[] = [];
 
+    // Planos idénticos (forma, material estático, sin máscaras) comparten su textura final, como en la beta de Hobbaz:
+    // en el Recibidor, 777 planos son 376 distintos. RoomPlane cuenta las referencias y la suelta al quedarse sin ellas.
+    public SHARED_PLANES: Map<string, { bitmap: RenderTexture, active: unknown, refs: number }> = new Map();
+
+    public releaseSharedPlane(key: string): void
+    {
+        const shared = this.SHARED_PLANES.get(key);
+
+        if(!shared || (--shared.refs > 0)) return;
+
+        this.SHARED_PLANES.delete(key);
+
+        const index = this.RENDER_TEXTURE_CACHE.indexOf(shared.bitmap);
+
+        if(index >= 0) this.RENDER_TEXTURE_CACHE.splice(index, 1);
+
+        shared.bitmap?.destroy(true);
+    }
+
     public clearCache(): void
     {
         this.RENDER_TEXTURE_POOL.forEach(renderTexture => renderTexture?.destroy(true));
@@ -18,6 +37,7 @@ export class PlaneTextureCache
 
         this.RENDER_TEXTURE_POOL.clear();
         this.RENDER_TEXTURE_CACHE = [];
+        this.SHARED_PLANES.clear();
     }
 
     public clearRenderTexture(renderTexture: RenderTexture): RenderTexture

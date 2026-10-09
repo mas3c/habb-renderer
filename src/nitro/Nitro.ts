@@ -105,7 +105,14 @@ export class Nitro implements INitro
             roundPixels: true,
             antialias: false,
             // Fotogramas sin pintarse antes de que Pixi borre una textura de la GPU (ver RoomContentLoader.purge).
-            textureGCMaxIdle: 3600
+            textureGCMaxIdle: 3600,
+            // Como la beta de Hobbaz: lo que no se usa en un minuto se libera, mirando cada 10 s (por defecto cada 30).
+            gcMaxUnusedTime: 60000,
+            gcFrequency: 10000,
+            // Nitro lleva el ratón con eventos del DOM sobre el canvas: el sistema de eventos de Pixi solo gastaría CPU
+            // buscando bajo el cursor en cada movimiento, y la accesibilidad (tabulador) no se usa.
+            eventFeatures: { move: false, globalMove: false, click: false, wheel: false },
+            accessibilityOptions: { activateOnTab: false }
         };
 
         instance.ready = instance._application.init(options).then(() =>

@@ -1031,6 +1031,9 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
     // RoomPlane.dispose() no suelta su textura ni las que el rasterizador guarda con su id: aquí sí.
     private disposePlaneTextures(plane: RoomPlane): void
     {
+        // la compartida no se destruye aquí: se suelta la referencia (la destruye el último que la use)
+        plane.releaseSharedPlane();
+
         const bitmapData = (plane as any)._bitmapData;
 
         if(bitmapData) bitmapData.destroy(true);

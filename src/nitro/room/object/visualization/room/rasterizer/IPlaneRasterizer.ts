@@ -11,4 +11,5 @@ export interface IPlaneRasterizer
     getTextureIdentifier(_arg_1: number, _arg_2: IVector3D): string;
     getLayers(_arg_1: string): PlaneVisualizationLayer[];
     reinitialize(): void;
+    isStaticPlane?(id: string): boolean;
 }
