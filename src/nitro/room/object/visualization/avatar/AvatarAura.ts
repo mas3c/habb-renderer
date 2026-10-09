@@ -2,7 +2,7 @@ import { DropShadowFilter, GlowFilter, OutlineFilter } from 'pixi-filters';
 import { Filter } from 'pixi.js';
 
 /**
- * Aura del avatar: el AuraManager del cliente de Hobbaz (Hobbaz-Auras.zip, aura-manager.js) con sus
+ * Aura del avatar: gestor de auras con sus
  * filtros, parámetros y animaciones tal cual. Lo usan la sala (AvatarVisualization) y la vista
  * previa de la ventana de auras, así que las dos se ven exactamente igual.
  *
@@ -82,7 +82,7 @@ export class AvatarAura
         {
             case 'OutlineFilter': return [ new OutlineFilter({ thickness: 1, color: c }) ];
             case 'ThickOutlineFilter': return [ new OutlineFilter({ thickness: 2, color: c }) ];
-            // pixi-filters 6 vuelve al offset {x, y} de Hobbaz (la 4, la de Pixi 6, pedía ángulo 45° y distancia ·√2)
+            // pixi-filters 6 vuelve al offset {x, y} original (la 4, la de Pixi 6, pedía ángulo 45° y distancia ·√2)
             case 'DropShadowFilter': return [ new DropShadowFilter({ color: c, quality: 20, blur: 0, alpha: 0.6, offset: { x: 2.8, y: 2.8 } }) ];
             case 'SoftShadowFilter': return [ new DropShadowFilter({ color: c, quality: 5, blur: 3, alpha: 0.55, offset: { x: 3.5, y: 3.5 } }) ];
             case 'GlowFilter': return [ new GlowFilter({ color: c, distance: 4, quality: 1 }) ];

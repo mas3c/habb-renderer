@@ -76,10 +76,10 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private _updatesUntilFrameUpdate: number;
 
     private _isAvatarReady: boolean;
-    // aura (Hobbaz): filtros de Pixi sobre el sprite del avatar; FIGURE_AURA la describe
+    // aura: filtros de Pixi sobre el sprite del avatar; FIGURE_AURA la describe
     private _aura: AvatarAura = null;
     private _auraSpec: string = '';
-    // Como Hobbaz: el aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
+    // El aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
     // AvatarLogic pone al pasar por encima). Así como mucho hay una en pantalla y no 30 filtros.
     private _auraVisible: boolean = false;
     private _needsUpdate: boolean;

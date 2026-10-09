@@ -167,7 +167,7 @@ export class AssetManager implements IAssetManager
                     case 'image/gif': {
                         const buffer = await response.arrayBuffer();
                         // ya decodificada: en Pixi 8 la textura nace válida, sin esperar a ningún evento
-                        const baseTexture = new ImageSource({ resource: await NitroBundle.decodeImage(new Uint8Array(buffer)) });
+                        const baseTexture = await NitroBundle.createImageSource(new Uint8Array(buffer));
 
                         this.setTexture(url, new Texture({ source: baseTexture }));
                         break;

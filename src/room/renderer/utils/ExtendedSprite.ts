@@ -165,6 +165,17 @@ export class ExtendedSprite extends Sprite
         this._tag = tag;
     }
 
+    // Nitro guarda aquí el identificador del sprite; en Pixi 8 «name» está obsoleto (avisa en cada uso) y es «label»
+    public override get name(): string
+    {
+        return this.label;
+    }
+
+    public override set name(value: string)
+    {
+        this.label = value;
+    }
+
     public get alphaTolerance(): number
     {
         return this._alphaTolerance;

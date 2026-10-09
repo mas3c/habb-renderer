@@ -1,4 +1,5 @@
 import { ImageSource, TextureSource } from 'pixi.js';
+import { QueueTextureUpload } from '../../pixi-proxy/TextureUploadQueue';
 import { Data, inflate } from 'pako';
 import { BinaryReader } from './BinaryReader';
 
@@ -33,7 +34,7 @@ export class NitroBundle
             }
             else
             {
-                bundle._baseTexture = new ImageSource({ resource: await NitroBundle.decodeImage(decompressed) });
+                bundle._baseTexture = await NitroBundle.createImageSource(decompressed);
             }
 
             fileCount--;
@@ -61,9 +62,31 @@ export class NitroBundle
         return inflate((data as Data));
     }
 
-    public static async decodeImage(data: Uint8Array): Promise<HTMLImageElement>
+    // hoja decodificada fuera del hilo principal, subida a la GPU por la cola y sin copia en RAM después
+    public static async createImageSource(data: Uint8Array): Promise<ImageSource>
     {
-        const url = URL.createObjectURL(new Blob([ data ], { type: 'image/png' }));
+        const source = new ImageSource({ resource: await NitroBundle.decodeImage(data) });
+
+        QueueTextureUpload(source);
+
+        return source;
+    }
+
+    public static async decodeImage(data: Uint8Array): Promise<ImageBitmap | HTMLImageElement>
+    {
+        const blob = new Blob([ data ], { type: 'image/png' });
+
+        // como el cargador de Pixi 8: ImageBitmap con sus opciones por defecto y alphaMode premultiply-alpha-on-upload
+        if(typeof createImageBitmap === 'function')
+        {
+            try
+            {
+                return await createImageBitmap(blob);
+            }
+            catch {}
+        }
+
+        const url = URL.createObjectURL(blob);
         const image = new Image();
 
         image.src = url;

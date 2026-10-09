@@ -8,7 +8,7 @@ export class PlaneTextureCache
     public RENDER_TEXTURE_POOL: Map<string, RenderTexture> = new Map();
     public RENDER_TEXTURE_CACHE: RenderTexture[] = [];
 
-    // Planos idénticos (forma, material estático, sin máscaras) comparten su textura final, como en la beta de Hobbaz:
+    // Planos idénticos (forma, material estático, sin máscaras) comparten su textura final:
     // en el Recibidor, 777 planos son 376 distintos. RoomPlane cuenta las referencias y la suelta al quedarse sin ellas.
     public SHARED_PLANES: Map<string, { bitmap: RenderTexture, active: unknown, refs: number }> = new Map();
 

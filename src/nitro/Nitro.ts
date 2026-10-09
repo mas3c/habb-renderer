@@ -1,8 +1,8 @@
-import { Application, ApplicationOptions, TextureSource, WebGLRenderer } from 'pixi.js';
+import { Application, ApplicationOptions, Color, Texture, TextureSource, WebGLRenderer } from 'pixi.js';
 import { IAvatarRenderManager, IEventDispatcher, ILinkEventTracker, INitroCommunicationManager, INitroCore, INitroLocalizationManager, IRoomCameraWidgetManager, IRoomEngine, IRoomManager, IRoomSessionManager, ISessionDataManager, ISoundManager, NitroConfiguration, NitroLogger } from '../api';
 import { ConfigurationEvent, EventDispatcher, NitroCore } from '../core';
 import { NitroEvent, RoomEngineEvent } from '../events';
-import { GetTicker, NitroBlendMode, PixiApplicationProxy } from '../pixi-proxy';
+import { GetTicker, NitroBlendMode, NitroFilter, PixiApplicationProxy } from '../pixi-proxy';
 import { RoomManager } from '../room';
 import { AvatarRenderManager } from './avatar';
 import { RoomCameraWidgetManager } from './camera';
@@ -22,10 +22,29 @@ LegacyExternalInterface.available;
 // Pixel art: sin suavizado salvo con zoom del sistema no entero (antes settings.SCALE_MODE en Pixi 6).
 TextureSource.defaultOptions.scaleMode = (!(window.devicePixelRatio % 1)) ? 'nearest' : 'linear';
 
+// Pixi 6 aceptaba un color NaN (dato que falta en el hotel) y seguía; Pixi 8 lanza y tira el cliente entero.
+// Aquí se hace como Pixi 6 (NaN >> 16 = 0: negro, igual que en producción) y se avisa una vez para encontrar el origen.
+const colorSetValue = Color.prototype.setValue;
+let colorNaNAvisado = false;
+
+Color.prototype.setValue = function(value)
+{
+    if((typeof value === 'number') && isNaN(value))
+    {
+        if(!colorNaNAvisado) { colorNaNAvisado = true; console.warn('Color NaN', new Error().stack); }
+
+        value = 0x000000;
+    }
+
+    return colorSetValue.call(this, value);
+};
+
 export class Nitro implements INitro
 {
     public static WEBGL_CONTEXT_LOST: string = 'NE_WEBGL_CONTEXT_LOST';
     public static WEBGL_UNAVAILABLE: string = 'NE_WEBGL_UNAVAILABLE';
+    // WebGPU solo si el jugador lo activa en Ajustes › Avanzados (se aplica al recargar)
+    public static WEBGPU_KEY: string = 'gc.graphics.webgpu';
     public static READY: string = 'NE_READY!';
 
     private static INSTANCE: INitro = null;
@@ -87,15 +106,18 @@ export class Nitro implements INitro
 
         const canvas = document.createElement('canvas');
 
-        // Lienzo OPACO, como Hobbaz (Pixi 8) y Hartico: Pixi 6 crea el contexto con alfa por defecto
+        // Lienzo OPACO: Pixi 6 crea el contexto con alfa por defecto
         // y entonces el navegador y Windows lo mezclan con lo de detrás; al arrastrar la sala, cuando
         // la gráfica lo saca por un plano de superposición, salían tonos negros en el monitor que una
         // captura (OBS) no veía. La sala ya pinta su propio fondo negro, así que no cambia la imagen.
         const instance = new this(new NitroCore());
 
         const options: Partial<ApplicationOptions> = {
-            // WebGL como el cliente de Pixi 6; WebGPU aún falla en bastantes navegadores.
-            preference: 'webgl',
+            // WebGL como el cliente de Pixi 6; WebGPU aún falla en bastantes navegadores y los filtros GLSL de
+            // Nitro no tienen versión WGSL (se apagan, ver NitroFilter): solo a quien lo active.
+            preference: Nitro.webgpuEnabled ? 'webgpu' : 'webgl',
+            // la línea de PixiJS en la consola
+            hello: true,
             backgroundAlpha: 1,
             autoDensity: false,
             width: window.innerWidth,
@@ -106,7 +128,7 @@ export class Nitro implements INitro
             antialias: false,
             // Fotogramas sin pintarse antes de que Pixi borre una textura de la GPU (ver RoomContentLoader.purge).
             textureGCMaxIdle: 3600,
-            // Como la beta de Hobbaz: lo que no se usa en un minuto se libera, mirando cada 10 s (por defecto cada 30).
+            // Lo que no se usa en un minuto se libera, mirando cada 10 s (por defecto cada 30).
             gcMaxUnusedTime: 60000,
             gcFrequency: 10000,
             // Nitro lleva el ratón con eventos del DOM sobre el canvas: el sistema de eventos de Pixi solo gastaría CPU
@@ -118,12 +140,36 @@ export class Nitro implements INitro
         instance.ready = instance._application.init(options).then(() =>
         {
             const renderer = instance._application.renderer as WebGLRenderer;
-            const subtract = () => NitroBlendMode.registerSubtract(renderer.gl, (renderer.state as unknown as { blendModesMap: Record<string, number[]> })?.blendModesMap);
 
-            subtract();
+            NitroFilter.webgpu = (renderer.name === 'webgpu');
 
-            // al recuperar el contexto Pixi rehace su tabla de mezclas
-            renderer.runners?.contextChange?.add({ contextChange: subtract });
+            if(renderer.gl)
+            {
+                const subtract = () => NitroBlendMode.registerSubtract(renderer.gl, (renderer.state as unknown as { blendModesMap: Record<string, number[]> })?.blendModesMap);
+
+                subtract();
+
+                // al recuperar el contexto Pixi rehace su tabla de mezclas
+                renderer.runners?.contextChange?.add({ contextChange: subtract });
+            }
+
+            // Una textura destruida que aún sigue en un sprite (un furni que se va mientras se pinta) haría que Pixi 8
+            // lance al enlazarla y tire el cliente: se enlaza la textura vacía y no se toca su estilo.
+            const texturas = renderer.texture as unknown as { bindSource: (source: TextureSource, location?: number) => void, updateStyle?: (source: TextureSource, firstCreation: boolean) => void };
+            const bindSource = texturas.bindSource;
+            const updateStyle = texturas.updateStyle;
+
+            if(bindSource) texturas.bindSource = function(source: TextureSource, location = 0)
+            {
+                if(!source || source.destroyed || !source.style) source = Texture.EMPTY.source;
+
+                return bindSource.call(this, source, location);
+            };
+
+            if(updateStyle) texturas.updateStyle = function(source: TextureSource, firstCreation: boolean)
+            {
+                if(source && !source.destroyed && source.style) return updateStyle.call(this, source, firstCreation);
+            };
 
             // Pintar un contenedor dentro de una textura lo convierte en grupo de render, y Pixi 8 guarda un Batcher
             // (con búferes de GPU) por grupo que solo suelta al destruirlo. Nitro pinta miles de contenedores
@@ -153,6 +199,27 @@ export class Nitro implements INitro
         });
 
         canvas.addEventListener('webglcontextlost', () => instance.events.dispatchEvent(new NitroEvent(Nitro.WEBGL_CONTEXT_LOST)));
+    }
+
+    public static get webgpuEnabled(): boolean
+    {
+        try
+        {
+            return (localStorage.getItem(Nitro.WEBGPU_KEY) === '1');
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static set webgpuEnabled(value: boolean)
+    {
+        try
+        {
+            value ? localStorage.setItem(Nitro.WEBGPU_KEY, '1') : localStorage.removeItem(Nitro.WEBGPU_KEY);
+        }
+        catch {}
     }
 
     public init(): void

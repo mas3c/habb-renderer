@@ -34,6 +34,9 @@ const VACIOS: Record<string, () => unknown> = {
  */
 export class NitroFilter extends Filter
 {
+    // con WebGPU (opcional, Ajustes › Avanzados) estos shaders no tienen versión WGSL: el filtro se apaga
+    public static webgpu = false;
+
     private _grupo: UniformGroup;
     private _samplers: Set<string>;
     private _uniformsProxy: Record<string, any>;
@@ -71,6 +74,8 @@ export class NitroFilter extends Filter
 
         this._grupo = grupo;
         this._samplers = samplers;
+
+        if(NitroFilter.webgpu) this.enabled = false;
 
         const filtro = this;
 

@@ -19,4 +19,5 @@ export * from './PaletteMapFilter';
 export * from './PixiApplicationProxy';
 export * from './PixiInteractionEventProxy';
 export * from './RoomTextureUtils';
+export * from './TextureUploadQueue';
 export * from './TextureUtils';
