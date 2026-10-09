@@ -1,4 +1,4 @@
-import { Filter, RenderTexture } from '@pixi/core';
+import { Filter, RenderTexture } from 'pixi.js';
 
 const vertex = `
 attribute vec2 aVertexPosition;

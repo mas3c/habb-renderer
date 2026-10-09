@@ -1,5 +1,4 @@
-import { BaseTexture, Resource, Texture } from '@pixi/core';
-import { Spritesheet } from '@pixi/spritesheet';
+import { Spritesheet, Texture, TextureSource } from 'pixi.js';
 import { NitroLogger } from '../common';
 import { ArrayBufferToBase64, NitroBundle } from '../utils';
 import { GraphicAssetCollection } from './GraphicAssetCollection';
@@ -12,13 +11,13 @@ export class AssetManager implements IAssetManager
 {
     public static _INSTANCE: IAssetManager = new AssetManager();
 
-    private _textures: Map<string, Texture<Resource>> = new Map();
+    private _textures: Map<string, Texture> = new Map();
     private _collections: Map<string, IGraphicAssetCollection> = new Map();
     // nombre de asset -> colección que lo tiene. getAsset recorría TODAS las colecciones en cada
     // consulta (cada pieza de cada avatar al pintarlo) y se volvía más lento cuanta más ropa se veía.
     private _assetIndex: Map<string, IGraphicAssetCollection> = new Map();
 
-    public getTexture(name: string): Texture<Resource>
+    public getTexture(name: string): Texture
     {
         if(!name) return null;
 
@@ -29,7 +28,7 @@ export class AssetManager implements IAssetManager
         return existing;
     }
 
-    public setTexture(name: string, texture: Texture<Resource>): void
+    public setTexture(name: string, texture: Texture): void
     {
         if(!name || !texture) return;
 
@@ -168,7 +167,7 @@ export class AssetManager implements IAssetManager
                     case 'image/gif': {
                         const buffer = await response.arrayBuffer();
                         const base64 = ArrayBufferToBase64(buffer);
-                        const baseTexture = BaseTexture.from(
+                        const baseTexture = TextureSource.from(
                             `data:${ contentType };base64,${ base64 }`
                         );
 
@@ -209,7 +208,7 @@ export class AssetManager implements IAssetManager
         }
     }
 
-    private async processAsset(baseTexture: BaseTexture, data: IAssetData): Promise<void>
+    private async processAsset(baseTexture: TextureSource, data: IAssetData): Promise<void>
     {
         const spritesheetData = data.spritesheet;
 

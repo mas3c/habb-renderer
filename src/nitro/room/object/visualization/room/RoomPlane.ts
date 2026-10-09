@@ -1,6 +1,4 @@
-import { Renderer, RenderTexture, Resource, Texture } from '@pixi/core';
-import { Matrix, Point } from '@pixi/math';
-import { Sprite } from '@pixi/sprite';
+import { Matrix, Point, RenderTexture, Renderer, Sprite, Texture } from 'pixi.js';
 import { IRoomGeometry, IRoomPlane, IVector3D, Vector3d } from '../../../../../api';
 import { PixiApplicationProxy, PlaneTextureCache } from '../../../../../pixi-proxy';
 import { ColorConverter } from '../../../../../room';
@@ -148,7 +146,7 @@ export class RoomPlane implements IRoomPlane
         return this._canBeVisible;
     }
 
-    public get bitmapData(): Texture<Resource>
+    public get bitmapData(): Texture
     {
         if(!this.visible || !this._bitmapData) return null;
 
@@ -272,7 +270,7 @@ export class RoomPlane implements IRoomPlane
         this._disposed = true;
     }
 
-    public copyBitmapData(k: Texture<Resource>): Texture<Resource>
+    public copyBitmapData(k: Texture): Texture
     {
         if(!this.visible || !this._bitmapData || !k) return null;
 

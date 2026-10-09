@@ -1,5 +1,4 @@
-import { Renderer, Resource, Texture } from '@pixi/core';
-import { Sprite } from '@pixi/sprite';
+import { Renderer, Sprite, Texture } from 'pixi.js';
 import { PixiApplicationProxy, TextureUtils } from '../../pixi-proxy';
 
 export class GraphicAssetPalette
@@ -23,7 +22,7 @@ export class GraphicAssetPalette
 
     }
 
-    public applyPalette(texture: Texture<Resource>): Texture<Resource>
+    public applyPalette(texture: Texture): Texture
     {
         const renderTexture = TextureUtils.createAndWriteRenderTexture(texture.width, texture.height, new Sprite(texture));
         const pixels = TextureUtils.getPixels(renderTexture);

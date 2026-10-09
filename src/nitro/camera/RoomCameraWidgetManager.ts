@@ -1,5 +1,4 @@
-import { Texture } from '@pixi/core';
-import { ColorMatrix, ColorMatrixFilter } from '@pixi/filter-color-matrix';
+import { ColorMatrix, ColorMatrixFilter, Texture } from 'pixi.js';
 import { IEventDispatcher, IRoomCameraWidgetEffect, IRoomCameraWidgetManager, IRoomCameraWidgetSelectedEffect, NitroConfiguration } from '../../api';
 import { EventDispatcher } from '../../core';
 import { RoomCameraWidgetManagerEvent } from '../../events';

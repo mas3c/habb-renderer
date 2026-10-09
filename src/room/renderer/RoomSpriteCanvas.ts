@@ -1,8 +1,4 @@
-import { RenderTexture } from '@pixi/core';
-import { Container, DisplayObject } from '@pixi/display';
-import { Graphics } from '@pixi/graphics';
-import { Matrix, Point, Rectangle } from '@pixi/math';
-import { Sprite } from '@pixi/sprite';
+import { Container, Graphics, Matrix, Point, Rectangle, RenderTexture, Sprite } from 'pixi.js';
 import { IRoomCanvasMouseListener, IRoomGeometry, IRoomObject, IRoomObjectSprite, IRoomObjectSpriteVisualization, IRoomRenderingCanvas, IRoomSpriteCanvasContainer, IRoomSpriteMouseEvent, MouseEventType, RoomObjectSpriteData, RoomObjectSpriteType, Vector3d } from '../../api';
 import { RoomSpriteMouseEvent } from '../../events';
 import { Nitro } from '../../nitro/Nitro';
@@ -1041,8 +1037,9 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
             height: this._display.height
         });
 
-        PixiApplicationProxy.instance.renderer.render(this._display, {
-            renderTexture,
+        PixiApplicationProxy.instance.renderer.render({
+            container: this._display,
+            target: renderTexture,
             clear: true,
             transform: new Matrix(1, 0, 0, 1, -(bounds.x), -(bounds.y))
         });
@@ -1238,12 +1235,12 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         return this._geometry;
     }
 
-    public get master(): DisplayObject
+    public get master(): Container
     {
         return this._master;
     }
 
-    public get display(): DisplayObject
+    public get display(): Container
     {
         return this._display;
     }

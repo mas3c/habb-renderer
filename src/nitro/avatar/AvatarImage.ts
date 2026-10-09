@@ -1,8 +1,4 @@
-import { RenderTexture, Texture } from '@pixi/core';
-import { Container } from '@pixi/display';
-import { ColorMatrixFilter } from '@pixi/filter-color-matrix';
-import { Rectangle } from '@pixi/math';
-import { Sprite } from '@pixi/sprite';
+import { ColorMatrixFilter, Container, Rectangle, RenderTexture, Sprite, Texture } from 'pixi.js';
 import { AdvancedMap, AvatarAction, AvatarDirectionAngle, AvatarScaleType, AvatarSetType, IActionDefinition, IActiveActionData, IAdvancedMap, IAnimationLayerData, IAvatarDataContainer, IAvatarEffectListener, IAvatarFigureContainer, IAvatarImage, IGraphicAsset, IPartColor, ISpriteDataContainer } from '../../api';
 import { GetTickerTime, NitroContainer, NitroSprite, PaletteMapFilter, PixiApplicationProxy, TextureUtils } from '../../pixi-proxy';
 import { ActiveActionData } from './actions';
@@ -402,8 +398,9 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
 
         if(this._reusableTexture)
         {
-            PixiApplicationProxy.instance.renderer.render(container, {
-                renderTexture: this._reusableTexture,
+            PixiApplicationProxy.instance.renderer.render({
+                container: container,
+                target: this._reusableTexture,
                 clear: true
             });
 
@@ -476,8 +473,9 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
 
         const newTexture = new Sprite(Texture.from(textureCanvas));
 
-        PixiApplicationProxy.instance.renderer.render(newTexture, {
-            renderTexture: texture,
+        PixiApplicationProxy.instance.renderer.render({
+            container: newTexture,
+            target: texture,
             clear: true
         });
 

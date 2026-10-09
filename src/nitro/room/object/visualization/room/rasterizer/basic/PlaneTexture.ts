@@ -1,4 +1,4 @@
-﻿import { Resource, Texture } from '@pixi/core';
+﻿import { Texture } from 'pixi.js';
 import { IVector3D } from '../../../../../../../api';
 import { PlaneTextureBitmap } from './PlaneTextureBitmap';
 
@@ -29,12 +29,12 @@ export class PlaneTexture
         }
     }
 
-    public addBitmap(bitmap: Texture<Resource>, normalMinX: number = -1, normalMaxX: number = 1, normalMinY: number = -1, normalMaxY: number = 1, assetName: string = null): void
+    public addBitmap(bitmap: Texture, normalMinX: number = -1, normalMaxX: number = 1, normalMinY: number = -1, normalMaxY: number = 1, assetName: string = null): void
     {
         this._bitmaps.push(new PlaneTextureBitmap(bitmap, normalMinX, normalMaxX, normalMinY, normalMaxY, assetName));
     }
 
-    public getBitmap(k: IVector3D): Texture<Resource>
+    public getBitmap(k: IVector3D): Texture
     {
         const _local_2 = this.getPlaneTextureBitmap(k);
 

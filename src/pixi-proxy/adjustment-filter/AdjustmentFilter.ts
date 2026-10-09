@@ -1,5 +1,4 @@
-import { CLEAR_MODES } from '@pixi/constants';
-import { Filter, FilterSystem, RenderTexture } from '@pixi/core';
+import { Filter, FilterSystem, RenderTexture } from 'pixi.js';
 
 interface AdjustmentFilterOptions
 {

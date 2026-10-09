@@ -1,5 +1,4 @@
-import { SCALE_MODES } from '@pixi/constants';
-import { Texture } from '@pixi/core';
+import { Texture } from 'pixi.js';
 import { IsometricImageFurniVisualization } from './IsometricImageFurniVisualization';
 
 export class FurnitureDynamicThumbnailVisualization extends IsometricImageFurniVisualization

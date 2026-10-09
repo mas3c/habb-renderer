@@ -1,6 +1,4 @@
-import { Application, IApplicationOptions } from '@pixi/app';
-import { SCALE_MODES } from '@pixi/constants';
-import { settings } from '@pixi/settings';
+import { Application, ApplicationOptions, TextureSource } from 'pixi.js';
 import { IAvatarRenderManager, IEventDispatcher, ILinkEventTracker, INitroCommunicationManager, INitroCore, INitroLocalizationManager, IRoomCameraWidgetManager, IRoomEngine, IRoomManager, IRoomSessionManager, ISessionDataManager, ISoundManager, NitroConfiguration, NitroLogger } from '../api';
 import { ConfigurationEvent, EventDispatcher, NitroCore } from '../core';
 import { NitroEvent, RoomEngineEvent } from '../events';
@@ -21,13 +19,8 @@ import { HabboWebTools } from './utils/HabboWebTools';
 
 LegacyExternalInterface.available;
 
-settings.SCALE_MODE = (!(window.devicePixelRatio % 1)) ? SCALE_MODES.NEAREST : SCALE_MODES.LINEAR;
-settings.ROUND_PIXELS = true;
-// Fotogramas sin pintarse antes de que Pixi borre una textura de la GPU. Estaba en 120: a 155 FPS
-// eso es menos de un segundo, y al arrastrar la sala los furnis que salían un momento de pantalla
-// perdían su textura y se volvían a subir al reaparecer (tirones y furnis mal pintados un instante).
-// 3600 es el valor de Pixi; Hobbaz usa 60 s. La memoria la controla RoomContentLoader.purge.
-settings.GC_MAX_IDLE = 3600;
+// Pixel art: sin suavizado salvo con zoom del sistema no entero (antes settings.SCALE_MODE en Pixi 6).
+TextureSource.defaultOptions.scaleMode = (!(window.devicePixelRatio % 1)) ? 'nearest' : 'linear';
 
 export class Nitro implements INitro
 {
@@ -54,11 +47,15 @@ export class Nitro implements INitro
     private _isReady: boolean;
     private _isDisposed: boolean;
 
-    constructor(core: INitroCore, options?: IApplicationOptions)
+    // Pixi 8 se inicializa de forma asíncrona (app.init): el cliente espera a esto antes de cargar la configuración,
+    // y todo lo que usa el renderer viene después de esa carga.
+    public ready: Promise<void> = Promise.resolve();
+
+    constructor(core: INitroCore)
     {
         if(!Nitro.INSTANCE) Nitro.INSTANCE = this;
 
-        this._application = new PixiApplicationProxy(options);
+        this._application = new PixiApplicationProxy();
         this._core = core;
         this._events = new EventDispatcher();
         this._communication = new NitroCommunicationManager(core.communication);
@@ -94,15 +91,24 @@ export class Nitro implements INitro
         // y entonces el navegador y Windows lo mezclan con lo de detrás; al arrastrar la sala, cuando
         // la gráfica lo saca por un plano de superposición, salían tonos negros en el monitor que una
         // captura (OBS) no veía. La sala ya pinta su propio fondo negro, así que no cambia la imagen.
-        const instance = new this(new NitroCore(), {
-            useContextAlpha: false,
+        const instance = new this(new NitroCore());
+
+        const options: Partial<ApplicationOptions> = {
+            // WebGL como el cliente de Pixi 6; WebGPU aún falla en bastantes navegadores.
+            preference: 'webgl',
             backgroundAlpha: 1,
             autoDensity: false,
             width: window.innerWidth,
             height: window.innerHeight,
             resolution: window.devicePixelRatio,
-            view: canvas
-        });
+            canvas,
+            roundPixels: true,
+            antialias: false,
+            // Fotogramas sin pintarse antes de que Pixi borre una textura de la GPU (ver RoomContentLoader.purge).
+            textureGCMaxIdle: 3600
+        };
+
+        instance.ready = instance._application.init(options);
 
         canvas.addEventListener('webglcontextlost', () => instance.events.dispatchEvent(new NitroEvent(Nitro.WEBGL_CONTEXT_LOST)));
     }

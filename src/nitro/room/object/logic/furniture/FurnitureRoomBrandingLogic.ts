@@ -1,4 +1,4 @@
-import { BaseTexture, Texture } from '@pixi/core';
+import { Texture, TextureSource } from 'pixi.js';
 import { decompressFrames, parseGIF } from 'gifuct-js';
 import { GetAssetManager, IAssetData, IRoomGeometry, MapDataType, MouseEventType, RoomObjectVariable, RoomWidgetEnumItemExtradataParameter } from '../../../../../api';
 import { RoomObjectRoomAdEvent, RoomSpriteMouseEvent } from '../../../../../events';
@@ -203,7 +203,7 @@ export class FurnitureRoomBrandingLogic extends FurnitureLogic
                             }
                         }
 
-                        const baseTexture = BaseTexture.fromBuffer(frame, width, height);
+                        const baseTexture = TextureSource.fromBuffer(frame, width, height);
 
                         textures.push(new Texture(baseTexture));
                         durations.push(frames[ind].delay);
@@ -240,7 +240,7 @@ export class FurnitureRoomBrandingLogic extends FurnitureLogic
 
                         const blob = await resp.blob();
                         const objectUrl = URL.createObjectURL(blob);
-                        const baseTexture = BaseTexture.from(objectUrl);
+                        const baseTexture = TextureSource.from(objectUrl);
 
                         const register = () =>
                         {

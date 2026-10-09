@@ -1,5 +1,4 @@
-import { Resource, Texture } from '@pixi/core';
-import { Matrix } from '@pixi/math';
+import { Matrix, Texture } from 'pixi.js';
 import { IGraphicAsset } from '../../../../../api';
 import { NitroSprite, NitroTexture, TextureUtils } from '../../../../../pixi-proxy';
 import { FurnitureAnimatedVisualization } from './FurnitureAnimatedVisualization';
@@ -9,7 +8,7 @@ export class IsometricImageFurniVisualization extends FurnitureAnimatedVisualiza
     protected static THUMBNAIL: string = 'THUMBNAIL';
 
     private _thumbnailAssetNameNormal: string;
-    private _thumbnailImageNormal: Texture<Resource>;
+    private _thumbnailImageNormal: Texture;
     private _thumbnailDirection: number;
     private _thumbnailChanged: boolean;
     protected _hasOutline: boolean;
@@ -30,7 +29,7 @@ export class IsometricImageFurniVisualization extends FurnitureAnimatedVisualiza
         return !(this._thumbnailImageNormal == null);
     }
 
-    public setThumbnailImages(k: Texture<Resource>): void
+    public setThumbnailImages(k: Texture): void
     {
         this._thumbnailImageNormal = k;
         this._thumbnailChanged = true;
@@ -64,7 +63,7 @@ export class IsometricImageFurniVisualization extends FurnitureAnimatedVisualiza
         this._thumbnailDirection = this.direction;
     }
 
-    private addThumbnailAsset(k: Texture<Resource>, scale: number): void
+    private addThumbnailAsset(k: Texture, scale: number): void
     {
         let layerId = 0;
 
@@ -91,7 +90,7 @@ export class IsometricImageFurniVisualization extends FurnitureAnimatedVisualiza
         }
     }
 
-    protected generateTransformedThumbnail(texture: Texture<Resource>, asset: IGraphicAsset): Texture<Resource>
+    protected generateTransformedThumbnail(texture: Texture, asset: IGraphicAsset): Texture
     {
         if(this._hasOutline)
         {

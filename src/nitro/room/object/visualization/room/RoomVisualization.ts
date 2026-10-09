@@ -1,6 +1,4 @@
-import { Filter } from '@pixi/core';
-import { ColorMatrixFilter } from '@pixi/filter-color-matrix';
-import { Rectangle } from '@pixi/math';
+import { ColorMatrixFilter, Filter, Rectangle } from 'pixi.js';
 import { AlphaTolerance, IObjectVisualizationData, IPlaneVisualization, IRoomGeometry, IVector3D, IRoomObjectModel, IRoomObjectSprite, IRoomPlane, RoomObjectSpriteType, RoomObjectVariable, Vector3d } from '../../../../../api';
 import { PlaneTextureCache } from '../../../../../pixi-proxy';
 import { RoomObjectSpriteVisualization } from '../../../../../room';

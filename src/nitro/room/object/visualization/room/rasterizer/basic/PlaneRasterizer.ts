@@ -1,5 +1,4 @@
-﻿import { RenderTexture, Resource, Texture } from '@pixi/core';
-import { Point } from '@pixi/math';
+﻿import { Point, RenderTexture, Texture } from 'pixi.js';
 import { IAssetPlaneMaterial, IAssetPlaneMaterialCellColumn, IAssetPlaneTexture, IAssetPlaneVisualization, IAssetPlaneVisualizationData, IAssetPlaneVisualizationLayer, IGraphicAsset, IGraphicAssetCollection, IRoomGeometry, IVector3D, Vector3d } from '../../../../../../../api';
 import { PlaneTextureCache } from '../../../../../../../pixi-proxy';
 import { Rasterizer, RoomGeometry } from '../../../../../../../room';
@@ -248,7 +247,7 @@ export class PlaneRasterizer implements IPlaneRasterizer
 
                                 if(texture)
                                 {
-                                    let newTexture: Texture<Resource> = texture;
+                                    let newTexture: Texture = texture;
 
                                     if(asset.flipH)
                                     {

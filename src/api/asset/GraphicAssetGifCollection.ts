@@ -1,10 +1,10 @@
-import { Resource, Texture } from '@pixi/core';
+import { Texture } from 'pixi.js';
 
 export class GraphicAssetGifCollection
 {
     constructor(
         public name: string,
-        public textures: Texture<Resource>[],
+        public textures: Texture[],
         public durations: number[]
     )
     {}

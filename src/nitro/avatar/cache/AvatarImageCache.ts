@@ -1,5 +1,4 @@
-import { Texture } from '@pixi/core';
-import { Matrix, Point, Rectangle } from '@pixi/math';
+import { Matrix, Point, Rectangle, Texture } from 'pixi.js';
 import { AvatarDirectionAngle, AvatarFigurePartType, AvatarScaleType, GeometryType, IActiveActionData, IAvatarImage, RoomObjectSpriteData } from '../../../api';
 import { GetTickerTime, NitroContainer, NitroSprite } from '../../../pixi-proxy';
 import { AssetAliasCollection } from '../alias';

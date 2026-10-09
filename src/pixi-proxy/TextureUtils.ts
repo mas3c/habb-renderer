@@ -1,52 +1,54 @@
-import { AbstractRenderer, Renderer, RenderTexture, Resource, Texture } from '@pixi/core';
-import { DisplayObject } from '@pixi/display';
-import { Extract } from '@pixi/extract';
-import { Matrix, Rectangle } from '@pixi/math';
-import { settings } from '@pixi/settings';
-import { Sprite } from '@pixi/sprite';
+import { Container, ExtractSystem, Matrix, Rectangle, RenderTexture, Renderer, SCALE_MODE, Sprite, Texture, TextureSource } from 'pixi.js';
 import { PixiApplicationProxy } from './PixiApplicationProxy';
 
 export class TextureUtils
 {
-    public static generateTexture(displayObject: DisplayObject, region: Rectangle = null, scaleMode: number = null, resolution: number = 1): RenderTexture
+    public static generateTexture(displayObject: Container, region: Rectangle = null, scaleMode: SCALE_MODE = null, resolution: number = 1): RenderTexture
     {
         if(!displayObject) return null;
 
-        if(scaleMode === null) scaleMode = settings.SCALE_MODE;
-
-        return this.getRenderer().generateTexture(displayObject, {
-            scaleMode,
+        return this.getRenderer().generateTexture({
+            target: displayObject,
+            frame: region ?? undefined,
             resolution,
-            region
-        });
+            textureSourceOptions: { scaleMode: scaleMode ?? TextureSource.defaultOptions.scaleMode }
+        }) as RenderTexture;
     }
 
-    public static generateTextureFromImage(image: HTMLImageElement): Texture<Resource>
+    public static generateTextureFromImage(image: HTMLImageElement): Texture
     {
         if(!image) return null;
 
         return Texture.from(image);
     }
 
-    public static generateImage(target: DisplayObject | RenderTexture): HTMLImageElement
+    // En Pixi 8 extract.image() y base64() devuelven promesas; canvas() sigue siendo síncrono. Se sacan del canvas
+    // para que todo el cliente siga llamándolas igual que con Pixi 6.
+    public static generateImage(target: Container | Texture): HTMLImageElement
     {
-        if(!target) return null;
+        const url = this.generateImageUrl(target);
 
-        return this.getExtractor().image(target);
+        if(!url) return null;
+
+        const image = new Image();
+
+        image.src = url;
+
+        return image;
     }
 
-    public static generateImageUrl(target: DisplayObject | RenderTexture): string
+    public static generateImageUrl(target: Container | Texture): string
     {
-        if(!target) return null;
+        const canvas = this.generateCanvas(target);
 
-        return this.getExtractor().base64(target);
+        return canvas ? canvas.toDataURL('image/png') : null;
     }
 
-    public static generateCanvas(target: DisplayObject | RenderTexture): HTMLCanvasElement
+    public static generateCanvas(target: Container | Texture): HTMLCanvasElement
     {
         if(!target) return null;
 
-        return this.getExtractor().canvas(target);
+        return this.getExtractor().canvas(target) as HTMLCanvasElement;
     }
 
     public static clearRenderTexture(renderTexture: RenderTexture): RenderTexture
@@ -75,7 +77,7 @@ export class TextureUtils
         return this.clearAndFillRenderTexture(renderTexture, color);
     }
 
-    public static createAndWriteRenderTexture(width: number, height: number, displayObject: DisplayObject, transform: Matrix = null): RenderTexture
+    public static createAndWriteRenderTexture(width: number, height: number, displayObject: Container, transform: Matrix = null): RenderTexture
     {
         if((width < 0) || (height < 0)) return null;
 
@@ -98,31 +100,34 @@ export class TextureUtils
         return this.writeToRenderTexture(sprite, renderTexture);
     }
 
-    public static writeToRenderTexture(displayObject: DisplayObject, renderTexture: RenderTexture, clear: boolean = true, transform: Matrix = null): RenderTexture
+    public static writeToRenderTexture(displayObject: Container, renderTexture: RenderTexture, clear: boolean = true, transform: Matrix = null): RenderTexture
     {
         if(!displayObject || !renderTexture) return null;
 
-        this.getRenderer().render(displayObject, {
-            renderTexture,
+        this.getRenderer().render({
+            container: displayObject,
+            target: renderTexture,
             clear,
-            transform
+            transform: transform ?? undefined
         });
 
         return renderTexture;
     }
 
-    public static getPixels(displayObject: DisplayObject | RenderTexture, frame: Rectangle = null): Uint8Array
+    public static getPixels(displayObject: Container | Texture, frame: Rectangle = null): Uint8Array
     {
-        return this.getExtractor().pixels(displayObject);
+        const pixels = this.getExtractor().pixels(frame ? { target: displayObject, frame } : displayObject).pixels;
+
+        return new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.length);
     }
 
-    public static getRenderer(): Renderer | AbstractRenderer
+    public static getRenderer(): Renderer
     {
         return PixiApplicationProxy.instance.renderer;
     }
 
-    public static getExtractor(): Extract
+    public static getExtractor(): ExtractSystem
     {
-        return (this.getRenderer().plugins.extract as Extract);
+        return this.getRenderer().extract;
     }
 }

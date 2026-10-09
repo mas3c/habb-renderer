@@ -1,7 +1,4 @@
-﻿import { Resource, Texture } from '@pixi/core';
-import { Graphics } from '@pixi/graphics';
-import { Matrix } from '@pixi/math';
-import { Sprite } from '@pixi/sprite';
+﻿import { Graphics, Matrix, Sprite, Texture } from 'pixi.js';
 import { PixiApplicationProxy, TextureUtils } from '../../pixi-proxy';
 
 export class Rasterizer
@@ -64,7 +61,7 @@ export class Rasterizer
     //     k.unlock();
     // }
 
-    public static getFlipHBitmapData(k: Texture<Resource>): Texture<Resource>
+    public static getFlipHBitmapData(k: Texture): Texture
     {
         if(!k) return null;
 
@@ -75,8 +72,9 @@ export class Rasterizer
         matrix.scale(-1, 1);
         matrix.translate(k.width, 0);
 
-        PixiApplicationProxy.instance.renderer.render(new Sprite(k), {
-            renderTexture,
+        PixiApplicationProxy.instance.renderer.render({
+            container: new Sprite(k),
+            target: renderTexture,
             clear: true,
             transform: matrix
         });
@@ -84,7 +82,7 @@ export class Rasterizer
         return renderTexture;
     }
 
-    public static getFlipVBitmapData(k: Texture<Resource>): Texture<Resource>
+    public static getFlipVBitmapData(k: Texture): Texture
     {
         if(!k) return null;
 
@@ -106,7 +104,7 @@ export class Rasterizer
         return TextureUtils.generateTexture(graphic);
     }
 
-    public static getFlipHVBitmapData(k: Texture<Resource>): Texture<Resource>
+    public static getFlipHVBitmapData(k: Texture): Texture
     {
         if(!k) return null;
 

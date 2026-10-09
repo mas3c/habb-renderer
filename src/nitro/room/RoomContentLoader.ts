@@ -1,5 +1,4 @@
-import { BaseTexture, Resource, Texture } from '@pixi/core';
-import { Spritesheet } from '@pixi/spritesheet';
+import { Spritesheet, Texture, TextureSource } from 'pixi.js';
 import { FurnitureType, GetAssetManager, GraphicAssetCollection, GraphicAssetGifCollection, IAssetData, IEventDispatcher, IFurnitureData, IFurnitureDataListener, IGraphicAssetCollection, IGraphicAssetGifCollection, IPetColorResult, IRoomContentListener, IRoomContentLoader, IRoomObject, ISessionDataManager, NitroBundle, NitroConfiguration, NitroLogger, RoomObjectCategory, RoomObjectUserType, RoomObjectVariable, RoomObjectVisualizationType } from '../../api';
 import { NitroEvent } from '../../events';
 import { RoomContentLoadedEvent } from '../../events/room/RoomContentLoadedEvent';
@@ -372,7 +371,7 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         return image;
     }
 
-    public addAssetToCollection(collectionName: string, assetName: string, texture: Texture<Resource>, override: boolean = true): boolean
+    public addAssetToCollection(collectionName: string, assetName: string, texture: Texture, override: boolean = true): boolean
     {
         const collection = this.getCollection(collectionName);
 
@@ -381,7 +380,7 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         return collection.addAsset(assetName, texture, override, 0, 0, false, false);
     }
 
-    public createGifCollection(collectionName: string, textures: Texture<Resource>[], durations: number[]): GraphicAssetGifCollection
+    public createGifCollection(collectionName: string, textures: Texture[], durations: number[]): GraphicAssetGifCollection
     {
         if(!collectionName || !textures || !durations) return null;
 
@@ -582,7 +581,7 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         }
     }
 
-    private async processAsset(baseTexture: BaseTexture, data: IAssetData): Promise<void>
+    private async processAsset(baseTexture: TextureSource, data: IAssetData): Promise<void>
     {
         const spritesheetData = data.spritesheet;
 

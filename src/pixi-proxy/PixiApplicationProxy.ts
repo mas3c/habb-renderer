@@ -1,12 +1,12 @@
-import { Application, IApplicationOptions } from '@pixi/app';
+import { Application } from 'pixi.js';
 
 export class PixiApplicationProxy extends Application
 {
     private static INSTANCE: Application = null;
 
-    constructor(options?: IApplicationOptions)
+    constructor()
     {
-        super(options);
+        super();
 
         if(!PixiApplicationProxy.INSTANCE) PixiApplicationProxy.INSTANCE = this;
     }

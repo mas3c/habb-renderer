@@ -1,4 +1,4 @@
-import { Resource, Texture } from '@pixi/core';
+import { Texture } from 'pixi.js';
 import { NitroConfiguration } from '../../../../../../api';
 
 /**
@@ -29,7 +29,7 @@ export class HabbiconAssets
     private static _definiciones = new Map<number, HabbiconDefinicion>();
     private static _hoja: HTMLImageElement = null;
     private static _animaciones = new Map<number, HTMLImageElement>();
-    private static _texturas = new Map<string, Texture<Resource>>();
+    private static _texturas = new Map<string, Texture>();
     private static _tamano = 42;
 
     private static raiz(): string
@@ -98,7 +98,7 @@ export class HabbiconAssets
     }
 
     /** La burbuja compuesta (contorno + sombra), o null si todavía no se ha cargado. */
-    public static textura(id: number, fotograma: number, pequena: boolean, espejo: boolean): Texture<Resource>
+    public static textura(id: number, fotograma: number, pequena: boolean, espejo: boolean): Texture
     {
         const clave = `${ id }|${ fotograma }|${ pequena ? 1 : 0 }|${ espejo ? 1 : 0 }`;
         const hecha = HabbiconAssets._texturas.get(clave);

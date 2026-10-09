@@ -1,6 +1,4 @@
-﻿import { RenderTexture } from '@pixi/core';
-import { Point, Rectangle } from '@pixi/math';
-import { Sprite } from '@pixi/sprite';
+﻿import { Point, Rectangle, RenderTexture, Sprite } from 'pixi.js';
 import { IVector3D, NitroLogger, Vector3d } from '../../../../../../../api';
 import { PlaneTextureCache, TextureUtils } from '../../../../../../../pixi-proxy';
 import { Randomizer } from '../../utils';

@@ -1,4 +1,4 @@
-import { Resource, Texture } from '@pixi/core';
+import { Texture } from 'pixi.js';
 import { IAssetManager, IDisposable, IMessageEvent, NitroConfiguration } from '../../../api';
 import { BadgeImageReadyEvent } from '../../../events';
 import { NitroContainer, NitroSprite, NitroTexture, TextureUtils } from '../../../pixi-proxy';
@@ -65,7 +65,7 @@ export class BadgeImageManager implements IDisposable
         this._sessionDataManager = null;
     }
 
-    public getBadgeImage(badgeName: string, type: string = BadgeImageManager.NORMAL_BADGE, load: boolean = true): Texture<Resource>
+    public getBadgeImage(badgeName: string, type: string = BadgeImageManager.NORMAL_BADGE, load: boolean = true): Texture
     {
         let badge = this.getBadgeTexture(badgeName, type);
 
@@ -90,7 +90,7 @@ export class BadgeImageManager implements IDisposable
         return null;
     }
 
-    private getBadgeTexture(badgeName: string, type: string = BadgeImageManager.NORMAL_BADGE): Texture<Resource>
+    private getBadgeTexture(badgeName: string, type: string = BadgeImageManager.NORMAL_BADGE): Texture
     {
         const url = this.getBadgeUrl(badgeName, type);
 
@@ -136,7 +136,7 @@ export class BadgeImageManager implements IDisposable
         return null;
     }
 
-    private getBadgePlaceholder(): Texture<Resource>
+    private getBadgePlaceholder(): Texture
     {
         const url = (NitroConfiguration.getValue<string>('images.url') + '/loading_icon.png');
         const existing = this._assets.getTexture(url);

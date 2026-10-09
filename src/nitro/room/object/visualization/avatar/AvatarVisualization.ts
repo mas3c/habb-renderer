@@ -1,5 +1,4 @@
-import { BLEND_MODES } from '@pixi/constants';
-import { Resource, Texture } from '@pixi/core';
+import { Texture } from 'pixi.js';
 import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, RoomObjectSpriteType, RoomObjectVariable } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
@@ -1207,7 +1206,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         }
     }
 
-    public getAvatarRenderAsset(name: string): Texture<Resource>
+    public getAvatarRenderAsset(name: string): Texture
     {
         return this._data ? this._data.getAvatarRendererAsset(name) : null;
     }

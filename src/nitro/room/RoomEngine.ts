@@ -1,6 +1,4 @@
-import { RenderTexture, Resource, Texture } from '@pixi/core';
-import { Container, DisplayObject } from '@pixi/display';
-import { Matrix, Point, Rectangle } from '@pixi/math';
+import { Container, Matrix, Point, Rectangle, RenderTexture, Texture } from 'pixi.js';
 import { IConnection, IDisposable, IFurnitureStackingHeightMap, IGetImageListener, IImageResult, ILegacyWallGeometry, IMessageComposer, INitroCommunicationManager, INitroEvent, IObjectData, IPetColorResult, IPetCustomPart, IRoomContentListener, IRoomContentLoader, IRoomCreator, IRoomEngine, IRoomEngineServices, IRoomGeometry, IRoomInstance, IRoomManager, IRoomManagerListener, IRoomObject, IRoomObjectController, IRoomObjectLogicFactory, IRoomObjectVisualizationFactory, IRoomRenderer, IRoomRendererFactory, IRoomRenderingCanvas, IRoomSessionManager, ISelectedRoomObjectData, ISessionDataManager, ITileObjectMap, IUpdateReceiver, IVector3D, LegacyDataType, MouseEventType, NitroConfiguration, NitroLogger, ObjectDataFactory, RoomControllerLevel, RoomObjectCategory, RoomObjectUserType, RoomObjectVariable, ToolbarIconEnum, Vector3d } from '../../api';
 import { NitroManager } from '../../core';
 import { BadgeImageReadyEvent, NitroToolbarAnimateIconEvent, RoomBackgroundColorEvent, RoomDragEvent, RoomEngineEvent, RoomEngineObjectEvent, RoomObjectEvent, RoomObjectFurnitureActionEvent, RoomObjectMouseEvent, RoomSessionEvent, RoomToObjectOwnAvatarMoveEvent } from '../../events';
@@ -508,7 +506,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         return instance;
     }
 
-    public getRoomInstanceDisplay(roomId: number, id: number, width: number, height: number, scale: number): DisplayObject
+    public getRoomInstanceDisplay(roomId: number, id: number, width: number, height: number, scale: number): Container
     {
         const instance = this.getRoomInstance(roomId);
 
@@ -2998,7 +2996,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
         this._roomObjectEventHandler.cancelRoomObjectInsert(this._activeRoomId);
     }
 
-    private addOverlayIconSprite(k: NitroSprite, _arg_2: string, _arg_3: Texture<Resource>, scale: number = 1): NitroSprite
+    private addOverlayIconSprite(k: NitroSprite, _arg_2: string, _arg_3: Texture, scale: number = 1): NitroSprite
     {
         if(!k || !_arg_3) return;
 

@@ -1,4 +1,4 @@
-import { Texture } from '@pixi/core';
+import { Texture } from 'pixi.js';
 import { IRoomGeometry, IRoomObjectSprite } from '../../../../../../api';
 import { AvatarEstela } from '../AvatarEstela';
 import { AvatarVisualization } from '../AvatarVisualization';

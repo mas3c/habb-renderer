@@ -1,7 +1,4 @@
-import { BLEND_MODES } from '@pixi/constants';
-import { BaseTexture, Resource, Texture } from '@pixi/core';
-import { Point } from '@pixi/math';
-import { Sprite } from '@pixi/sprite';
+import { Point, Sprite, Texture, TextureSource } from 'pixi.js';
 import { AlphaTolerance } from '../../../api';
 import { TextureUtils } from '../../../pixi-proxy';
 
@@ -17,7 +14,7 @@ export class ExtendedSprite extends Sprite
     private _pairedSpriteId: number;
     private _pairedSpriteUpdateCounter: number;
 
-    constructor(texture: Texture<Resource> = null)
+    constructor(texture: Texture = null)
     {
         super(texture);
 
@@ -49,7 +46,7 @@ export class ExtendedSprite extends Sprite
         super.calculateVertices();
     }
 
-    public setTexture(texture: Texture<Resource>): void
+    public setTexture(texture: Texture): void
     {
         if(!texture) texture = Texture.EMPTY;
 
@@ -115,7 +112,7 @@ export class ExtendedSprite extends Sprite
         return (hitMap[ind2] & (1 << ind1)) !== 0;
     }
 
-    private static generateHitMap(baseTexture: BaseTexture): boolean
+    private static generateHitMap(baseTexture: TextureSource): boolean
     {
         if(!baseTexture) return false;
 

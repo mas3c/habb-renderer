@@ -1,4 +1,3 @@
-import { BLEND_MODES } from '@pixi/constants';
 
 export class SpriteUtilities
 {

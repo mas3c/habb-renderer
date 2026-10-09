@@ -1,7 +1,5 @@
-import { DropShadowFilter } from '@pixi/filter-drop-shadow';
-import { GlowFilter } from '@pixi/filter-glow';
-import { OutlineFilter } from '@pixi/filter-outline';
-import { Filter } from '@pixi/core';
+import { DropShadowFilter, GlowFilter, OutlineFilter } from 'pixi-filters';
+import { Filter } from 'pixi.js';
 
 /**
  * Aura del avatar: el AuraManager del cliente de Hobbaz (Hobbaz-Auras.zip, aura-manager.js) con sus

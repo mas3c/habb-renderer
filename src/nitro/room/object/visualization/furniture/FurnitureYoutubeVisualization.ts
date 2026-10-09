@@ -1,5 +1,4 @@
-import { Resource, Texture } from '@pixi/core';
-import { Matrix } from '@pixi/math';
+import { Matrix, Texture } from 'pixi.js';
 import { IGraphicAsset, RoomObjectVariable } from '../../../../../api';
 import { NitroSprite, NitroTexture, TextureUtils } from '../../../../../pixi-proxy';
 import { FurnitureDynamicThumbnailVisualization } from './FurnitureDynamicThumbnailVisualization';
@@ -23,7 +22,7 @@ export class FurnitureYoutubeVisualization extends FurnitureDynamicThumbnailVisu
      * habb.tv: los televisores de frente (dirección 0 o 6, como yttv3) llevan la pantalla
      * plana; la base los inclinaba como a los de lado y la miniatura se salía del marco.
      */
-    protected generateTransformedThumbnail(texture: Texture<Resource>, asset: IGraphicAsset): Texture<Resource>
+    protected generateTransformedThumbnail(texture: Texture, asset: IGraphicAsset): Texture
     {
         if((this.direction !== 0) && (this.direction !== 6)) return super.generateTransformedThumbnail(texture, asset);
 

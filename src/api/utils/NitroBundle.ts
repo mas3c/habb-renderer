@@ -1,4 +1,4 @@
-import { BaseTexture } from '@pixi/core';
+import { TextureSource } from 'pixi.js';
 import { Data, inflate } from 'pako';
 import { BinaryReader } from './BinaryReader';
 
@@ -7,7 +7,7 @@ export class NitroBundle
     private static TEXT_DECODER: TextDecoder = new TextDecoder('utf-8');
 
     private _jsonFile: Object = null;
-    private _baseTexture: BaseTexture = null;
+    private _baseTexture: TextureSource = null;
 
     // Asíncrono para no congelar la sala al cargar furnis: descompresión nativa del navegador
     // (pako, en el hilo principal, de reserva) y la imagen se decodifica fuera del hilo con
@@ -33,7 +33,7 @@ export class NitroBundle
             }
             else
             {
-                bundle._baseTexture = new BaseTexture(await NitroBundle.decodeImage(decompressed));
+                bundle._baseTexture = new TextureSource(await NitroBundle.decodeImage(decompressed));
             }
 
             fileCount--;
@@ -87,7 +87,7 @@ export class NitroBundle
         return this._jsonFile;
     }
 
-    public get baseTexture(): BaseTexture
+    public get baseTexture(): TextureSource
     {
         return this._baseTexture;
     }

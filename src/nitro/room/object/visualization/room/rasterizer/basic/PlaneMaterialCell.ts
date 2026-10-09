@@ -1,6 +1,4 @@
-﻿import { Matrix, Point } from '@pixi/math';
-import { Sprite } from '@pixi/sprite';
-import { TilingSprite } from '@pixi/sprite-tiling';
+﻿import { Matrix, Point, Sprite, TilingSprite } from 'pixi.js';
 import { IGraphicAsset, IVector3D } from '../../../../../../../api';
 import { Randomizer } from '../../utils';
 import { PlaneTexture } from './PlaneTexture';

@@ -1,4 +1,4 @@
-import { BaseTexture, Resource, Texture } from '@pixi/core';
+import { Texture, TextureSource } from 'pixi.js';
 import { IAssetData } from './IAssetData';
 import { IGraphicAsset } from './IGraphicAsset';
 import { IGraphicAssetPalette } from './IGraphicAssetPalette';
@@ -11,16 +11,16 @@ export interface IGraphicAssetCollection
     define(data: IAssetData): void;
     getAsset(name: string): IGraphicAsset;
     getAssetWithPalette(name: string, paletteName: string): IGraphicAsset;
-    getTexture(name: string): Texture<Resource>;
+    getTexture(name: string): Texture;
     getPaletteNames(): string[];
     getPaletteColors(paletteName: string): number[];
     getPalette(name: string): IGraphicAssetPalette;
-    addAsset(name: string, texture: Texture<Resource>, override: boolean, x?: number, y?: number, flipH?: boolean, flipV?: boolean): boolean;
+    addAsset(name: string, texture: Texture, override: boolean, x?: number, y?: number, flipH?: boolean, flipV?: boolean): boolean;
     disposeAsset(name: string): void;
     referenceCount: number;
     referenceTimestamp: number;
     name: string;
-    baseTexture: BaseTexture;
-    textures: Map<string, Texture<Resource>>;
+    baseTexture: TextureSource;
+    textures: Map<string, Texture>;
     data: IAssetData;
 }
