@@ -1,4 +1,4 @@
-import { IGraphicAssetCollection, IRoomContentLoader, IRoomInstance, IRoomInstanceContainer, IRoomManager, IRoomManagerListener, IRoomObject, IRoomObjectController, IRoomObjectLogicFactory, IRoomObjectManager, IRoomObjectVisualizationFactory, NitroLogger } from '../api';
+import { Dispositivo, IGraphicAssetCollection, Metricas, IRoomContentLoader, IRoomInstance, IRoomInstanceContainer, IRoomManager, IRoomManagerListener, IRoomObject, IRoomObjectController, IRoomObjectLogicFactory, IRoomObjectManager, IRoomObjectVisualizationFactory, NitroLogger } from '../api';
 import { NitroManager } from '../core';
 import { RoomContentLoadedEvent } from '../events';
 import { RoomContentLoader } from '../nitro/room/RoomContentLoader';
@@ -310,7 +310,12 @@ export class RoomManager extends NitroManager implements IRoomManager, IRoomInst
             return;
         }
 
-        while(this._pendingContentTypes.length)
+        // Activar los furnis de cada tipo recién cargado (visualización y lógica) se reparte entre fotogramas: 32 ms en PC
+        // y 10 en móvil; lo que no cabe sigue en el siguiente. Antes una sala grande se montaba entera en un fotograma.
+        const inicio = performance.now();
+        const presupuesto = (Dispositivo.esMovil ? 10 : 32);
+
+        while(this._pendingContentTypes.length && ((performance.now() - inicio) < presupuesto))
         {
             const type = this._pendingContentTypes.shift();
 
@@ -328,7 +333,11 @@ export class RoomManager extends NitroManager implements IRoomManager, IRoomInst
                 continue;
             }
 
+            const inicioTipo = performance.now();
+
             this.reinitializeRoomObjectsByType(type);
+
+            Metricas.add('activar_furnis_ms', (performance.now() - inicioTipo));
 
             if(this._listener) this._listener.initalizeTemporaryObjectsByType(type, true);
 

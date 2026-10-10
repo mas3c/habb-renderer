@@ -1,5 +1,5 @@
 import { ImageSource, TextureSource } from 'pixi.js';
-import { QueueTextureUpload } from '../../pixi-proxy/TextureUploadQueue';
+import { QueueTextureUpload, WaitTextureUploadRoom } from '../../pixi-proxy/TextureUploadQueue';
 import { Data, inflate } from 'pako';
 import { BinaryReader } from './BinaryReader';
 
@@ -65,6 +65,8 @@ export class NitroBundle
     // hoja decodificada fuera del hilo principal, subida a la GPU por la cola y sin copia en RAM después
     public static async createImageSource(data: Uint8Array): Promise<ImageSource>
     {
+        await WaitTextureUploadRoom();
+
         const source = new ImageSource({ resource: await NitroBundle.decodeImage(data) });
 
         QueueTextureUpload(source);

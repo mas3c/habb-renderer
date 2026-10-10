@@ -18,6 +18,7 @@ export * from './NitroTexture';
 export * from './PaletteMapFilter';
 export * from './PixiApplicationProxy';
 export * from './PixiInteractionEventProxy';
+export * from './RoomDownsampleFilter';
 export * from './RoomTextureUtils';
 export * from './TextureUploadQueue';
 export * from './TextureUtils';

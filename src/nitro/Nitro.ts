@@ -1,5 +1,5 @@
 import { Application, ApplicationOptions, Color, Texture, TextureSource, WebGLRenderer } from 'pixi.js';
-import { IAvatarRenderManager, IEventDispatcher, ILinkEventTracker, INitroCommunicationManager, INitroCore, INitroLocalizationManager, IRoomCameraWidgetManager, IRoomEngine, IRoomManager, IRoomSessionManager, ISessionDataManager, ISoundManager, NitroConfiguration, NitroLogger } from '../api';
+import { IAvatarRenderManager, Metricas, IEventDispatcher, ILinkEventTracker, INitroCommunicationManager, INitroCore, INitroLocalizationManager, IRoomCameraWidgetManager, IRoomEngine, IRoomManager, IRoomSessionManager, ISessionDataManager, ISoundManager, NitroConfiguration, NitroLogger } from '../api';
 import { ConfigurationEvent, EventDispatcher, NitroCore } from '../core';
 import { NitroEvent, RoomEngineEvent } from '../events';
 import { GetTicker, NitroBlendMode, NitroFilter, PixiApplicationProxy } from '../pixi-proxy';
@@ -192,7 +192,16 @@ export class Nitro implements INitro
                     options = { ...options, transform: options.transform.clone().append(container.localTransform) };
                 }
 
+                const inicio = performance.now();
+
                 pintar(options, deprecated);
+
+                // el fotograma de la pantalla (sin destino): CPU que cuesta mandarlo a la GPU (telemetría de la beta)
+                if(!options?.target)
+                {
+                    Metricas.add('render_cpu_ms', (performance.now() - inicio));
+                    Metricas.add('fotogramas');
+                }
 
                 if(temporal && container.isRenderGroup && !container.destroyed) container.disableRenderGroup();
             };

@@ -78,6 +78,10 @@ export class ExtendedSprite extends Sprite
 
         if(!sprite.getLocalBounds().rectangle.contains(x, y)) return false;
 
+        // el worker de TextureUploadQueue aún lo está sacando: un instante sin clic, sin leer la GPU
+        //@ts-ignore
+        if(baseTexture.hitMapPending && !baseTexture.hitMap) return false;
+
         //@ts-ignore
         if(!baseTexture.hitMap)
         {

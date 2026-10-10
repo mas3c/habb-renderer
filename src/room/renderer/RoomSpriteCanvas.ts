@@ -2,7 +2,7 @@ import { Container, Matrix, Point, Rectangle, RenderTexture, Sprite } from 'pixi
 import { IRoomCanvasMouseListener, IRoomGeometry, IRoomObject, IRoomObjectSprite, IRoomObjectSpriteVisualization, IRoomRenderingCanvas, IRoomSpriteCanvasContainer, IRoomSpriteMouseEvent, MouseEventType, RoomObjectSpriteData, RoomObjectSpriteType, Vector3d } from '../../api';
 import { RoomSpriteMouseEvent } from '../../events';
 import { Nitro } from '../../nitro/Nitro';
-import { GetTicker, NitroBlendMode, NitroContainer, NitroSprite, PixiApplicationProxy } from '../../pixi-proxy';
+import { GetTicker, NitroBlendMode, NitroContainer, NitroSprite, PixiApplicationProxy, RoomDownsampleFilter } from '../../pixi-proxy';
 import { RoomEnterEffect, RoomGeometry, RoomRotatingEffect, RoomShakingEffect } from '../utils';
 import { RoomObjectCache, RoomObjectCacheItem } from './cache';
 import { ExtendedSprite, ObjectMouseData, SortableSprite } from './utils';
@@ -43,6 +43,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
     private _eventCache: Map<string, IRoomSpriteMouseEvent>;
     private _eventId: number;
     private _scale: number;
+    private _downsampleFilter: RoomDownsampleFilter = null;
+    private _compositeZoom: boolean = false;
 
     private _SafeStr_4507: boolean = false;
     private _rotation: number = 0;
@@ -176,6 +178,13 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         this._display = null;
         this._sortableSprites = [];
+
+        if(this._downsampleFilter)
+        {
+            this._downsampleFilter.destroy();
+
+            this._downsampleFilter = null;
+        }
 
         if(this._mouseActiveObjects)
         {
@@ -315,6 +324,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
             update = true;
         }
+
+        this.updateZoomSampling();
 
         this.doMagic();
 
@@ -537,6 +548,34 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         if(!sprite) return null;
 
         return sprite;
+    }
+
+    // Zoom 0,5 con resolución x1: la sala se compone al doble y se reduce con media de 4 píxeles (RoomDownsampleFilter)
+    private updateZoomSampling(): void
+    {
+        if(!this._master || !this._display) return;
+
+        const renderer = PixiApplicationProxy.instance?.renderer;
+        const activo = (RoomDownsampleFilter.enabled && (this._scale === 0.5) && !!renderer && (renderer.resolution === 1));
+
+        if(activo)
+        {
+            if(!this._downsampleFilter) this._downsampleFilter = new RoomDownsampleFilter(2 * renderer.resolution);
+
+            const area = (this._display.filterArea || (this._display.filterArea = new Rectangle()));
+
+            area.x = (-this._screenOffsetX / this._scale);
+            area.y = (-this._screenOffsetY / this._scale);
+            area.width = (this._width / this._scale);
+            area.height = (this._height / this._scale);
+        }
+
+        if(activo === this._compositeZoom) return;
+
+        this._compositeZoom = activo;
+        this._display.filters = (activo ? [ this._downsampleFilter ] : null);
+
+        if(!activo) this._display.filterArea = null;
     }
 
     protected getExtendedSpriteIdentifier(sprite: ExtendedSprite): string

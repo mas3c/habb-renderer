@@ -1,5 +1,5 @@
 import { Spritesheet, Texture, TextureSource } from 'pixi.js';
-import { FurnitureType, GetAssetManager, GraphicAssetCollection, GraphicAssetGifCollection, IAssetData, IEventDispatcher, IFurnitureData, IFurnitureDataListener, IGraphicAssetCollection, IGraphicAssetGifCollection, IPetColorResult, IRoomContentListener, IRoomContentLoader, IRoomObject, ISessionDataManager, NitroBundle, NitroConfiguration, NitroLogger, RoomObjectCategory, RoomObjectUserType, RoomObjectVariable, RoomObjectVisualizationType } from '../../api';
+import { Dispositivo, FurnitureType, Metricas, GetAssetManager, GraphicAssetCollection, GraphicAssetGifCollection, IAssetData, IEventDispatcher, IFurnitureData, IFurnitureDataListener, IGraphicAssetCollection, IGraphicAssetGifCollection, IPetColorResult, IRoomContentListener, IRoomContentLoader, IRoomObject, ISessionDataManager, NitroBundle, NitroConfiguration, NitroLogger, RoomObjectCategory, RoomObjectUserType, RoomObjectVariable, RoomObjectVisualizationType } from '../../api';
 import { NitroEvent } from '../../events';
 import { RoomContentLoadedEvent } from '../../events/room/RoomContentLoadedEvent';
 import { GetTickerTime } from '../../pixi-proxy';
@@ -535,6 +535,30 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         return false;
     }
 
+    // Descargas de furnis a la vez: 12 en PC y 4 en móvil. Al entrar en una sala grande se piden cientos de golpe y
+    // descomprimirlas y decodificarlas todas a la vez se come la RAM y los fotogramas; así llegan en tandas.
+    private static MAX_DESCARGAS = (Dispositivo.esMovil ? 4 : 12);
+    private static _descargando = 0;
+    private static _turnos: (() => void)[] = [];
+
+    private static async pedirTurno(): Promise<() => void>
+    {
+        if(RoomContentLoader._descargando >= RoomContentLoader.MAX_DESCARGAS) await new Promise<void>(resolve => RoomContentLoader._turnos.push(resolve));
+
+        RoomContentLoader._descargando++;
+
+        let soltado = false;
+
+        return () =>
+        {
+            if(soltado) return;
+
+            soltado = true;
+            RoomContentLoader._descargando--;
+            RoomContentLoader._turnos.shift()?.();
+        };
+    }
+
     public async downloadAsset(type: string, events: IEventDispatcher): Promise<void>
     {
         const assetUrl: string = this.getAssetUrls(type)?.[0];
@@ -545,6 +569,12 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
 
         this._pendingContentTypes.push(type);
         this._events.set(type, events);
+
+        const esperaTurno = performance.now();
+        const soltar = await RoomContentLoader.pedirTurno();
+        const inicioDescarga = performance.now();
+
+        Metricas.add('descargas_espera_ms', (inicioDescarga - esperaTurno));
 
         try
         {
@@ -567,6 +597,9 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
 
                     if(!events) return;
 
+                    Metricas.add('descargas');
+                    Metricas.add('descarga_furni_ms', (performance.now() - inicioDescarga));
+
                     events.dispatchEvent(new RoomContentLoadedEvent(RoomContentLoadedEvent.RCLE_SUCCESS, type));
                     break;
                 }
@@ -578,6 +611,11 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         catch (err)
         {
             events.dispatchEvent(new RoomContentLoadedEvent(RoomContentLoadedEvent.RCLE_FAILURE, type));
+        }
+
+        finally
+        {
+            soltar();
         }
     }
 

@@ -1,5 +1,5 @@
 import { BufferImageSource, Matrix, Point, RenderTexture, Sprite, Texture } from 'pixi.js';
-import { IRoomGeometry, IRoomPlane, IVector3D, Vector3d } from '../../../../../api';
+import { IRoomGeometry, IRoomPlane, IVector3D, Metricas, Vector3d } from '../../../../../api';
 import { PixiApplicationProxy, PlaneTextureCache } from '../../../../../pixi-proxy';
 import { ColorConverter } from '../../../../../room';
 import { PlaneMaskManager } from './mask';
@@ -536,6 +536,8 @@ export class RoomPlane implements IRoomPlane
 
                 shared.refs++;
 
+                Metricas.add('planos_compartidos');
+
                 this._sharedKey = sharedKey;
                 this._bitmapData = shared.bitmap;
                 this._activeTexture = (shared.active as PlaneBitmapData);
@@ -590,11 +592,15 @@ export class RoomPlane implements IRoomPlane
 
             Randomizer.setSeed(this._randomSeed);
 
+            const inicioPlano = performance.now();
             const texture = this.getTexture(geometry, timeSinceStartMs);
 
             if(texture)
             {
                 this.renderTexture(geometry, texture);
+
+                Metricas.add('planos_dibujados');
+                Metricas.add('planos_ms', (performance.now() - inicioPlano));
 
                 // dibujo estático y sin máscaras: queda a disposición de los planos idénticos
                 if(sharedKey && this._activeTexture && (this._activeTexture.timeStamp < 0) && !this._bitmapMasks.length && !this._rectangleMasks.length)

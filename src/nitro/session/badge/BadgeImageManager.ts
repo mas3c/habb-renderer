@@ -218,7 +218,8 @@ export class BadgeImageManager implements IDisposable
 
                     sprite.position.set(x, y);
 
-                    if(isFirst) sprite.tint = parseInt(this._groupPartColors.get(part.color), 16);
+                    // un color que no existe (p. ej. 00 en «s15004») sale negro, como en el Habbo de Flash
+                    if(isFirst) sprite.tint = (parseInt(this._groupPartColors.get(part.color), 16) || 0);
 
                     isFirst = false;
 
