@@ -2,7 +2,6 @@ import { ICommunicationManager, IConfigurationManager, INitroCore } from '../api
 import { Disposable } from './common';
 import { CommunicationManager } from './communication';
 import { ConfigurationManager } from './configuration';
-import { NitroVersion } from './NitroVersion';
 
 export class NitroCore extends Disposable implements INitroCore
 {
@@ -13,7 +12,6 @@ export class NitroCore extends Disposable implements INitroCore
     {
         super();
 
-        NitroVersion.sayHello();
 
         this._configuration = new ConfigurationManager();
         this._communication = new CommunicationManager();
