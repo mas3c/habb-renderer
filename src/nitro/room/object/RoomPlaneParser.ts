@@ -975,7 +975,26 @@ export class RoomPlaneParser
                 const _local_25 = k.getManuallyLeftCut(_local_7);
                 const _local_26 = k.getManuallyRightCut(_local_7);
 
-                this.addWall(_local_16, _local_18, _local_19, _local_21, ((!(_local_23)) || (_local_25)), ((!(_local_22)) || (_local_26)), (!(_local_24)));
+                const capFin = ((!(_local_23)) || (_local_25));
+                const capInicio = ((!(_local_22)) || (_local_26));
+
+                // Tramos largos de sala gigante, troceados como el suelo: una pared de 158 baldosas era una
+                // textura de 5.024x2.627. Los remates van solo en los extremos de verdad: el del inicio
+                // (location) en el primer trozo y el del final (location + leftSide) en el último.
+                const maximo = Math.min(_local_10, this.planeMaxTiles());
+                const trozos = Math.ceil(_local_10 / maximo);
+
+                for(let t = 0; t < trozos; t++)
+                {
+                    const desde = (t * maximo);
+                    const largo = (Math.min(_local_10, (desde + maximo)) - desde);
+                    const inicio = Vector3d.sum(_local_16, Vector3d.product(_local_18, (desde / _local_10)));
+                    const lado = Vector3d.product(_local_18, (largo / _local_10));
+                    const primero = (t === 0);
+                    const ultimo = (t === (trozos - 1));
+
+                    this.addWall(inicio, lado, _local_19, _local_21, (ultimo && capFin), (primero && capInicio), (primero && (!(_local_24))));
+                }
             }
 
             _local_7++;
@@ -1675,8 +1694,39 @@ export class RoomPlaneParser
         }
     }
 
+    /*
+     * Salas gigantes (más de PLANE_SPLIT_ROOM_TILES de lado): suelos y paredes se trocean en planos de
+     * como mucho PLANE_MAX_TILES baldosas. Un plano se pinta en una textura del tamaño de su recuadro en
+     * pantalla: un suelo liso de 158x158 eran 10.048x5.024 px (más que el máximo de muchas tarjetas, que
+     * lo dejan en negro) y 822 MB de texturas en total. Troceado, cada trozo cabe en 2.048x1.024 a zoom 1
+     * y los iguales comparten textura (planos compartidos). Las salas normales no se tocan.
+     */
+    private static PLANE_SPLIT_ROOM_TILES = 79;
+    private static PLANE_MAX_TILES = 32;
+
+    private planeMaxTiles(): number
+    {
+        return (Math.max(this.tileMapWidth, this.tileMapHeight) > RoomPlaneParser.PLANE_SPLIT_ROOM_TILES) ? RoomPlaneParser.PLANE_MAX_TILES : Infinity;
+    }
+
+    /*
+     * Cortes de [desde, hasta) en tramos de como mucho paso, contados desde el principio: así cada trozo
+     * pinta el motivo del suelo igual que el plano entero (comparado píxel a píxel, también con ladrillos;
+     * contando desde el final, no).
+     */
+    private static cortes(desde: number, hasta: number, paso: number): number[][]
+    {
+        const tramos: number[][] = [];
+
+        for(let inicio = desde; inicio < hasta; inicio += paso) tramos.push([ inicio, Math.min(hasta, (inicio + paso)) ]);
+
+        return tramos;
+    }
+
     private extractPlanes(k: number[][]): void
     {
+        const paso = (this.planeMaxTiles() * 4); // la matriz va en cuartos de baldosa
+
         let _local_7: number;
         let _local_8: number;
         let _local_9: number;
@@ -1764,11 +1814,18 @@ export class RoomPlaneParser
                         }
                         _local_16++;
                     }
-                    _local_18 = ((_local_7 / 4) - 0.5);
-                    _local_19 = ((_local_6 / 4) - 0.5);
-                    _local_20 = ((_local_9 - _local_7) / 4);
-                    _local_21 = ((_local_10 - _local_6) / 4);
-                    this.addFloor(new Vector3d((_local_18 + _local_20), (_local_19 + _local_21), (_local_8 / 4)), new Vector3d(-(_local_20), 0, 0), new Vector3d(0, -(_local_21), 0), _local_13, _local_11, _local_14, _local_12);
+                    // sala gigante: el rectángulo se pinta en trozos; las caras laterales solo en su contorno
+                    for(const [ x0, x1 ] of RoomPlaneParser.cortes(_local_7, _local_9, paso))
+                    {
+                        for(const [ y0, y1 ] of RoomPlaneParser.cortes(_local_6, _local_10, paso))
+                        {
+                            _local_18 = ((x0 / 4) - 0.5);
+                            _local_19 = ((y0 / 4) - 0.5);
+                            _local_20 = ((x1 - x0) / 4);
+                            _local_21 = ((y1 - y0) / 4);
+                            this.addFloor(new Vector3d((_local_18 + _local_20), (_local_19 + _local_21), (_local_8 / 4)), new Vector3d(-(_local_20), 0, 0), new Vector3d(0, -(_local_21), 0), (_local_13 && (x1 === _local_9)), (_local_11 && (x0 === _local_7)), (_local_14 && (y1 === _local_10)), (_local_12 && (y0 === _local_6)));
+                        }
+                    }
                 }
                 _local_7++;
             }
