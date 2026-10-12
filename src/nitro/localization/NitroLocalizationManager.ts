@@ -60,17 +60,54 @@ export class NitroLocalizationManager extends NitroManager implements INitroLoca
     // siguientes, sin caché) y el último error queda en globalThis.__nitroTextosError para el informe de arranque.
     public loadLocalizationFromURL(url: string, intento: number = 1): void
     {
+        const anotar = (globalThis as any).__anotarArranque || (() => null);
+        const nombre = url.split('/').pop();
+        let recibidos = 0;
+
+        anotar(`textos ${ nombre } intento ${ intento }`);
+
+        // leído por trozos para saber cuántos bytes llegan antes de un corte
         fetch(url, (intento > 1) ? { cache: 'reload' } : undefined)
-            .then(response =>
+            .then(async response =>
             {
                 if(!response.ok) throw new Error('HTTP ' + response.status);
 
-                return response.json();
+                if(!response.body || !(globalThis as any).TextDecoder) return response.json();
+
+                const lector = response.body.getReader();
+                const trozos: Uint8Array[] = [];
+
+                try
+                {
+                    for(;;)
+                    {
+                        const { done, value } = await lector.read();
+
+                        if(done) break;
+
+                        trozos.push(value);
+                        recibidos += value.length;
+                    }
+                }
+                catch(err)
+                {
+                    throw new Error(`${ (err && err.message) || err } tras ${ recibidos } bytes`);
+                }
+
+                const todo = new Uint8Array(recibidos);
+                let o = 0;
+
+                for(const t of trozos) { todo.set(t, o); o += t.length; }
+
+                anotar(`textos ${ nombre } ok ${ recibidos }`);
+
+                return JSON.parse(new TextDecoder().decode(todo));
             })
             .then(data => this.onLocalizationLoaded(data, url))
             .catch(err =>
             {
-                (globalThis as any).__nitroTextosError = `${ url.split('/').pop() } intento ${ intento }: ${ (err && err.message) || err }`;
+                (globalThis as any).__nitroTextosError = `${ nombre } intento ${ intento }: ${ (err && err.message) || err }`;
+                anotar(`textos ${ nombre } FALLO ${ (err && err.message) || err }`);
 
                 if(intento < 3) setTimeout(() => this.loadLocalizationFromURL(url, intento + 1), 1000 * intento);
                 else this.onLocalizationFailed(err);
