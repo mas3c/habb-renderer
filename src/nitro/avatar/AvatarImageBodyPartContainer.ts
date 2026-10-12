@@ -2,6 +2,11 @@
 
 export class AvatarImageBodyPartContainer
 {
+    private static _nextUid = 0;
+
+    // Identidad de la pieza ya pintada: entra en la clave del fotograma completo.
+    public readonly uid = ++AvatarImageBodyPartContainer._nextUid;
+
     private _image: Container;
     private _regPoint: Point;
     private _offset: Point;
@@ -76,7 +81,8 @@ export class AvatarImageBodyPartContainer
 
     public set offset(k: Point)
     {
-        this._offset = k;
+        // Copia: quien llama reutiliza su Point en cada fotograma.
+        (this._offset ??= new Point()).copyFrom(k);
 
         this.cleanPoints();
     }

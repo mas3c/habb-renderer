@@ -12,6 +12,14 @@ import { AvatarImageBodyPartCache } from './AvatarImageBodyPartCache';
 import { AvatarImageDirectionCache } from './AvatarImageDirectionCache';
 import { ImageData } from './ImageData';
 
+// Valores sin animación compartidos: getParts solo los lee (removes se concatena,
+// no se modifica). Antes se creaba un array y un Map nuevos por llamada.
+const NO_REMOVES: string[] = [];
+const NO_ITEMS: Map<string, string> = new Map();
+
+// Punto de trabajo: el contenedor COPIA el offset (ver su setter).
+const OFFSET = new Point();
+
 export class AvatarImageCache
 {
     private static DEFAULT_MAX_CACHE_STORAGE_TIME_MS: number = 60000;
@@ -170,9 +178,9 @@ export class AvatarImageCache
         if(_local_7.definition.startFromFrameZero) frameCount -= _local_7.startFrame;
 
         let _local_8 = _local_7;
-        let _local_9: string[] = [];
-        let _local_10: Map<string, string> = new Map();
-        const _local_11 = new Point();
+        let _local_9: string[] = NO_REMOVES;
+        let _local_10: Map<string, string> = NO_ITEMS;
+        const _local_11 = OFFSET.set(0, 0);
 
         if(!((!(_local_7)) || (!(_local_7.definition))))
         {
@@ -263,6 +271,10 @@ export class AvatarImageCache
 
             _local_12.updateDirectionCache(_local_5, _local_13);
         }
+
+        // Parte sin nada en esta acción/dirección (sin sombrero, nada en la mano…):
+        // renderBodyPart devolvería null igualmente. Es casi la mitad de las llamadas.
+        if(!_local_13.getPartList().length) return null;
 
         let _local_14 = _local_13.getImageContainer(frameCount);
 

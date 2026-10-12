@@ -4,6 +4,7 @@ import { GetTickerTime, NitroContainer, NitroSprite, PaletteMapFilter, PixiAppli
 import { ActiveActionData } from './actions';
 import { AssetAliasCollection } from './alias';
 import { AvatarFigureContainer } from './AvatarFigureContainer';
+import { AvatarImageBodyPartContainer } from './AvatarImageBodyPartContainer';
 import { AvatarStructure } from './AvatarStructure';
 import { AvatarImageCache } from './cache';
 import { EffectAssetDownloadManager } from './EffectAssetDownloadManager';
@@ -47,7 +48,13 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
     private _lastActionsString: string;
     private _currentActionsString: string;
     private _fullImageCache: IAdvancedMap<string, RenderTexture>;
-    private _fullImageCacheSize: number = 5;
+    // Andar/bailar recorre 5-8 fotogramas: con 8 huecos acierta ~55 % con 124 avatares
+    // andando (con 4-5 casi nunca). Cada fallo es un render completo del avatar.
+    private _fullImageCacheSize: number = 8;
+    private _fullImageLastUse = 0;
+    private _fullImageMisses = 0;
+    private _frameParts: AvatarImageBodyPartContainer[] = [];
+    private _framePoints: number[] = [];
     protected _isCachedImage: boolean = false;
     private _useFullImageCache: boolean = false;
     private _effectIdInUse: number = -1;
@@ -114,12 +121,14 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
         this._avatarSpriteData = null;
         this._actions = null;
 
-        if(this._image)
-        {
-            this._image.destroy();
+        const cachedImages = new Set(this._fullImageCache ? this._fullImageCache.getValues() : []);
 
-            this._image = null;
-        }
+        if(this._image && !cachedImages.has(this._image)) this._image.destroy();
+
+        if(this._reusableTexture && (this._reusableTexture !== this._image)) this._reusableTexture.destroy(true);
+
+        this._image = null;
+        this._reusableTexture = null;
 
         if(this._cache)
         {
@@ -326,56 +335,78 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
 
         this._image = null;
 
-        const container = new NitroContainer();
+        /*
+         * Caché de fotogramas completos. Andar, bailar o hablar repiten un ciclo corto,
+         * y cada fotograma nuevo era montar el avatar entero y un renderer.render. La
+         * clave sale de las piezas ya pintadas (cada una es el mismo objeto mientras
+         * siga en su caché) y de dónde van, más acción y lienzo: misma clave = mismos
+         * píxeles. Si una pieza no es cacheable, o el avatar no repite fotogramas
+         * (dos vueltas de la caché sin acertar), se pinta como antes en una sola textura.
+         */
+        const parts = this._frameParts;
+        const points = this._framePoints;
+
+        parts.length = 0;
+        points.length = 0;
 
         let isCachable = true;
+        let key = (cache && (this._fullImageMisses < (this._fullImageCacheSize * 2)))
+            ? `${ this._mainDirection }/${ this._headDirection }/${ this._currentActionsString }/${ avatarCanvas.width }x${ avatarCanvas.height }`
+            : null;
         let partCount = (_local_6.length - 1);
 
         while(partCount >= 0)
         {
-            const set = _local_6[partCount];
-            const part = this._cache.getImageContainer(set, this._frameCounter);
-
-            if(part)
-            {
-                const partCacheContainer = part.image;
-
-                if(!partCacheContainer)
-                {
-                    container.destroy({
-                        children: true
-                    });
-
-                    return null;
-                }
-
-                isCachable = ((isCachable) && (part.isCacheable));
-
-                const point = part.regPoint.clone();
-
-                if(point)
-                {
-                    point.x += avatarCanvas.offset.x;
-                    point.y += avatarCanvas.offset.y;
-
-                    point.x += avatarCanvas.regPoint.x;
-                    point.y += avatarCanvas.regPoint.y;
-
-                    const partContainer = new NitroContainer();
-
-                    partContainer.addChild(partCacheContainer);
-
-                    if(partContainer)
-                    {
-                        partContainer.position.set(point.x, point.y);
-
-                        container.addChild(partContainer);
-                    }
-                }
-            }
+            const part = this._cache.getImageContainer(_local_6[partCount], this._frameCounter);
 
             partCount--;
+
+            if(!part) continue;
+
+            if(!part.image) return null;
+
+            isCachable = ((isCachable) && (part.isCacheable));
+
+            const point = part.regPoint;
+            const x = (point.x + avatarCanvas.offset.x + avatarCanvas.regPoint.x);
+            const y = (point.y + avatarCanvas.offset.y + avatarCanvas.regPoint.y);
+
+            parts.push(part);
+            points.push(x, y);
+
+            if(key !== null) key += `|${ part.uid }:${ x },${ y }`;
         }
+
+        if(!isCachable) key = null;
+
+        if(key !== null)
+        {
+            const cached = this.getFullImage(key);
+
+            if(cached)
+            {
+                this._fullImageMisses = 0;
+                this._fullImageLastUse = Date.now();
+                this._image = cached;
+                this._changes = false;
+
+                return cached;
+            }
+        }
+
+        const container = new NitroContainer();
+
+        for(let i = 0; i < parts.length; i++)
+        {
+            const partContainer = new NitroContainer();
+
+            partContainer.addChild(parts[i].image);
+            partContainer.position.set(points[i * 2], points[(i * 2) + 1]);
+
+            container.addChild(partContainer);
+        }
+
+        parts.length = 0;
 
         if(this._avatarSpriteData)
         {
@@ -393,6 +424,21 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
         if(!cache)
         {
             return TextureUtils.generateTexture(container, new Rectangle(0, 0, avatarCanvas.width, avatarCanvas.height));
+        }
+
+        if(key !== null)
+        {
+            const texture = TextureUtils.generateTexture(container, new Rectangle(0, 0, avatarCanvas.width, avatarCanvas.height));
+
+            if(!texture) return null;
+
+            this._fullImageMisses++;
+            this._fullImageLastUse = Date.now();
+            this.cacheFullImage(key, texture);
+            this._image = texture;
+            this._changes = false;
+
+            return texture;
         }
 
         if(this._reusableTexture)
@@ -619,18 +665,45 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
         return image;
     }
 
+    /**
+     * Suelta los fotogramas guardados (menos el que se ve) de un avatar que lleva
+     * idleMs sin pedir ninguno: quieto ya no los necesita y ocupan memoria de vídeo.
+     */
+    public trimFullImageCache(now: number, idleMs: number): void
+    {
+        if(!this._fullImageCache || !this._fullImageCache.length) return;
+
+        if((now - this._fullImageLastUse) < idleMs) return;
+
+        for(const key of [ ...this._fullImageCache.getKeys() ])
+        {
+            const texture = this._fullImageCache.getValue(key);
+
+            if(texture === this._image) continue;
+
+            this._fullImageCache.remove(key);
+
+            texture && texture.destroy(true);
+        }
+    }
+
     protected getFullImage(k: string): RenderTexture
     {
         const existing = this._fullImageCache.getValue(k);
 
         if(existing)
         {
+            this._fullImageCache.remove(k);
+
             if(existing.destroyed || !existing.source)
             {
-                this._fullImageCache.remove(k);
-
                 existing.destroy(true);
+
+                return null;
             }
+
+            // LRU: el que se acaba de usar pasa al final y nunca es el que se expulsa
+            this._fullImageCache.add(k, existing);
 
             return existing;
         }
@@ -861,6 +934,7 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
         let k: boolean;
 
         this._currentActionsString = '';
+        this._fullImageMisses = 0; // acción nueva: vuelve a intentar la caché de fotogramas
         this._sortedActions = this._structure.sortActions(this._actions);
         this._animationFrameCount = this._structure.maxFrames(this._sortedActions);
 

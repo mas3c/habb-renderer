@@ -62,6 +62,11 @@ export class AvatarImagePartContainer
         return null;
     }
 
+    public get frameCount(): number
+    {
+        return this._frames?.length ?? 0;
+    }
+
     public getCacheableKey(k: number): string
     {
         const frameNumber = (k % this._frames.length);

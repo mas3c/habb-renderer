@@ -70,7 +70,13 @@ export class AvatarAssetDownloadManager extends EventDispatcher
             if(libraries) for(const library of libraries) library && needed.add(library);
         };
 
-        for(const image of AvatarImage.LIVE) add(this.getAvatarFigureLibraries(image.getFigure()));
+        for(const image of AvatarImage.LIVE)
+        {
+            add(this.getAvatarFigureLibraries(image.getFigure()));
+
+            // avatares quietos: fuera los fotogramas guardados que ya no se piden
+            image.trimFullImageCache(now, 10000);
+        }
 
         for(const part of this._missingMandatoryLibs) add(this._figureMap.get(part));
 
