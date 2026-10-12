@@ -55,12 +55,26 @@ export class NitroLocalizationManager extends NitroManager implements INitroLoca
         this.loadLocalizationFromURL(this._pendingUrls[0]);
     }
 
-    public loadLocalizationFromURL(url: string): void
+    // Los textos pesan 2 MB y en algunos móviles (iPhone) la descarga llegaba cortada: response.json() fallaba,
+    // nadie atendía el FAILED y el arranque se quedaba en el 20 % sin decir nada. Ahora: hasta 3 intentos (los
+    // siguientes, sin caché) y el último error queda en globalThis.__nitroTextosError para el informe de arranque.
+    public loadLocalizationFromURL(url: string, intento: number = 1): void
     {
-        fetch(url)
-            .then(response => response.json())
+        fetch(url, (intento > 1) ? { cache: 'reload' } : undefined)
+            .then(response =>
+            {
+                if(!response.ok) throw new Error('HTTP ' + response.status);
+
+                return response.json();
+            })
             .then(data => this.onLocalizationLoaded(data, url))
-            .catch(err => this.onLocalizationFailed(err));
+            .catch(err =>
+            {
+                (globalThis as any).__nitroTextosError = `${ url.split('/').pop() } intento ${ intento }: ${ (err && err.message) || err }`;
+
+                if(intento < 3) setTimeout(() => this.loadLocalizationFromURL(url, intento + 1), 1000 * intento);
+                else this.onLocalizationFailed(err);
+            });
     }
 
     private onLocalizationLoaded(data: { [index: string]: any }, url: string): void
