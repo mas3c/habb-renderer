@@ -91,16 +91,19 @@ export class NitroBundle
         const url = URL.createObjectURL(blob);
         const image = new Image();
 
-        image.src = url;
+        // Lo primero que llegue: decode(), load/error o 5 s (Chrome puede aplazar decode() sin fin con la
+        // página sin pintar; en producción clavaba el arranque en el 20 %).
+        await new Promise<void>(resolve =>
+        {
+            let hecho = false;
+            const fin = () => { if(!hecho) { hecho = true; resolve(); } };
 
-        try
-        {
-            await image.decode();
-        }
-        catch
-        {
-            if(!image.complete) await new Promise(resolve => image.onload = image.onerror = resolve);
-        }
+            image.onload = fin;
+            image.onerror = fin;
+            image.src = url;
+            image.decode().then(fin, fin);
+            setTimeout(fin, 5000);
+        });
 
         URL.revokeObjectURL(url);
 
