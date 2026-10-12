@@ -66,22 +66,21 @@ export class NitroBundle
         const url = URL.createObjectURL(new Blob([ data ], { type: 'image/png' }));
         const image = new Image();
 
-        // Lo primero que llegue: decode(), load/error o 5 s. Chrome puede aplazar decode() sin fin
-        // mientras la página no se pinta (pestaña o móvil en segundo plano, iframe aún oculto) y el
-        // arranque se quedaba clavado en el 20 % (fallo-arranque desde el 09-10). load no depende de pintar.
+        // Se espera a decode() (con 5 s de tope por si Chrome lo aplaza con la página sin pintar). La URL del
+        // blob se revoca DESPUÉS de decodificar: Safari decodifica tarde y con la URL ya revocada la textura
+        // salía negra (iPhone, 13-10: medio Recibidor en negro). Si decode() no llega, se revoca al minuto.
         await new Promise<void>(resolve =>
         {
             let hecho = false;
             const fin = () => { if(!hecho) { hecho = true; resolve(); } };
 
-            image.onload = fin;
-            image.onerror = fin;
             image.src = url;
-            image.decode().then(fin, fin);
+            image.decode().then(fin, () => { if(image.complete) fin(); else image.onload = image.onerror = fin; });
             setTimeout(fin, 5000);
         });
 
-        URL.revokeObjectURL(url);
+        image.decode().catch(() => null).finally(() => URL.revokeObjectURL(url));
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
 
         return image;
     }
