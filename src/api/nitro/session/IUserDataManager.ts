@@ -15,6 +15,8 @@ export interface IUserDataManager
     removeUserData(roomIndex: number): void;
     setChatIcono(roomIndex: number, iconoId: number): void;
     getChatIcono(roomIndex: number): number;
+    setColorNombre(roomIndex: number, color: string): void;
+    getColorNombre(roomIndex: number): string;
     getUserBadges(userId: number): string[];
     setUserBadges(userId: number, badges: string[]): void;
     updateFigure(roomIndex: number, figure: string, sex: string, hasSaddle: boolean, isRiding: boolean): void;

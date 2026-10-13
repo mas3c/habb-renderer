@@ -1,6 +1,6 @@
 import { IConnection, IRoomHandlerListener, IRoomUserData } from '../../../api';
 import { RoomSessionConfirmPetBreedingEvent, RoomSessionConfirmPetBreedingResultEvent, RoomSessionDanceEvent, RoomSessionDoorbellEvent, RoomSessionErrorMessageEvent, RoomSessionFavoriteGroupUpdateEvent, RoomSessionFriendRequestEvent, RoomSessionNestBreedingSuccessEvent, RoomSessionPetBreedingEvent, RoomSessionPetBreedingResultEvent, RoomSessionPetFigureUpdateEvent, RoomSessionPetInfoUpdateEvent, RoomSessionPetLevelUpdateEvent, RoomSessionPetStatusUpdateEvent, RoomSessionUserBadgesEvent, RoomSessionUserDataUpdateEvent, RoomSessionUserFigureUpdateEvent } from '../../../events';
-import { BotErrorEvent, ConfirmBreedingRequestEvent, ConfirmBreedingResultEvent, DoorbellMessageEvent, FavoriteMembershipUpdateMessageEvent, NestBreedingSuccessEvent, NewFriendRequestEvent, PetBreedingMessageEvent, PetBreedingResultEvent, PetFigureUpdateEvent, PetInfoEvent, PetLevelUpdateMessageEvent, PetPlacingErrorEvent, PetStatusUpdateEvent, RoomUnitDanceEvent, RoomUnitEvent, RoomUnitInfoEvent, RoomUnitRemoveEvent, RoomIconoMessageEvent, UserCurrentBadgesEvent, UserNameChangeMessageEvent } from '../../communication';
+import { BotErrorEvent, ConfirmBreedingRequestEvent, ConfirmBreedingResultEvent, DoorbellMessageEvent, FavoriteMembershipUpdateMessageEvent, NestBreedingSuccessEvent, NewFriendRequestEvent, PetBreedingMessageEvent, PetBreedingResultEvent, PetFigureUpdateEvent, PetInfoEvent, PetLevelUpdateMessageEvent, PetPlacingErrorEvent, PetStatusUpdateEvent, RoomUnitDanceEvent, RoomUnitEvent, RoomUnitInfoEvent, RoomUnitRemoveEvent, RoomIconoMessageEvent, RoomColorNombreMessageEvent, UserCurrentBadgesEvent, UserNameChangeMessageEvent } from '../../communication';
 import { RoomPetData } from '../RoomPetData';
 import { RoomUserData } from '../RoomUserData';
 import { BaseHandler } from './BaseHandler';
@@ -15,6 +15,7 @@ export class RoomUsersHandler extends BaseHandler
         connection.addMessageEvent(new RoomUnitInfoEvent(this.onRoomUnitInfoEvent.bind(this)));
         connection.addMessageEvent(new RoomUnitRemoveEvent(this.onRoomUnitRemoveEvent.bind(this)));
         connection.addMessageEvent(new RoomIconoMessageEvent(this.onRoomIconoEvent.bind(this)));
+        connection.addMessageEvent(new RoomColorNombreMessageEvent(this.onRoomColorNombreEvent.bind(this)));
         connection.addMessageEvent(new RoomUnitDanceEvent(this.onRoomUnitDanceEvent.bind(this)));
         connection.addMessageEvent(new UserCurrentBadgesEvent(this.onUserCurrentBadgesEvent.bind(this)));
         connection.addMessageEvent(new DoorbellMessageEvent(this.onRoomDoorbellEvent.bind(this)));
@@ -117,6 +118,19 @@ export class RoomUsersHandler extends BaseHandler
         const parser = event.getParser();
 
         session.userDataManager.setChatIcono(parser.roomIndex, parser.iconoId);
+    }
+
+    private onRoomColorNombreEvent(event: RoomColorNombreMessageEvent): void
+    {
+        if(!this.listener) return;
+
+        const session = this.listener.getSession(this.roomId);
+
+        if(!session) return;
+
+        const parser = event.getParser();
+
+        session.userDataManager.setColorNombre(parser.roomIndex, parser.color);
     }
 
     private onRoomUnitRemoveEvent(event: RoomUnitRemoveEvent): void
