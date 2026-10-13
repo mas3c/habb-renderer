@@ -2,7 +2,6 @@ import '@pixi/canvas-display';
 import { BatchRenderer, extensions } from '@pixi/core';
 import { Extract } from '@pixi/extract';
 import '@pixi/graphics-extras';
-import { InteractionManager } from '@pixi/interaction';
 import { AppLoaderPlugin } from '@pixi/loaders';
 import '@pixi/math-extras';
 import '@pixi/mixin-cache-as-bitmap';
@@ -13,11 +12,12 @@ import { TilingSpriteRenderer } from '@pixi/sprite-tiling';
 import { SpritesheetLoader } from '@pixi/spritesheet';
 import { TickerPlugin } from '@pixi/ticker';
 
+// Sin InteractionManager (13-10): Nitro lleva el ratón con eventos del DOM sobre el canvas y nadie usa los de Pixi;
+// el plugin solo gastaba CPU buscando qué hay bajo el cursor en cada movimiento y en cada fotograma.
 extensions.add(
     BatchRenderer,
     Extract,
     TilingSpriteRenderer,
-    InteractionManager,
     SpritesheetLoader,
     AppLoaderPlugin,
     TickerPlugin);

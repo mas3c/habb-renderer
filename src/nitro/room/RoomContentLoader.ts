@@ -1,6 +1,6 @@
 import { BaseTexture, Resource, Texture } from '@pixi/core';
 import { Spritesheet } from '@pixi/spritesheet';
-import { FurnitureType, GetAssetManager, GraphicAssetCollection, GraphicAssetGifCollection, IAssetData, IEventDispatcher, IFurnitureData, IFurnitureDataListener, IGraphicAssetCollection, IGraphicAssetGifCollection, IPetColorResult, IRoomContentListener, IRoomContentLoader, IRoomObject, ISessionDataManager, NitroBundle, NitroConfiguration, NitroLogger, RoomObjectCategory, RoomObjectUserType, RoomObjectVariable, RoomObjectVisualizationType } from '../../api';
+import { Dispositivo, FurnitureType, GetAssetManager, GraphicAssetCollection, GraphicAssetGifCollection, IAssetData, IEventDispatcher, IFurnitureData, IFurnitureDataListener, IGraphicAssetCollection, IGraphicAssetGifCollection, IPetColorResult, IRoomContentListener, IRoomContentLoader, IRoomObject, ISessionDataManager, NitroBundle, NitroConfiguration, NitroLogger, RoomObjectCategory, RoomObjectUserType, RoomObjectVariable, RoomObjectVisualizationType } from '../../api';
 import { NitroEvent } from '../../events';
 import { RoomContentLoadedEvent } from '../../events/room/RoomContentLoadedEvent';
 import { GetTickerTime } from '../../pixi-proxy';
@@ -536,6 +536,31 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         return false;
     }
 
+    // Descargas de furnis a la vez en móvil: 8. Al entrar en una sala grande se piden cientos de golpe y descomprimirlas y
+    // decodificarlas todas a la vez se come la RAM del teléfono; así llegan en tandas. En PC sin tope: medido el 13-10 en
+    // el Recibidor, con 12 tardaba 27 s en pintarse entero y sin tope 9 s, y la RAM ahí sobra.
+    private static MAX_DESCARGAS = (Dispositivo.esMovil ? 8 : Infinity);
+    private static _descargando = 0;
+    private static _turnos: (() => void)[] = [];
+
+    private static async pedirTurno(): Promise<() => void>
+    {
+        if(RoomContentLoader._descargando >= RoomContentLoader.MAX_DESCARGAS) await new Promise<void>(resolve => RoomContentLoader._turnos.push(resolve));
+
+        RoomContentLoader._descargando++;
+
+        let soltado = false;
+
+        return () =>
+        {
+            if(soltado) return;
+
+            soltado = true;
+            RoomContentLoader._descargando--;
+            RoomContentLoader._turnos.shift()?.();
+        };
+    }
+
     public async downloadAsset(type: string, events: IEventDispatcher): Promise<void>
     {
         const assetUrl: string = this.getAssetUrls(type)?.[0];
@@ -546,6 +571,8 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
 
         this._pendingContentTypes.push(type);
         this._events.set(type, events);
+
+        const soltar = await RoomContentLoader.pedirTurno();
 
         try
         {
@@ -579,6 +606,11 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         catch (err)
         {
             events.dispatchEvent(new RoomContentLoadedEvent(RoomContentLoadedEvent.RCLE_FAILURE, type));
+        }
+
+        finally
+        {
+            soltar();
         }
     }
 

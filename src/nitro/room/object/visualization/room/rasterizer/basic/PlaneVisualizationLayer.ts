@@ -92,4 +92,9 @@ export class PlaneVisualizationLayer
     {
         return this._color;
     }
+
+    public get material(): PlaneMaterial
+    {
+        return this._material;
+    }
 }
