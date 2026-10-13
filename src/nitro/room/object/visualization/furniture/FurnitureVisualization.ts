@@ -263,7 +263,8 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
 
             while(animation > 0)
             {
-                if(animation) this.updateSprite(scale, layerId);
+                // un bit por capa: solo las capas cuya animación ha cambiado (antes todas hasta la más alta animada)
+                if(animation & 1) this.updateSprite(scale, layerId);
 
                 layerId++;
                 animation = (animation >> 1);

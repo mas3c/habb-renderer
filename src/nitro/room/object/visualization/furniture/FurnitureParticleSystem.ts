@@ -1,9 +1,9 @@
 import { RenderTexture, Texture } from '@pixi/core';
+import { Container } from '@pixi/display';
 import { AlphaFilter } from '@pixi/filter-alpha';
 import { Graphics } from '@pixi/graphics';
-import { Matrix } from '@pixi/math';
 import { AdvancedMap, IAdvancedMap, IGraphicAsset, IParticleSystem, IRoomObjectSprite } from '../../../../../api';
-import { NitroPoint, NitroSprite, PixiApplicationProxy } from '../../../../../pixi-proxy';
+import { NitroSprite, PixiApplicationProxy } from '../../../../../pixi-proxy';
 import { Vector3D } from '../../../../avatar';
 import { FurnitureAnimatedVisualization } from './FurnitureAnimatedVisualization';
 import { FurnitureParticleSystemEmitter } from './FurnitureParticleSystemEmitter';
@@ -24,13 +24,16 @@ export class FurnitureParticleSystem
     private _scaleMultiplier: number = 1;
     private _blackOverlay: Graphics;
     private _blackOverlayAlphaTransform: AlphaFilter;
-    private _particleColorTransform: AlphaFilter;
-    private _identityMatrix: Matrix;
-    private _translationMatrix: Matrix;
     private _blend: number = 1;
     private _bgColor: number = 0xFF000000;
     private _emptySprite: NitroSprite;
     private _isDone: boolean = false;
+    // Todas las partículas de un fotograma van en un contenedor y se pintan de una vez (antes un render completo
+    // por partícula, con un filtro de alfa en las que se desvanecen). Los sprites se reutilizan entre fotogramas.
+    private _capa: Container = null;
+    private _sprites: NitroSprite[] = [];
+    // la textura anterior se destruye cuando ya hay otra puesta (el sprite de la sala nunca apunta a una destruida)
+    private _texturaVieja: RenderTexture = null;
 
     constructor(visualization: FurnitureAnimatedVisualization)
     {
@@ -38,9 +41,6 @@ export class FurnitureParticleSystem
         this._visualization = visualization;
         this._blackOverlayAlphaTransform = new AlphaFilter();
         this._blackOverlayAlphaTransform.alpha = 1;
-        this._particleColorTransform = new AlphaFilter();
-        this._identityMatrix = new Matrix();
-        this._translationMatrix = new Matrix();
     }
 
     public dispose(): void
@@ -67,10 +67,20 @@ export class FurnitureParticleSystem
             this._emptySprite = null;
         }
 
+        if(this._capa)
+        {
+            this._capa.destroy({ children: true });
+            this._capa = null;
+            this._sprites = [];
+        }
+
+        if(this._texturaVieja)
+        {
+            this._texturaVieja.destroy(true);
+            this._texturaVieja = null;
+        }
+
         this._blackOverlayAlphaTransform = null;
-        this._particleColorTransform = null;
-        this._identityMatrix = null;
-        this._translationMatrix = null;
     }
 
     public reset(): void
@@ -105,7 +115,7 @@ export class FurnitureParticleSystem
         {
             if((this._roomSprite.width <= 1) || (this._roomSprite.height <= 1)) return;
 
-            if(this._canvasTexture && ((this._canvasTexture.width !== this._roomSprite.width) || (this._canvasTexture.height !== this._roomSprite.height))) this._canvasTexture = null;
+            if(this._canvasTexture && ((this._canvasTexture.width !== this._roomSprite.width) || (this._canvasTexture.height !== this._roomSprite.height))) this.soltarTextura();
 
             this.clearCanvas();
 
@@ -168,7 +178,11 @@ export class FurnitureParticleSystem
 
             if(!this._canvasTexture) this.updateCanvas();
 
-            this.clearCanvas();
+            if(!this._canvasTexture) this.clearCanvas();
+
+            if(!this._capa) this._capa = new Container();
+
+            let n = 0;
 
             for(const particle of this._currentEmitter.particles)
             {
@@ -176,55 +190,47 @@ export class FurnitureParticleSystem
                 const ty = ((this._centerY - offsetY) + ((((particle.y + ((particle.x + particle.z) / 2)) * k) / 10) * this._scaleMultiplier));
                 const asset = particle.getAsset();
 
+                let sprite = this._sprites[n];
+
+                if(!sprite)
+                {
+                    sprite = new NitroSprite(Texture.EMPTY);
+
+                    this._sprites.push(sprite);
+                    this._capa.addChild(sprite);
+                }
+
+                sprite.visible = true;
+
                 if(asset && asset.texture)
                 {
-                    if(particle.fade && (particle.alphaMultiplier < 1))
-                    {
-                        this._translationMatrix.identity();
-                        this._translationMatrix.translate((tx + asset.offsetX), (ty + asset.offsetY));
-
-                        const sprite = new NitroSprite(asset.texture);
-
-                        this._particleColorTransform.alpha = particle.alphaMultiplier;
-
-                        sprite.filters = [this._particleColorTransform];
-
-                        PixiApplicationProxy.instance.renderer.render(sprite, {
-                            renderTexture: this._canvasTexture,
-                            transform: this._translationMatrix,
-                            clear: false
-                        });
-                    }
-                    else
-                    {
-                        const point = new NitroPoint((tx + asset.offsetX), (ty + asset.offsetY));
-                        const sprite = new NitroSprite(asset.texture);
-
-                        sprite.x = point.x;
-                        sprite.y = point.y;
-
-                        PixiApplicationProxy.instance.renderer.render(sprite, {
-                            renderTexture: this._canvasTexture,
-                            clear: false
-                        });
-                    }
+                    sprite.texture = asset.texture;
+                    sprite.tint = 0xFFFFFF;
+                    sprite.position.set((tx + asset.offsetX), (ty + asset.offsetY));
+                    sprite.scale.set(1);
+                    sprite.alpha = (particle.fade && (particle.alphaMultiplier < 1)) ? particle.alphaMultiplier : 1;
                 }
                 else
                 {
-                    const sprite = new NitroSprite(Texture.WHITE);
-
+                    // sin dibujo: un punto blanco de 2x2
+                    sprite.texture = Texture.WHITE;
                     sprite.tint = 0xFFFFFF;
-                    sprite.x = (tx - 1);
-                    sprite.y = (ty - 1);
+                    sprite.position.set((tx - 1), (ty - 1));
                     sprite.width = 2;
                     sprite.height = 2;
-
-                    PixiApplicationProxy.instance.renderer.render(sprite, {
-                        renderTexture: this._canvasTexture,
-                        clear: false
-                    });
+                    sprite.alpha = 1;
                 }
+
+                n++;
             }
+
+            for(let i = n; i < this._sprites.length; i++) this._sprites[i].visible = false;
+
+            // un solo pintado por fotograma, que además borra lo anterior
+            PixiApplicationProxy.instance.renderer.render(this._capa, {
+                renderTexture: this._canvasTexture,
+                clear: true
+            });
 
             if(!this._currentEmitter.particles.length)
             {
@@ -303,6 +309,17 @@ export class FurnitureParticleSystem
 
         if(this._currentEmitter) this._currentEmitter.copyStateFrom(particleSystem._currentEmitter, (particleSystem._size / this._size));
 
+        this.soltarTextura();
+    }
+
+    // deja de usar la textura del lienzo; se destruye al crear la siguiente (antes se anulaba sin destruir: fuga)
+    private soltarTextura(): void
+    {
+        if(!this._canvasTexture) return;
+
+        if(this._texturaVieja && (this._texturaVieja !== this._canvasTexture)) this._texturaVieja.destroy(true);
+
+        this._texturaVieja = this._canvasTexture;
         this._canvasTexture = null;
     }
 
@@ -321,6 +338,14 @@ export class FurnitureParticleSystem
                 width: this._roomSprite.width,
                 height: this._roomSprite.height
             });
+
+            if(this._roomSprite.texture === this._texturaVieja) this._roomSprite.texture = this._canvasTexture;
+
+            if(this._texturaVieja)
+            {
+                this._texturaVieja.destroy(true);
+                this._texturaVieja = null;
+            }
         }
         else
         {

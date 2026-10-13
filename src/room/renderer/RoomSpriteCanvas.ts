@@ -68,6 +68,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
     private _usesExclusionRectangles: boolean;
     private _usesMask: boolean;
     private _canvasUpdated: boolean;
+    // un solo punto para las comprobaciones de clic (antes un new Point por sprite y movimiento del ratón)
+    private _puntoRaton: Point = new Point();
 
     private _objectCache: RoomObjectCache;
 
@@ -414,7 +416,9 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         this.cleanSprites(spriteCount);
 
-        if(update || updateVisuals) this._canvasUpdated = true;
+        // Solo si cambia algo (renderObject ya lo marca cuando un sprite cambia): antes también en cada fotograma de
+        // animación, y la vista previa del catálogo/inventario sacaba un PNG de la GPU 24 veces por segundo sin cambios.
+        if(update) this._canvasUpdated = true;
 
         this._renderTimestamp = this._totalTimeRunning;
         this._renderedWidth = this._width;
@@ -867,7 +871,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         {
             const extendedSprite = this.getExtendedSprite(spriteId);
 
-            if(extendedSprite && extendedSprite.containsPoint(new Point((x - extendedSprite.x), (y - extendedSprite.y))))
+            if(extendedSprite && extendedSprite.containsPoint(this._puntoRaton.set((x - extendedSprite.x), (y - extendedSprite.y))))
             {
                 if(extendedSprite.clickHandling && ((type === MouseEventType.MOUSE_CLICK) || (type === MouseEventType.DOUBLE_CLICK)))
                 {
