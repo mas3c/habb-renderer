@@ -52,7 +52,11 @@ export class NitroBundle
         {
             try
             {
-                const stream = new Blob([ data ]).stream().pipeThrough(new Decompression('deflate'));
+                // Los .nitro vienen en zlib (78 9c) o en gzip (1f 8b; ~1 de cada 5): con 'deflate' fijo los gzip fallaban
+                // siempre y caían en pako, en el hilo principal.
+                const cabecera = new Uint8Array(data, 0, Math.min(2, data.byteLength));
+                const formato = ((cabecera[0] === 0x1f) && (cabecera[1] === 0x8b)) ? 'gzip' : 'deflate';
+                const stream = new Blob([ data ]).stream().pipeThrough(new Decompression(formato));
 
                 return new Uint8Array(await new Response(stream).arrayBuffer());
             }

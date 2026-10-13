@@ -126,9 +126,9 @@ export class Nitro implements INitro
             canvas,
             roundPixels: true,
             antialias: false,
-            // Fotogramas sin pintarse antes de que Pixi borre una textura de la GPU (ver RoomContentLoader.purge).
-            textureGCMaxIdle: 3600,
-            // Lo que no se usa en un minuto se libera, mirando cada 10 s (por defecto cada 30).
+            // Lo que no se usa en un minuto se libera, mirando cada 10 s (por defecto cada 30). Solo afecta a las fuentes con
+            // autoGarbageCollect; las RenderTexture y CanvasSource (avatares, planos, estelas) se destruyen a mano.
+            // (textureGCMaxIdle ya no hace nada desde Pixi 8.15: quitado el 13-10.)
             gcMaxUnusedTime: 60000,
             gcFrequency: 10000,
             // Nitro lleva el ratón con eventos del DOM sobre el canvas: el sistema de eventos de Pixi solo gastaría CPU

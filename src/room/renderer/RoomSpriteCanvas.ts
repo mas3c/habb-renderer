@@ -65,6 +65,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
     private _usesExclusionRectangles: boolean;
     private _usesMask: boolean;
     private _canvasUpdated: boolean;
+    // un solo punto para las comprobaciones de clic (antes un new Point por sprite y movimiento del ratón)
+    private _puntoRaton: Point;
 
     private _objectCache: RoomObjectCache;
 
@@ -98,6 +100,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         this._screenOffsetX = 0;
         this._screenOffsetY = 0;
         this._mouseLocation = new Point;
+        this._puntoRaton = new Point();
         this._mouseOldX = 0;
         this._mouseOldY = 0;
         this._mouseCheckCount = 0;
@@ -134,6 +137,10 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         if(!this._display)
         {
             const display = new NitroContainer();
+
+            // Render group de Pixi 8: mover o escalar la sala (seguir al avatar, arrastrar, zoom) es un uniform de la
+            // GPU en vez de recalcular la posición de cada sprite (~1.000 en una sala grande)
+            display.isRenderGroup = true;
 
             this._master.addChild(display);
 
@@ -381,7 +388,9 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         this.cleanSprites(spriteCount);
 
-        if(update || updateVisuals) this._canvasUpdated = true;
+        // Solo si cambia algo (renderObject ya lo marca cuando un sprite cambia): antes también en cada fotograma de
+        // animación, y la vista previa del catálogo/inventario sacaba un PNG de la GPU 24 veces por segundo sin cambios.
+        if(update) this._canvasUpdated = true;
 
         this._renderTimestamp = this._totalTimeRunning;
         this._renderedWidth = this._width;
@@ -601,6 +610,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         if(!objectSprite || !extendedSprite) return false;
 
+        if(!extendedSprite.visible) extendedSprite.visible = true;
+
         if(extendedSprite.varyingDepth !== objectSprite.varyingDepth)
         {
             if(extendedSprite.varyingDepth && !objectSprite.varyingDepth)
@@ -624,7 +635,13 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
             extendedSprite.name = sprite.name;
             extendedSprite.varyingDepth = objectSprite.varyingDepth;
             extendedSprite.clickHandling = objectSprite.clickHandling;
-            extendedSprite.filters = objectSprite.filters;
+
+            // el setter de filters de Pixi 8 crea un FilterEffect y copia la lista en cada asignación: solo si cambia
+            if(extendedSprite.nitroFilters !== objectSprite.filters)
+            {
+                extendedSprite.nitroFilters = objectSprite.filters;
+                extendedSprite.filters = objectSprite.filters;
+            }
 
             const alpha = (objectSprite.alpha / 255);
 
@@ -705,7 +722,9 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         extendedSprite.varyingDepth = sprite.varyingDepth;
         extendedSprite.clickHandling = sprite.clickHandling;
         extendedSprite.blendMode = NitroBlendMode.toPixi(sprite.blendMode);
+        extendedSprite.nitroFilters = sprite.filters;
         extendedSprite.filters = sprite.filters;
+        extendedSprite.visible = true;
 
         extendedSprite.setTexture(sprite.texture);
 
@@ -783,6 +802,9 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         if(!_arg_2)
         {
             sprite.setTexture(null);
+
+            // sobrante: fuera de la lista de pintado (si no, Pixi lo seguía metiendo en el lote como un cuadro vacío)
+            sprite.visible = false;
         }
         else
         {
@@ -864,7 +886,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         {
             const extendedSprite = this.getExtendedSprite(spriteId);
 
-            if(extendedSprite && extendedSprite.containsPoint(new Point((x - extendedSprite.x), (y - extendedSprite.y))))
+            if(extendedSprite && extendedSprite.containsPoint(this._puntoRaton.set((x - extendedSprite.x), (y - extendedSprite.y))))
             {
                 if(extendedSprite.clickHandling && ((type === MouseEventType.MOUSE_CLICK) || (type === MouseEventType.DOUBLE_CLICK)))
                 {

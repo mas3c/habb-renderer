@@ -14,6 +14,9 @@ export class ExtendedSprite extends Sprite
     private _pairedSpriteId: number;
     private _pairedSpriteUpdateCounter: number;
 
+    /** la lista de filtros de Nitro que tiene puesta (para no reasignar la misma en cada actualización) */
+    public nitroFilters: unknown = null;
+
     constructor(texture: Texture = null)
     {
         // Pixi 8 no acepta null (Pixi 6 lo trataba como textura vacía)
@@ -114,9 +117,9 @@ export class ExtendedSprite extends Sprite
     {
         if(!baseTexture) return false;
 
+        // la textura directamente: con un Sprite de por medio Pixi lo pintaba antes en otra textura para leerlo
         const texture = new Texture({ source: baseTexture });
-        const sprite = new Sprite(texture);
-        const pixels = TextureUtils.getPixels(sprite);
+        const pixels = TextureUtils.getPixels(texture);
         const width = baseTexture.pixelWidth;
         const height = baseTexture.pixelHeight;
         const hitmap = new Uint32Array(Math.ceil(width * height / 32));
@@ -133,7 +136,6 @@ export class ExtendedSprite extends Sprite
         //@ts-ignore
         baseTexture.hitMap = hitmap;
 
-        sprite.destroy();
         texture.destroy();
 
         return true;
