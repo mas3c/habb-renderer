@@ -535,9 +535,10 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         return false;
     }
 
-    // Descargas de furnis a la vez: 12 en PC y 4 en móvil. Al entrar en una sala grande se piden cientos de golpe y
-    // descomprimirlas y decodificarlas todas a la vez se come la RAM y los fotogramas; así llegan en tandas.
-    private static MAX_DESCARGAS = (Dispositivo.esMovil ? 4 : 12);
+    // Descargas de furnis a la vez en móvil: 8. Al entrar en una sala grande se piden cientos de golpe y descomprimirlas y
+    // decodificarlas todas a la vez se come la RAM del teléfono; así llegan en tandas. En PC sin tope: medido el 13-10 en
+    // el Recibidor (producción), con 12 tardaba 27 s en pintarse entero y sin tope 9 s, y la RAM ahí sobra.
+    private static MAX_DESCARGAS = (Dispositivo.esMovil ? 8 : Infinity);
     private static _descargando = 0;
     private static _turnos: (() => void)[] = [];
 
