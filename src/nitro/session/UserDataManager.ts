@@ -124,10 +124,25 @@ export class UserDataManager extends Disposable
         return (this._chatIconos.get(roomIndex) || 0);
     }
 
+    /** color de nombre de cada índice (Hartico), «tipo|color1|color2»; aparte por lo mismo que los iconos */
+    private _coloresNombre: Map<number, string> = new Map();
+
+    public setColorNombre(roomIndex: number, color: string): void
+    {
+        if(color) this._coloresNombre.set(roomIndex, color);
+        else this._coloresNombre.delete(roomIndex);
+    }
+
+    public getColorNombre(roomIndex: number): string
+    {
+        return (this._coloresNombre.get(roomIndex) || '');
+    }
+
     public removeUserData(roomIndex: number): void
     {
         // el índice lo puede heredar quien entre después
         this._chatIconos.delete(roomIndex);
+        this._coloresNombre.delete(roomIndex);
 
         const existing = this.getUserDataByIndex(roomIndex);
 

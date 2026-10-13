@@ -13,6 +13,7 @@ export * from './competition';
 export * from './crafting';
 export * from './desktop';
 export * from './estelas';
+export * from './coloresnombre';
 export * from './friendlist';
 export * from './game';
 export * from './game/directory';
