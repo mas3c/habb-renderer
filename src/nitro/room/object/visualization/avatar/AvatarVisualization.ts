@@ -87,6 +87,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private _splash: any = null;
     private _splashFase = '';
     private _splashInicio = 0;
+    private _splashCreado = 0;
     private _splashFiltro: SplashFiltro = null;
     private _splashFiltros: any[] = null;
     private _splashBase: any[] = null;
@@ -1152,6 +1153,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         this._splash = efecto;
         this._splashFase = fase;
         this._splashInicio = performance.now();
+        this._splashCreado = this._splashInicio;
         this._splashFiltro = new SplashFiltro(efecto.color, efecto.estilo[fase]);
         this._splashFiltro.avanzar((fase === 'entry'), 0, 0);
         this._sombra = ((fase === 'entry') ? 0 : 1);
@@ -1197,8 +1199,28 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             return;
         }
 
-        const t = (performance.now() - this._splashInicio);
         const entrar = (this._splashFase === 'entry');
+
+        // al entrar, el keko espera escondido a tener su ropa (el muñeco gris de carga no se «construye»): el
+        // efecto arranca justo cuando de verdad aparece. Tope de 5 s por si la ropa no llega
+        if(entrar && (!this._avatarImage || this._avatarImage.isPlaceholder()) && ((performance.now() - this._splashCreado) < 5000))
+        {
+            this._splashInicio = performance.now();
+            this._splashFiltro.ocultar();
+            this._sombra = 0;
+
+            if(avatar && (avatar.filters !== this.filtrosAvatar())) avatar.filters = this.filtrosAvatar();
+
+            const sombraEspera = this.getSprite(AvatarVisualization.SHADOW_LAYER_ID);
+
+            if(sombraEspera) sombraEspera.alpha = 0;
+
+            this.updateSpriteCounter++;
+
+            return;
+        }
+
+        const t = (performance.now() - this._splashInicio);
         const f = Math.min(1, (t / SplashMotor.DURACION_SHADER));
 
         this._splashFiltro.avanzar(entrar, f, (t / 1000));

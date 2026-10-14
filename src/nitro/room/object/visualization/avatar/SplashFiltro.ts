@@ -116,8 +116,9 @@ fn mainFragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
         let edge = 1.0 - smoothstep(0.0, 0.12, abs(teleportUniforms.progress - threshold));
         let edgeColor = mix(base * 0.56, teleportUniforms.tint, 0.72);
         let rgb = mix(base, edgeColor, edge);
-        let alpha = original.a * max(materialized, edge * 0.92);
-        return vec4<f32>(rgb, alpha);
+        // premultiplicado: lo que no se ve tampoco suma color
+        let k = max(materialized, edge * 0.92);
+        return vec4<f32>(rgb * k, original.a * k);
     }
 
     if(teleportUniforms.progress <= threshold) { return vec4<f32>(base, original.a); }
@@ -201,8 +202,8 @@ const FRAGMENTO_GL = `in vec2 vTextureCoord;
                         float edge = 1.0 - smoothstep(0.0, 0.12, abs(progress - threshold));
                         vec3 edgeColor = mix(base * 0.56, tint, 0.72);
                         vec3 rgb = mix(base, edgeColor, edge);
-                        float alpha = original.a * max(materialized, edge * 0.92);
-                        finalColor = vec4(rgb, alpha);
+                        float k = max(materialized, edge * 0.92);
+                        finalColor = vec4(rgb * k, original.a * k);
                         return;
                     }
                     if(progress <= threshold) { finalColor = vec4(base, original.a); return; }
@@ -233,6 +234,13 @@ export class SplashFiltro extends Filter
         });
 
         this.uniforms = this.resources.teleportUniforms.uniforms;
+    }
+
+    /** del todo invisible (esperando a que el keko tenga su ropa) */
+    public ocultar(): void
+    {
+        this.uniforms.rebuilding = 1;
+        this.uniforms.progress = 1;
     }
 
     /** f de 0 a 1 por la duración del shader; entrar = construirse */
