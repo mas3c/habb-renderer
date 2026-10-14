@@ -14,6 +14,7 @@ export * from './crafting';
 export * from './desktop';
 export * from './estelas';
 export * from './splash';
+export * from './hotelview';
 export * from './coloresnombre';
 export * from './friendlist';
 export * from './game';
