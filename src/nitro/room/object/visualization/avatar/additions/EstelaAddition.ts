@@ -98,9 +98,10 @@ export class EstelaAddition implements IAvatarAddition
 
         sprite.visible = true;
         sprite.texture = this._textura;
-        // los pies están un cuarto de baldosa por debajo del punto del avatar (donde va su sombra)
+        // el punto del avatar es el centro de su baldosa: ahí van las partículas (con un cuarto de baldosa de más
+        // la pista de baile encendía media baldosa de cada lado, Legion28 12-10)
         sprite.offsetX = -this.piesX - fx;
-        sprite.offsetY = Math.round(this._escala / 4) - this.piesY - fy;
+        sprite.offsetY = -this.piesY - fy;
         sprite.relativeDepth = 0.9;
         sprite.alpha = 255;
 
@@ -124,7 +125,7 @@ export class EstelaAddition implements IAvatarAddition
         if(!pantalla) return false;
 
         const offsetX = (this._anclaX - this.piesX - pantalla.x);
-        const offsetY = (this._anclaY + Math.round(this._escala / 4) - this.piesY - pantalla.y);
+        const offsetY = (this._anclaY - this.piesY - pantalla.y);
 
         if((offsetX === sprite.offsetX) && (offsetY === sprite.offsetY)) return false;
 
