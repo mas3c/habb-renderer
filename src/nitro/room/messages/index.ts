@@ -14,6 +14,7 @@ export * from './ObjectAvatarOwnMessage';
 export * from './ObjectAvatarPetGestureUpdateMessage';
 export * from './ObjectAvatarAuraUpdateMessage';
 export * from './ObjectAvatarEstelaUpdateMessage';
+export * from './ObjectAvatarSplashUpdateMessage';
 export * from './ObjectAvatarHabbiconUpdateMessage';
 export * from './ObjectAvatarPlayerValueUpdateMessage';
 export * from './ObjectAvatarPlayingGameUpdateMessage';

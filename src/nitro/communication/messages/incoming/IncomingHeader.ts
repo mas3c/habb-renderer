@@ -24,6 +24,8 @@ export class IncomingHeader
     public static ROOM_ICONO = 9626;
     public static ESTELAS = 9628;
     public static ROOM_ESTELA = 9629;
+    public static SPLASH = 9634;
+    public static ROOM_SPLASH = 9635;
     public static COLORES_NOMBRE = 9631;
     public static ROOM_COLOR_NOMBRE = 9632;
 

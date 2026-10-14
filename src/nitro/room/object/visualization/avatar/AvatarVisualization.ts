@@ -2,6 +2,9 @@ import { BLEND_MODES } from '@pixi/constants';
 import { Resource, Texture } from '@pixi/core';
 import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, RoomObjectSpriteType, RoomObjectVariable } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
+import { SplashAddition } from './additions/SplashAddition';
+import { SplashFiltro } from './SplashFiltro';
+import { SplashMotor } from './SplashMotor';
 import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
 import { AvatarAura } from './AvatarAura';
 import { AvatarVisualizationData } from './AvatarVisualizationData';
@@ -18,6 +21,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private static GUIDE_BUBBLE_ID: number = 7;
     private static HABBICON_ID: number = 8;
     private static ESTELA_ID: number = 9;
+    private static SPLASH_ID: number = 10;
     private static OWN_USER_ID: number = 4;
     private static UPDATE_TIME_INCREASER: number = 41;
     private static SIN_FILTROS: any[] = [];
@@ -78,6 +82,16 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private _isAvatarReady: boolean;
     // aura (Hobbaz): filtros de Pixi sobre el sprite del avatar; FIGURE_AURA la describe
     private _aura: AvatarAura = null;
+    // Splash (entrada/salida de sala): FIGURE_SPLASH = «fase|n|spec»; shader sobre el keko + partículas
+    private _splashValor = '';
+    private _splash: any = null;
+    private _splashFase = '';
+    private _splashInicio = 0;
+    private _splashFiltro: SplashFiltro = null;
+    private _splashFiltros: any[] = null;
+    private _splashBase: any[] = null;
+    private _splashOculto = false;
+    private _sombra = 1;
     private _auraSpec: string = '';
     // Como Hobbaz: el aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
     // AvatarLogic pone al pasar por encima). Así como mucho hay una en pantalla y no 30 filtros.
@@ -155,6 +169,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     public dispose(): void
     {
         if(this._disposed) return;
+
+        this.acabarSplash();
 
         super.dispose();
 
@@ -304,7 +320,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                     sprite.texture = avatarImage;
 
                     // el aura (o nada); el resaltado de Nitro ya va pintado en la propia imagen
-                    const filtros = ((this._aura && this._auraVisible) ? this._aura.filters : AvatarVisualization.SIN_FILTROS);
+                    const filtros = this.filtrosAvatar();
 
                     if(sprite.filters !== filtros) sprite.filters = filtros;
                 }
@@ -843,6 +859,16 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             if(estelaAddition || estelaSpec) needsUpdate = true;
         }
 
+        // Splash: cada valor nuevo (el número cambia aunque sea el mismo Splash) lo arranca
+        const splashValor = (model.getValue<string>(RoomObjectVariable.FIGURE_SPLASH) || '');
+
+        if(splashValor !== this._splashValor)
+        {
+            this._splashValor = splashValor;
+
+            if(this.empezarSplash(splashValor)) needsUpdate = true;
+        }
+
         // Habbicon (AIR): una burbuja nueva cada vez que sube la secuencia, aunque sea el mismo icono
         const habbiconId = model.getValue<number>(RoomObjectVariable.FIGURE_HABBICON);
         const habbiconSecuencia = model.getValue<number>(RoomObjectVariable.FIGURE_HABBICON_SEQUENCE) || 0;
@@ -1081,6 +1107,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     /** lo llama RoomSpriteCanvas en cada fotograma (update() va a 24 por segundo): la estela se queda clavada al suelo */
     public cadaFotograma(geometry: IRoomGeometry): void
     {
+        if(this._splash || this._splashOculto) this.animarSplash();
+
         if(!this._additions || !this._additions.has(AvatarVisualization.ESTELA_ID)) return;
 
         let index = this._extraSpritesStartIndex;
@@ -1091,6 +1119,119 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
             index++;
         }
+    }
+
+    /** los filtros del sprite del avatar: el aura (si la hay) y, mientras dura, el del Splash */
+    private filtrosAvatar(): any[]
+    {
+        const base = ((this._aura && this._auraVisible) ? this._aura.filters : AvatarVisualization.SIN_FILTROS);
+
+        if(!this._splashFiltro) return base;
+
+        if(this._splashBase !== base)
+        {
+            this._splashBase = base;
+            this._splashFiltros = [ ...base, this._splashFiltro ];
+        }
+
+        return this._splashFiltros;
+    }
+
+    /** «fase|n|spec»: arranca el Splash; false si no hay nada que hacer */
+    private empezarSplash(valor: string): boolean
+    {
+        const partes = valor.split('|');
+        const fase = ((partes[0] === 'exit') ? 'exit' : 'entry');
+        const spec = partes.slice(2).join('|');
+        const efecto = SplashMotor.efecto(spec);
+
+        this.acabarSplash();
+
+        if(!efecto) return false;
+
+        this._splash = efecto;
+        this._splashFase = fase;
+        this._splashInicio = performance.now();
+        this._splashFiltro = new SplashFiltro(efecto.color, efecto.estilo[fase]);
+        this._splashFiltro.avanzar((fase === 'entry'), 0, 0);
+        this._sombra = ((fase === 'entry') ? 0 : 1);
+
+        if(efecto.dibujar) this.addAddition(new SplashAddition(AvatarVisualization.SPLASH_ID, efecto, SplashMotor.datos(efecto, this.object.model.getValue<number>(RoomObjectVariable.OBJECT_ROOM_ID) || 0, this.object.id, fase), fase));
+
+        return true;
+    }
+
+    private acabarSplash(): void
+    {
+        if(this._splashFiltro)
+        {
+            const filtro = this._splashFiltro;
+
+            // se destruye cuando el sprite ya no lo usa
+            requestAnimationFrame(() => requestAnimationFrame(() => filtro.destroy()));
+        }
+
+        this._splash = null;
+        this._splashFiltro = null;
+        this._splashFiltros = null;
+        this._splashBase = null;
+        this._splashOculto = false;
+        this._sombra = 1;
+        this.removeAddition(AvatarVisualization.SPLASH_ID);
+    }
+
+    /** en cada fotograma mientras dura: el shader, la sombra y las partículas; al salir, el keko se queda escondido */
+    private animarSplash(): void
+    {
+        const avatar = this.getSprite(AvatarVisualization.SPRITE_INDEX_AVATAR);
+
+        if(this._splashOculto)
+        {
+            for(let i = 0; i < this.totalSprites; i++)
+            {
+                const sprite = this.getSprite(i);
+
+                if(sprite && sprite.visible) { sprite.visible = false; this.updateSpriteCounter++; }
+            }
+
+            return;
+        }
+
+        const t = (performance.now() - this._splashInicio);
+        const entrar = (this._splashFase === 'entry');
+        const f = Math.min(1, (t / SplashMotor.DURACION_SHADER));
+
+        this._splashFiltro.avanzar(entrar, f, (t / 1000));
+        this._sombra = (entrar ? f : (1 - f));
+
+        const sombra = this.getSprite(AvatarVisualization.SHADOW_LAYER_ID);
+
+        if(sombra && this._shadow) sombra.alpha = Math.round(50 * this._sombra);
+
+        if(avatar && (avatar.filters !== this.filtrosAvatar())) avatar.filters = this.filtrosAvatar();
+
+        if(this._additions && this._additions.has(AvatarVisualization.SPLASH_ID))
+        {
+            let index = this._extraSpritesStartIndex;
+
+            for(const addition of this._additions.values())
+            {
+                if(addition.id === AvatarVisualization.SPLASH_ID) (addition as SplashAddition).pintar(this.getSprite(index), t);
+
+                index++;
+            }
+        }
+
+        this.updateSpriteCounter++;
+
+        if(t < Math.max(this._splash.duracion, SplashMotor.DURACION_SHADER)) return;
+
+        this.acabarSplash();
+
+        if(avatar) avatar.filters = this.filtrosAvatar();
+
+        // al salir el servidor quita el avatar un poco después: hasta entonces no se ve
+        if(!entrar) this._splashOculto = true;
     }
 
     private animarEstela(geometry: IRoomGeometry): void
@@ -1190,7 +1331,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                     sprite.texture = this._shadow.texture;
                     sprite.offsetX = offsetX;
                     sprite.offsetY = offsetY;
-                    sprite.alpha = 50;
+                    sprite.alpha = Math.round(50 * this._sombra);
                     sprite.relativeDepth = 1;
                 }
                 else
