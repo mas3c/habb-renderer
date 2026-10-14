@@ -66,7 +66,9 @@ void main(void)
         float edge = 1.0 - smoothstep(0.0, 0.12, abs(progress - threshold));
         vec3 edgeColor = mix(base * 0.56, tint, 0.72);
         vec3 rgb = mix(base, edgeColor, edge);
-        gl_FragColor = vec4(rgb, original.a * max(materialized, edge * 0.92));
+        // premultiplicado: lo que no se ve tampoco suma color
+        float k = max(materialized, edge * 0.92);
+        gl_FragColor = vec4(rgb * k, original.a * k);
         return;
     }
     if(progress <= threshold) { gl_FragColor = vec4(base, original.a); return; }
@@ -87,6 +89,13 @@ export class SplashFiltro extends Filter
             style: estilo,
             tint: new Float32Array([ ((color >> 16) & 255) / 255, ((color >> 8) & 255) / 255, (color & 255) / 255 ])
         });
+    }
+
+    /** del todo invisible (esperando a que el keko tenga su ropa) */
+    public ocultar(): void
+    {
+        this.uniforms.rebuilding = 1;
+        this.uniforms.progress = 1;
     }
 
     /** f de 0 a 1 por la duración del shader; entrar = construirse */
