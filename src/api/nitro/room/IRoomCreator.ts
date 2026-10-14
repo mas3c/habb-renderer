@@ -39,6 +39,7 @@ export interface IRoomCreator
     updateRoomObjectUserLocation(roomId: number, objectId: number, location: IVector3D, targetLocation: IVector3D, canStandUp?: boolean, baseY?: number, direction?: IVector3D, headDirection?: number): boolean;
     updateRoomObjectUserAura(roomId: number, objectId: number, aura: string): boolean;
     updateRoomObjectUserEstela(roomId: number, objectId: number, estela: string): boolean;
+    updateRoomObjectUserSplash(roomId: number, objectId: number, fase: string, splash: string): boolean;
     updateRoomObjectUserAction(roomId: number, objectId: number, action: string, value: number, parameter?: string): boolean;
     updateRoomObjectUserFigure(roomId: number, objectId: number, figure: string, gender?: string, subType?: string, isRiding?: boolean): boolean;
     updateRoomObjectUserFlatControl(roomId: number, objectId: number, level: string): boolean;
