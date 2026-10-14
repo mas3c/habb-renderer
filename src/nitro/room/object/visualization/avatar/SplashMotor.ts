@@ -697,6 +697,96 @@ export class SplashMotor
         }
     }
 
+    /**
+     * El icono de un Splash para su casilla, dibujado a propósito a escala 1 en un lienzo de 32 x 32 (nada reducido:
+     * pixel art limpio). Los hechos a mano, con sus propias piezas; las recetas, dos piezas de su hoja a 16 px; los
+     * de solo shader, null (los pinta la vista).
+     */
+    public static icono(spec: string, ctx: CanvasRenderingContext2D): boolean
+    {
+        const efecto = SplashMotor.efecto(spec);
+
+        if(!efecto || !efecto.dibujar) return false;
+
+        ctx.imageSmoothingEnabled = false;
+
+        const en = (x: number, y: number) => new Pintor(ctx, x, y, 1);
+        let i: any;
+
+        try
+        {
+            switch(spec)
+            {
+                case 'portal':
+                    i = en(16, 22);
+                    i.elipse(0, 0, 13, 6.5, '#12042a', 0.9); i.elipse(0, 0, 9, 4.5, '#2e0a5c', 1); i.elipse(0, 0, 4, 2, '#7c3aed', 1);
+                    i.anillo(0, 0, 13, 6.5, (u) => ((Math.floor(u / VUELTA * 24) % 3 === 0) ? '#22d3ee' : '#a855f7'), 1, 1);
+                    i.punto(-7, -9, 1, '#67e8f9', 1); i.punto(2, -15, 2, '#d8b4fe', 1); i.punto(8, -7, 1, '#67e8f9', 1); i.punto(-2, -6, 1, '#f5d0fe', 1);
+                    break;
+                case 'stars':
+                    i = en(16, 16);
+                    estrellita(i, -7, -6, 2, 1); estrellita(i, 6, 3, 3, 1); estrellita(i, -4, 9, 1, 1); estrellita(i, 9, -9, 1, 1);
+                    break;
+                case 'blackhole':
+                    i = en(16, 16);
+                    i.anillo(0, 0, 13, 4, (u) => MORADOS[Math.floor(u / VUELTA * MORADOS.length) % MORADOS.length], 0.6, 1);
+                    i.elipse(0, 0, 7, 7, '#040008', 1); i.anillo(0, 0, 7.5, 7.5, () => '#a855f7', 1, 1);
+                    i.anillo(0, 0, 13, 4, (u) => ((Math.sin(u) > 0) ? MORADOS[Math.floor(u / VUELTA * MORADOS.length) % MORADOS.length] : 'rgba(0,0,0,0)'), 1, 1);
+                    i.punto(-11, -9, 1, '#f5d0fe', 1); i.punto(10, 8, 1, '#7e22ce', 1);
+                    break;
+                case 'hologram':
+                    i = en(16, 28);
+                    i.sumar(true);
+                    for(let y = 0; y > -24; y -= 2) i.rect(-8, y - 2, 16, 1, '#0e7490', 0.55 * (1 + (y / 40)));
+                    i.sumar(false);
+                    i.elipse(0, 0, 10, 4, '#062a36', 0.9); i.anillo(0, 0, 10, 4, () => '#67e8f9', 1, 1);
+                    i.rect(-10, -15, 20, 1, '#cffafe', 1); i.rect(-10, -14, 20, 1, '#0891b2', 0.7);
+                    i.rect(-6, -21, 5, 1, '#a5f3fc', 0.8); i.rect(2, -8, 4, 1, '#a5f3fc', 0.8);
+                    break;
+                case 'fire':
+                    i = en(16, 29);
+                    i.sumar(true); i.luz(0, -4, 14, [ 251, 146, 60 ], 0.5, 0.7); i.sumar(false);
+                    lenguaFuego(i, -8, 0, 13, 5, 1); lenguaFuego(i, 7, 0, 15, 5, 1); lenguaFuego(i, 0, 0, 21, 7, 1);
+                    i.punto(-4, -23, 1, '#fde047', 1); i.punto(6, -21, 1, '#f97316', 1);
+                    break;
+                case 'ice':
+                    i = en(16, 29);
+                    i.elipse(0, 0, 11, 3, '#bae6fd', 0.5);
+                    i.rect(-8, -20, 8, 20, '#e0f2fe', 0.75); i.rect(0, -20, 8, 20, '#7dd3fc', 0.8);
+                    i.rect(-8, -20, 1, 20, '#f0f9ff', 1); i.rect(7, -20, 1, 20, '#0ea5e9', 1); i.rect(0, -18, 1, 18, '#f0f9ff', 0.6);
+                    for(const [ x, w, h ] of [ [ -8, 6, 5 ], [ -3, 6, 8 ], [ 3, 5, 4 ] ]) for(let k = 0; k < h; k++) { const f = Math.max(1, Math.round(w * (1 - (k / h)))); i.rect(x + Math.floor((w - f) / 2), -21 - k, f, 1, '#e0f2fe', 0.9); }
+                    i.punto(-5, -14, 1, '#ffffff', 1); i.punto(-3, -11, 1, '#ffffff', 1); i.punto(-1, -8, 1, '#ffffff', 1);
+                    break;
+                case 'sakura':
+                    i = en(16, 16);
+                    // un remolino de pétalos
+                    for(let k = 0; k < 8; k++) { const a = (k / 8) * VUELTA, r = 5 + (k * 1.3); petalo(i, Math.round(Math.cos(a) * r) - 2, Math.round(Math.sin(a) * r * 0.8) - 2, (k % 2) === 0, k % 3, 1); }
+                    break;
+                case 'bubbles':
+                    i = en(16, 16);
+                    i.elipse(-2, 0, 8, 8, '#bae6fd', 0.35); pompa(i, -2, 0, 9, 1); pompa(i, 10, -9, 3, 1); pompa(i, 10, 9, 2, 1); pompa(i, -12, -10, 2, 1);
+                    break;
+                default:
+                {
+                    // receta: dos piezas de su hoja a su tamaño (16 px)
+                    const h = HOJAS.get(JSON.parse(spec).imagen);
+
+                    if(!h || !h.imagen) return false;
+
+                    ctx.drawImage(h.imagen, 0, 0, 16, 16, 2, 3, 16, 16);
+                    ctx.drawImage(h.imagen, 16, 0, 16, 16, 14, 13, 16, 16);
+                }
+            }
+        }
+        finally
+        {
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        return true;
+    }
+
     /** pinta las partículas en ctx con los pies en (x, y); escala 1 = sala a 64 */
     public static pintar(efecto, datos, ctx: CanvasRenderingContext2D, x: number, y: number, escala: number, t: number, fase: string): void
     {
