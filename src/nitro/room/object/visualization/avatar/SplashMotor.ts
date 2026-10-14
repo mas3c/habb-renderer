@@ -698,15 +698,65 @@ export class SplashMotor
     }
 
     /**
-     * El icono de un Splash para su casilla, dibujado a propósito a escala 1 en un lienzo de 32 x 32 (nada reducido:
-     * pixel art limpio). Los hechos a mano, con sus propias piezas; las recetas, dos piezas de su hoja a 16 px; los
-     * de solo shader, null (los pinta la vista).
+     * El icono de un Splash para su casilla (32 x 32, todo a escala 1: nada reducido ni ampliado). Todos igual: una
+     * placa redondeada con el degradado del color del Splash, brillo arriba y filo, y en el centro su emblema: la
+     * pieza principal de las recetas (16 px), uno dibujado con las piezas del motor en los hechos a mano y un keko
+     * deshaciéndose en los de solo shader. false si aún no se puede (receta sin su hoja cargada).
      */
     public static icono(spec: string, ctx: CanvasRenderingContext2D): boolean
     {
         const efecto = SplashMotor.efecto(spec);
 
-        if(!efecto || !efecto.dibujar) return false;
+        if(!efecto) return false;
+
+        let hoja = null;
+
+        if(spec.charAt(0) === '{')
+        {
+            hoja = HOJAS.get(JSON.parse(spec).imagen);
+
+            if(!hoja || !hoja.imagen) return false;
+        }
+
+        // un color casi negro (los murciélagos) dejaría la placa invisible: se usa un morado de noche
+        const lum = ((((efecto.color >> 16) & 255) * 0.3) + (((efecto.color >> 8) & 255) * 0.59) + ((efecto.color & 255) * 0.11));
+        const c = (lum < 70) ? 0x6d4aa8 : efecto.color;
+        const tono = (f: number) => `rgb(${ Math.round(((c >> 16) & 255) * f) }, ${ Math.round(((c >> 8) & 255) * f) }, ${ Math.round((c & 255) * f) })`;
+        const claro = (f: number) => `rgb(${ Math.round(((c >> 16) & 255) + ((255 - ((c >> 16) & 255)) * f)) }, ${ Math.round(((c >> 8) & 255) + ((255 - ((c >> 8) & 255)) * f)) }, ${ Math.round((c & 255) + ((255 - (c & 255)) * f)) })`;
+        const placa = () =>
+        {
+            ctx.beginPath();
+            // roundRect falta en navegadores viejos (Safari < 16): ahí, cuadrada
+            if(ctx.roundRect) ctx.roundRect(2.5, 2.5, 27, 27, 6); else ctx.rect(2.5, 2.5, 27, 27);
+        };
+
+        // la placa
+        const fondo = ctx.createLinearGradient(0, 2, 0, 30);
+
+        fondo.addColorStop(0, tono(0.62));
+        fondo.addColorStop(1, tono(0.22));
+        placa();
+        ctx.fillStyle = fondo;
+        ctx.fill();
+
+        const brillo = ctx.createRadialGradient(16, 17, 1, 16, 17, 13);
+
+        brillo.addColorStop(0, claro(0.35));
+        brillo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.save();
+        placa();
+        ctx.clip();
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = brillo;
+        ctx.fillRect(0, 0, 32, 32);
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(3, 3, 26, 9);
+        ctx.restore();
+        placa();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = tono(0.3);
+        ctx.stroke();
 
         ctx.imageSmoothingEnabled = false;
 
@@ -715,66 +765,81 @@ export class SplashMotor
 
         try
         {
+            if(hoja)
+            {
+                ctx.drawImage(hoja.imagen, 0, 0, 16, 16, 8, 8, 16, 16);
+
+                return true;
+            }
+
             switch(spec)
             {
                 case 'portal':
-                    i = en(16, 22);
-                    i.elipse(0, 0, 13, 6.5, '#12042a', 0.9); i.elipse(0, 0, 9, 4.5, '#2e0a5c', 1); i.elipse(0, 0, 4, 2, '#7c3aed', 1);
-                    i.anillo(0, 0, 13, 6.5, (u) => ((Math.floor(u / VUELTA * 24) % 3 === 0) ? '#22d3ee' : '#a855f7'), 1, 1);
-                    i.punto(-7, -9, 1, '#67e8f9', 1); i.punto(2, -15, 2, '#d8b4fe', 1); i.punto(8, -7, 1, '#67e8f9', 1); i.punto(-2, -6, 1, '#f5d0fe', 1);
+                    i = en(16, 19);
+                    i.elipse(0, 0, 9, 4.5, '#12042a', 1); i.elipse(0, 0, 6, 3, '#2e0a5c', 1); i.elipse(0, 0, 2.5, 1.3, '#a78bfa', 1);
+                    i.anillo(0, 0, 9, 4.5, (u) => ((Math.floor(u / VUELTA * 18) % 3 === 0) ? '#22d3ee' : '#c084fc'), 1, 1);
+                    i.punto(-4, -7, 1, '#67e8f9', 1); i.punto(2, -10, 2, '#f5d0fe', 1); i.punto(5, -6, 1, '#67e8f9', 1);
                     break;
                 case 'stars':
-                    i = en(16, 16);
-                    estrellita(i, -7, -6, 2, 1); estrellita(i, 6, 3, 3, 1); estrellita(i, -4, 9, 1, 1); estrellita(i, 9, -9, 1, 1);
+                    estrellita(en(15, 16), 0, 0, 4, 1); estrellita(en(16, 16), -7, -6, 1, 1); estrellita(en(16, 16), 7, 6, 1, 1);
                     break;
                 case 'blackhole':
                     i = en(16, 16);
-                    i.anillo(0, 0, 13, 4, (u) => MORADOS[Math.floor(u / VUELTA * MORADOS.length) % MORADOS.length], 0.6, 1);
-                    i.elipse(0, 0, 7, 7, '#040008', 1); i.anillo(0, 0, 7.5, 7.5, () => '#a855f7', 1, 1);
-                    i.anillo(0, 0, 13, 4, (u) => ((Math.sin(u) > 0) ? MORADOS[Math.floor(u / VUELTA * MORADOS.length) % MORADOS.length] : 'rgba(0,0,0,0)'), 1, 1);
-                    i.punto(-11, -9, 1, '#f5d0fe', 1); i.punto(10, 8, 1, '#7e22ce', 1);
+                    i.anillo(0, 0, 10, 3, (u) => MORADOS[Math.floor(u / VUELTA * MORADOS.length) % MORADOS.length], 0.7, 1);
+                    i.elipse(0, 0, 5.5, 5.5, '#040008', 1); i.anillo(0, 0, 6, 6, () => '#d8b4fe', 1, 1);
+                    i.anillo(0, 0, 10, 3, (u) => ((Math.sin(u) > 0) ? '#f0abfc' : 'rgba(0,0,0,0)'), 1, 1);
                     break;
                 case 'hologram':
-                    i = en(16, 28);
+                    i = en(16, 24);
                     i.sumar(true);
-                    for(let y = 0; y > -24; y -= 2) i.rect(-8, y - 2, 16, 1, '#0e7490', 0.55 * (1 + (y / 40)));
+                    for(let y = 0; y > -16; y -= 2) i.rect(-6, y - 2, 12, 1, '#22d3ee', 0.45);
                     i.sumar(false);
-                    i.elipse(0, 0, 10, 4, '#062a36', 0.9); i.anillo(0, 0, 10, 4, () => '#67e8f9', 1, 1);
-                    i.rect(-10, -15, 20, 1, '#cffafe', 1); i.rect(-10, -14, 20, 1, '#0891b2', 0.7);
-                    i.rect(-6, -21, 5, 1, '#a5f3fc', 0.8); i.rect(2, -8, 4, 1, '#a5f3fc', 0.8);
+                    i.elipse(0, 0, 8, 3, '#062a36', 1); i.anillo(0, 0, 8, 3, () => '#a5f3fc', 1, 1);
+                    i.rect(-7, -10, 14, 1, '#ecfeff', 1);
                     break;
                 case 'fire':
-                    i = en(16, 29);
-                    i.sumar(true); i.luz(0, -4, 14, [ 251, 146, 60 ], 0.5, 0.7); i.sumar(false);
-                    lenguaFuego(i, -8, 0, 13, 5, 1); lenguaFuego(i, 7, 0, 15, 5, 1); lenguaFuego(i, 0, 0, 21, 7, 1);
-                    i.punto(-4, -23, 1, '#fde047', 1); i.punto(6, -21, 1, '#f97316', 1);
+                    i = en(16, 25);
+                    lenguaFuego(i, -5, 0, 10, 4, 1); lenguaFuego(i, 5, 0, 11, 4, 1); lenguaFuego(i, 0, 0, 16, 6, 1);
                     break;
                 case 'ice':
-                    i = en(16, 29);
-                    i.elipse(0, 0, 11, 3, '#bae6fd', 0.5);
-                    i.rect(-8, -20, 8, 20, '#e0f2fe', 0.75); i.rect(0, -20, 8, 20, '#7dd3fc', 0.8);
-                    i.rect(-8, -20, 1, 20, '#f0f9ff', 1); i.rect(7, -20, 1, 20, '#0ea5e9', 1); i.rect(0, -18, 1, 18, '#f0f9ff', 0.6);
-                    for(const [ x, w, h ] of [ [ -8, 6, 5 ], [ -3, 6, 8 ], [ 3, 5, 4 ] ]) for(let k = 0; k < h; k++) { const f = Math.max(1, Math.round(w * (1 - (k / h)))); i.rect(x + Math.floor((w - f) / 2), -21 - k, f, 1, '#e0f2fe', 0.9); }
-                    i.punto(-5, -14, 1, '#ffffff', 1); i.punto(-3, -11, 1, '#ffffff', 1); i.punto(-1, -8, 1, '#ffffff', 1);
+                    i = en(16, 25);
+                    i.rect(-6, -14, 6, 14, '#f0f9ff', 0.95); i.rect(0, -14, 6, 14, '#bae6fd', 0.95);
+                    i.rect(-6, -14, 1, 14, '#ffffff', 1); i.rect(5, -14, 1, 14, '#0ea5e9', 1);
+                    for(const [ x, w, h ] of [ [ -6, 5, 4 ], [ -2, 5, 6 ], [ 2, 4, 3 ] ]) for(let k = 0; k < h; k++) { const f = Math.max(1, Math.round(w * (1 - (k / h)))); i.rect(x + Math.floor((w - f) / 2), -15 - k, f, 1, '#e0f2fe', 1); }
+                    i.punto(-3, -10, 1, '#ffffff', 1); i.punto(-2, -7, 1, '#ffffff', 1);
                     break;
                 case 'sakura':
-                    i = en(16, 16);
-                    // un remolino de pétalos
-                    for(let k = 0; k < 8; k++) { const a = (k / 8) * VUELTA, r = 5 + (k * 1.3); petalo(i, Math.round(Math.cos(a) * r) - 2, Math.round(Math.sin(a) * r * 0.8) - 2, (k % 2) === 0, k % 3, 1); }
+                    for(let k = 0; k < 5; k++) { const a = ((k / 5) * VUELTA) - (Math.PI / 2); petalo(en(16, 16), Math.round(Math.cos(a) * 5) - 2, Math.round(Math.sin(a) * 5) - 2, (k % 2) === 0, k % 3, 1); }
+                    en(16, 16).rect(-1, -1, 2, 2, '#fde68a', 1);
                     break;
                 case 'bubbles':
                     i = en(16, 16);
-                    i.elipse(-2, 0, 8, 8, '#bae6fd', 0.35); pompa(i, -2, 0, 9, 1); pompa(i, 10, -9, 3, 1); pompa(i, 10, 9, 2, 1); pompa(i, -12, -10, 2, 1);
+                    i.elipse(-1, 1, 6, 6, '#e0f2fe', 0.35); pompa(i, -1, 1, 7, 1); pompa(i, 7, -7, 2.5, 1); pompa(i, -8, -7, 1.5, 1);
                     break;
                 default:
                 {
-                    // receta: dos piezas de su hoja a su tamaño (16 px)
-                    const h = HOJAS.get(JSON.parse(spec).imagen);
+                    // solo shader: un keko de pixel art que se deshace por arriba en motas del color
+                    const KEKO = [ '...XXXX...', '..XXXXXX..', '..XXXXXX..', '...XXXX...', '....XX....', '.XXXXXXXX.', 'XXXXXXXXXX', 'XX.XXXX.XX', 'XX.XXXX.XX', '...XXXX...', '...XX.XX..', '...XX.XX..', '...XX.XX..' ];
+                    const x0 = 11, y0 = 11;
 
-                    if(!h || !h.imagen) return false;
+                    KEKO.forEach((fila, y) => fila.split('').forEach((v, x) =>
+                    {
+                        if(v !== 'X') return;
 
-                    ctx.drawImage(h.imagen, 0, 0, 16, 16, 2, 3, 16, 16);
-                    ctx.drawImage(h.imagen, 16, 0, 16, 16, 14, 13, 16, 16);
+                        // la mitad de arriba ya se va: unas celdas faltan y suben como motas
+                        if((y < 5) && ((((x * 7) + (y * 13)) % 5) < 2))
+                        {
+                            ctx.fillStyle = claro(0.55);
+                            ctx.fillRect(x0 + x + ((x % 3) - 1), y0 + y - 3 - ((x + y) % 3), 1, 1);
+
+                            return;
+                        }
+
+                        ctx.fillStyle = (y < 4) ? '#ffffff' : '#e3ebf3';
+                        ctx.fillRect(x0 + x, y0 + y, 1, 1);
+                    }));
+                    ctx.fillStyle = claro(0.7);
+                    ctx.fillRect(x0 + 2, y0 - 7, 1, 1); ctx.fillRect(x0 + 6, y0 - 8, 1, 1); ctx.fillRect(x0 + 8, y0 - 5, 1, 1);
                 }
             }
         }
