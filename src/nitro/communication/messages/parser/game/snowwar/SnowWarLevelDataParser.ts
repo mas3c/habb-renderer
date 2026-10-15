@@ -3,6 +3,29 @@ import { SnowWarLevelItemData } from './SnowWarLevelItemData';
 import { SnowWarMachineData } from './SnowWarMachineData';
 import { SnowWarPlayerData } from './SnowWarPlayerData';
 
+export interface SnowWarAirFuseObject
+{
+    name: string;
+    id: number;
+    x: number;
+    y: number;
+    xDimension: number;
+    yDimension: number;
+    height: number;
+    direction: number;
+    altitude: number;
+    canStandOn: boolean;
+    stuff: string;
+}
+
+export interface SnowWarAirLevel
+{
+    width: number;
+    height: number;
+    heightMap: string;
+    fuseObjects: SnowWarAirFuseObject[];
+}
+
 export class SnowWarLevelDataParser implements IMessageParser
 {
     private _gameLengthSeconds: number;
@@ -14,6 +37,7 @@ export class SnowWarLevelDataParser implements IMessageParser
     private _machines: SnowWarMachineData[];
     private _canEditRoom: boolean;
     private _arenaName: string;
+    private _level: SnowWarAirLevel;
 
     public flush(): boolean
     {
@@ -26,6 +50,7 @@ export class SnowWarLevelDataParser implements IMessageParser
         this._machines = [];
         this._canEditRoom = false;
         this._arenaName = '';
+        this._level = null;
 
         return true;
     }
@@ -71,7 +96,26 @@ export class SnowWarLevelDataParser implements IMessageParser
         if(!wrapper.bytesAvailable) return true;
 
         this._canEditRoom = wrapper.readBoolean();
-        if(wrapper.bytesAvailable) this._arenaName = wrapper.readString();
+
+        // AIR GameLevelData: el nivel exacto que simulan servidor y cliente
+        if(!wrapper.bytesAvailable) return true;
+
+        const width = wrapper.readInt();
+        const height = wrapper.readInt();
+        const heightMap = wrapper.readString();
+        const fuseObjects: SnowWarAirFuseObject[] = [];
+        let total = wrapper.readInt();
+
+        while(total-- > 0)
+        {
+            fuseObjects.push({
+                name: wrapper.readString(), id: wrapper.readInt(), x: wrapper.readInt(), y: wrapper.readInt(),
+                xDimension: wrapper.readInt(), yDimension: wrapper.readInt(), height: wrapper.readInt(), direction: wrapper.readInt(),
+                altitude: wrapper.readInt(), canStandOn: wrapper.readBoolean(), stuff: wrapper.readString()
+            });
+        }
+
+        this._level = { width, height, heightMap, fuseObjects };
 
         return true;
     }
@@ -114,6 +158,12 @@ export class SnowWarLevelDataParser implements IMessageParser
     public get machines(): SnowWarMachineData[]
     {
         return this._machines;
+    }
+
+    /** El nivel del AIR para la simulación (null con un servidor viejo). */
+    public get level(): SnowWarAirLevel
+    {
+        return this._level;
     }
 
     public get canEditRoom(): boolean
