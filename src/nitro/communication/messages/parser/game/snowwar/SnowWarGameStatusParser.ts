@@ -1,6 +1,7 @@
 import { IMessageDataWrapper, IMessageParser } from '../../../../../../api';
 import { SnowWarSubturnEventData } from './SnowWarSubturnEventData';
 
+/** AIR GameStatus: el checksum del turno simulado y las órdenes de los 3 subturnos del turno siguiente. */
 export class SnowWarGameStatusParser implements IMessageParser
 {
     private _turn: number;
@@ -20,30 +21,34 @@ export class SnowWarGameStatusParser implements IMessageParser
     {
         if(!wrapper) return false;
 
-        this._turn = wrapper.readInt();
-        this._checksum = wrapper.readInt();
+        const status = SnowWarGameStatusParser.readStatus(wrapper);
 
-        let totalSubturns = wrapper.readInt();
-
-        while(totalSubturns > 0)
-        {
-            const events: SnowWarSubturnEventData[] = [];
-
-            let totalEvents = wrapper.readInt();
-
-            while(totalEvents > 0)
-            {
-                events.push(new SnowWarSubturnEventData(wrapper));
-
-                totalEvents--;
-            }
-
-            this._subturns.push(events);
-
-            totalSubturns--;
-        }
+        this._turn = status.turn;
+        this._checksum = status.checksum;
+        this._subturns = status.subturns;
 
         return true;
+    }
+
+    /** turno, checksum y subturnos con sus eventos (también va dentro del estado completo). */
+    public static readStatus(wrapper: IMessageDataWrapper): { turn: number, checksum: number, subturns: SnowWarSubturnEventData[][] }
+    {
+        const turn = wrapper.readInt();
+        const checksum = wrapper.readInt();
+        const subturns: SnowWarSubturnEventData[][] = [];
+        let total = wrapper.readInt();
+
+        while(total-- > 0)
+        {
+            const events: SnowWarSubturnEventData[] = [];
+            let count = wrapper.readInt();
+
+            while(count-- > 0) events.push(new SnowWarSubturnEventData(wrapper));
+
+            subturns.push(events);
+        }
+
+        return { turn, checksum, subturns };
     }
 
     public get turn(): number
@@ -54,11 +59,6 @@ export class SnowWarGameStatusParser implements IMessageParser
     public get checksum(): number
     {
         return this._checksum;
-    }
-
-    public get subturnCount(): number
-    {
-        return this._subturns.length;
     }
 
     public get subturns(): SnowWarSubturnEventData[][]
