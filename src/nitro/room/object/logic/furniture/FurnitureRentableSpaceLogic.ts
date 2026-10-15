@@ -1,4 +1,4 @@
-import { AdvancedMap, RoomObjectVariable, RoomWidgetEnum } from '../../../../../api';
+import { RoomObjectVariable, RoomWidgetEnum } from '../../../../../api';
 import { RoomObjectDataRequestEvent } from '../../../../../events';
 import { FurnitureLogic } from './FurnitureLogic';
 
@@ -24,7 +24,8 @@ export class FurnitureRentableSpaceLogic extends FurnitureLogic
                 this.eventDispatcher.dispatchEvent(new RoomObjectDataRequestEvent(RoomObjectDataRequestEvent.RODRE_CURRENT_USER_ID, this.object));
             }
 
-            const renterId = this.object.model.getValue<AdvancedMap<string, string>>(RoomObjectVariable.FURNITURE_DATA).getValue('renterId');
+            // los datos de tipo mapa (MapDataType) se guardan como objeto plano, no como AdvancedMap: .getValue reventaba en cada fotograma
+            const renterId = this.object.model.getValue<{ [index: string]: string }>(RoomObjectVariable.FURNITURE_DATA)?.['renterId'];
             const userId = this.object.model.getValue<number>(RoomObjectVariable.SESSION_CURRENT_USER_ID);
 
             if(renterId)
