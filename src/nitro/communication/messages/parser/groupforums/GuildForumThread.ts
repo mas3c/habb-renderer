@@ -2,6 +2,7 @@
 
 export class GuildForumThread
 {
+    private _viewsAmount: number = 0;
     private _threadId: number;
     private _authorId: number;
     private _authorName: string;
@@ -41,6 +42,7 @@ export class GuildForumThread
         thread._adminId = wrapper.readInt();
         thread._adminName = wrapper.readString();
         thread._adminOperationTimeAsSecondsAgo = wrapper.readInt();
+        thread._viewsAmount = wrapper.readInt(); // visitas (Comet las manda al final, como Hartico)
 
         return thread;
     }
@@ -63,6 +65,11 @@ export class GuildForumThread
     public set lastCommentTime(time: number)
     {
         this._lastCommentTime = time;
+    }
+
+    public get viewsAmount(): number
+    {
+        return this._viewsAmount;
     }
 
     public get threadId(): number

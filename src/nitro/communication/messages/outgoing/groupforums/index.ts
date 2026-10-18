@@ -1,3 +1,4 @@
+export * from './EditMessageMessageComposer';
 export * from './GetForumsListMessageComposer';
 export * from './GetForumStatsMessageComposer';
 export * from './GetMessagesMessageComposer';
