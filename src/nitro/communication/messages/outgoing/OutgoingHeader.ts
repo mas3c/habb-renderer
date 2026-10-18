@@ -72,6 +72,7 @@ export class OutgoingHeader
     public static UPDATE_FORUM_READ_MARKER = 1855;
     public static UPDATE_FORUM_SETTINGS = 2214;
     public static FORUM_UPDATE_THREAD = 3045;
+    public static FORUM_UPDATE_MESSAGE = 3700;
     public static GROUP_INFO = 2991;
     public static GROUP_DELETE = 1134;
     public static GROUP_MEMBER_REMOVE_CONFIRM = 3593;
