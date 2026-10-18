@@ -81,7 +81,10 @@ export class IsometricImageFurniVisualization extends FurnitureAnimatedVisualiza
                     const _local_7 = this.getThumbnailAssetName(scale);
 
                     this.asset.disposeAsset(_local_7);
-                    this.asset.addAsset(_local_7, _local_6, true, asset.offsetX, asset.offsetY, false, false);
+                    // terminal de foro girado (dirección 2): su asset es el espejo del 0 y la insignia caía 36 px fuera de la pantalla (arreglo de Hartico)
+                    const offsetX = (assetName === 'guild_forum_64_i_2_0') ? (asset.offsetX - 36) : asset.offsetX;
+
+                    this.asset.addAsset(_local_7, _local_6, true, offsetX, asset.offsetY, false, false);
                 }
 
                 return;

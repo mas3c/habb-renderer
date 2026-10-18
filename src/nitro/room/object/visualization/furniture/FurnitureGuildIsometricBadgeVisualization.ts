@@ -1,7 +1,6 @@
 import { Resource, Texture } from '@pixi/core';
-import { Matrix } from '@pixi/math';
 import { IGraphicAsset, IRoomObjectSprite, RoomObjectVariable } from '../../../../../api';
-import { NitroSprite, TextureUtils } from '../../../../../pixi-proxy';
+import { NitroContainer, NitroSprite, TextureUtils } from '../../../../../pixi-proxy';
 import { IsometricImageFurniVisualization } from './IsometricImageFurniVisualization';
 
 export class FurnitureGuildIsometricBadgeVisualization extends IsometricImageFurniVisualization
@@ -36,76 +35,35 @@ export class FurnitureGuildIsometricBadgeVisualization extends IsometricImageFur
         return flag;
     }
 
+    // Como Hartico: escala + sesgo en un contenedor. Con transform.setFromMatrix Pixi descomponía la matriz y la insignia
+    // del terminal de foro salía plana (sin perspectiva).
     protected generateTransformedThumbnail(texture: Texture<Resource>, asset: IGraphicAsset): Texture<Resource>
     {
-        const scale = 1.1;
-        const matrix = new Matrix();
         const difference = (asset.width / texture.width);
+        const container = new NitroContainer();
+        const sprite = new NitroSprite(texture);
 
         switch(this.direction)
         {
             case 2:
-                matrix.a = difference;
-                matrix.b = (-0.5 * difference);
-                matrix.c = 0;
-                matrix.d = (difference * scale);
-                matrix.tx = 0;
-                matrix.ty = ((0.5 * difference) * texture.width);
+                sprite.scale.set(difference, (difference * 1.1));
+                sprite.skew.set(0, -Math.atan(0.5));
+                sprite.position.set(0, (difference * 0.5 * texture.width));
                 break;
             case 0:
             case 4:
-                matrix.a = difference;
-                matrix.b = (0.5 * difference);
-                matrix.c = 0;
-                matrix.d = (difference * scale);
-                matrix.tx = 0;
-                matrix.ty = 0;
+                sprite.scale.set(difference, (difference * 1.1));
+                sprite.skew.set(0, Math.atan(0.5));
+                sprite.position.set(0, 0);
                 break;
             default:
-                matrix.a = difference;
-                matrix.b = 0;
-                matrix.c = 0;
-                matrix.d = difference;
-                matrix.tx = 0;
-                matrix.ty = 0;
+                sprite.scale.set(difference, difference);
+                sprite.position.set(0, 0);
         }
 
-        const sprite = new NitroSprite(texture);
+        container.addChild(sprite);
 
-        sprite.transform.setFromMatrix(matrix);
-
-        sprite.position.set(0);
-
-        return TextureUtils.generateTexture(sprite);
-
-        /* const renderTexture = RenderTexture.create({
-            width: asset.width,
-            height: asset.height
-        });
-
-        PixiApplicationProxy.instance.renderer.render(sprite, {
-            renderTexture,
-            clear: true,
-        });
-
-        return renderTexture; */
-
-        /* const sprite = new NitroSprite(texture);
-
-        const renderTexture = RenderTexture.create({
-            width: (asset.width + matrix.tx),
-            height: (asset.height + matrix.ty)
-        });
-
-        sprite.position.set(0)
-
-        PixiApplicationProxy.instance.renderer.render(sprite, {
-            renderTexture,
-            clear: true,
-            transform: matrix
-        });
-
-        return renderTexture; */
+        return TextureUtils.generateTexture(container);
     }
 
     protected getLayerColor(scale: number, layerId: number, colorId: number): number
