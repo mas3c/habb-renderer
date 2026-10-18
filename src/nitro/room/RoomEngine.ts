@@ -2650,6 +2650,10 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
         let badgeName = (groupBadge) ? this._sessionDataManager.loadGroupBadgeImage(badgeId) : this._sessionDataManager.loadBadgeImage(badgeId);
 
+        // Con las piezas de placa ya cargadas, la placa de grupo se genera DENTRO de esa llamada y su aviso de «lista» sale
+        // antes de que aquí se escuche: el terminal de foro se quedaba en blanco hasta quitarlo y ponerlo. Ya existe: se usa.
+        if(!badgeName && groupBadge) badgeName = this._sessionDataManager.loadGroupBadgeImage(badgeId);
+
         if(!badgeName)
         {
             badgeName = 'loading_icon';
