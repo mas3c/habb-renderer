@@ -60,7 +60,7 @@ export class EvaWireDataWrapper implements IMessageDataWrapper
 
     public readString(): string
     {
-        const length = this.readShort();
+        const length = (this.readShort() & 0xFFFF);   // sin signo, como lo escribe el emulador: los textos de más de 32.767 bytes salían negativos
         const buffer = this._buffer.readBytes(length);
 
         return buffer.toString('utf8');
