@@ -577,36 +577,53 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
 
         Metricas.add('descargas_espera_ms', (inicioDescarga - esperaTurno));
 
+        // Las 6 librerías básicas de sala (21-10, como en producción): si una no termina, el cliente se queda al 80 % para
+        // siempre. Cada una tiene 3 intentos de 20 s; desde el 2.º se salta la caché del navegador.
+        const basica = (RoomContentLoader.MANDATORY_LIBRARIES.indexOf(type) >= 0);
+
         try
         {
-            const response = await fetch(assetUrl);
-            let contentType = 'application/octet-stream';
-
-            if(response.headers.has('Content-Type'))
+            for(let intento = 1; ; intento++)
             {
-                contentType = response.headers.get('Content-Type');
-            }
+                try
+                {
+                    const cargar = async () =>
+                    {
+                        const response = await fetch(assetUrl, ((intento > 1) ? { cache: 'reload' } : undefined));
+                        const contentType = (response.headers.get('Content-Type') || 'application/octet-stream');
 
-            switch(contentType)
-            {
-                case 'application/octet-stream': {
-                    const nitroBundle = await NitroBundle.from(await response.arrayBuffer());
+                        if(!response.ok || (contentType !== 'application/octet-stream')) throw new Error(`${ response.status } ${ contentType }`);
 
-                    await this.processAsset(nitroBundle.baseTexture, (nitroBundle.jsonFile as IAssetData));
+                        const nitroBundle = await NitroBundle.from(await response.arrayBuffer());
 
-                    const events = this._events.get(type);
+                        await this.processAsset(nitroBundle.baseTexture, (nitroBundle.jsonFile as IAssetData));
+                    };
 
-                    if(!events) return;
+                    if(basica)
+                    {
+                        let tope: ReturnType<typeof setTimeout>;
 
-                    Metricas.add('descargas');
-                    Metricas.add('descarga_furni_ms', (performance.now() - inicioDescarga));
+                        await Promise.race([ cargar(), new Promise<void>((_, reject) => (tope = setTimeout(() => reject(new Error('tiempo')), 20000))) ]).finally(() => clearTimeout(tope));
+                    }
+                    else await cargar();
 
-                    events.dispatchEvent(new RoomContentLoadedEvent(RoomContentLoadedEvent.RCLE_SUCCESS, type));
                     break;
                 }
-                default:
-                    throw new Error();
+
+                catch (err)
+                {
+                    if(!basica || (intento >= 3)) throw err;
+                }
             }
+
+            const events = this._events.get(type);
+
+            if(!events) return;
+
+            Metricas.add('descargas');
+            Metricas.add('descarga_furni_ms', (performance.now() - inicioDescarga));
+
+            events.dispatchEvent(new RoomContentLoadedEvent(RoomContentLoadedEvent.RCLE_SUCCESS, type));
         }
 
         catch (err)
