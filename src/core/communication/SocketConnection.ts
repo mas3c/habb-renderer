@@ -67,7 +67,9 @@ export class SocketConnection extends EventDispatcher implements IConnection
 
     public onReady(): void
     {
-        if(this._isReady) return;
+        // ya desechada (el socket se cerró mientras el cliente aún cargaba): sin esto la interfaz entera se caía y la
+        // pantalla se quedaba en negro sin volver a entrar (21-10)
+        if(this._isReady || !this._messages) return;
 
         this._isReady = true;
 
@@ -170,7 +172,7 @@ export class SocketConnection extends EventDispatcher implements IConnection
         {
             if(!composer) continue;
 
-            const header = this._messages.getComposerId(composer);
+            const header = (this._messages ? this._messages.getComposerId(composer) : -1);
 
             if(header === -1)
             {
@@ -272,7 +274,7 @@ export class SocketConnection extends EventDispatcher implements IConnection
 
     private getMessagesForWrapper(wrapper: IMessageDataWrapper): IMessageEvent[]
     {
-        if(!wrapper) return null;
+        if(!wrapper || !this._messages) return null;
 
         const events = this._messages.getEvents(wrapper.header);
 
@@ -319,7 +321,7 @@ export class SocketConnection extends EventDispatcher implements IConnection
 
     public registerMessages(configuration: IMessageConfiguration): void
     {
-        if(!configuration) return;
+        if(!configuration || !this._messages) return;
 
         this._messages.registerMessages(configuration);
     }
