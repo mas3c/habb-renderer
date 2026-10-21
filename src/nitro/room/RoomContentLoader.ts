@@ -574,33 +574,61 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
 
         const soltar = await RoomContentLoader.pedirTurno();
 
+        // Las 6 librerías básicas de sala (21-10): si una no termina, el cliente se queda al 80 % para siempre y el
+        // vigilante recarga cada 2 min (55 arranques así el 20-10, siempre las 6 a la vez y sin error). Cada una tiene
+        // 3 intentos de 20 s; desde el 2.º se salta la caché del navegador por si guarda una copia estropeada.
+        // La etapa en la que va cada una sale en el informe de arranque fallido (App.tsx).
+        const basica = (RoomContentLoader.MANDATORY_LIBRARIES.indexOf(type) >= 0);
+        const intentos = (basica ? 3 : 1);
+        const etapa = (texto: string) => { if(basica) RoomContentLoader.cargaBasica[type] = texto; };
+
         try
         {
-            const response = await fetch(assetUrl);
-            let contentType = 'application/octet-stream';
-
-            if(response.headers.has('Content-Type'))
+            for(let intento = 1; ; intento++)
             {
-                contentType = response.headers.get('Content-Type');
-            }
+                try
+                {
+                    const cargar = async () =>
+                    {
+                        etapa(`${ intento } descarga`);
+                        const response = await fetch(assetUrl, ((intento > 1) ? { cache: 'reload' } : undefined));
+                        const contentType = (response.headers.get('Content-Type') || 'application/octet-stream');
 
-            switch(contentType)
-            {
-                case 'application/octet-stream': {
-                    const nitroBundle = await NitroBundle.from(await response.arrayBuffer());
+                        if(!response.ok || (contentType !== 'application/octet-stream')) throw new Error(`${ response.status } ${ contentType }`);
 
-                    await this.processAsset(nitroBundle.baseTexture, (nitroBundle.jsonFile as IAssetData));
+                        etapa(`${ intento } bytes`);
+                        const buffer = await response.arrayBuffer();
+                        etapa(`${ intento } bundle ${ buffer.byteLength }`);
+                        const nitroBundle = await NitroBundle.from(buffer);
+                        etapa(`${ intento } textura`);
+                        await this.processAsset(nitroBundle.baseTexture, (nitroBundle.jsonFile as IAssetData));
+                    };
 
-                    const events = this._events.get(type);
+                    if(basica)
+                    {
+                        let tope: ReturnType<typeof setTimeout>;
 
-                    if(!events) return;
+                        await Promise.race([ cargar(), new Promise<void>((_, reject) => (tope = setTimeout(() => reject(new Error('tiempo')), 20000))) ]).finally(() => clearTimeout(tope));
+                    }
+                    else await cargar();
 
-                    events.dispatchEvent(new RoomContentLoadedEvent(RoomContentLoadedEvent.RCLE_SUCCESS, type));
+                    etapa('ok');
                     break;
                 }
-                default:
-                    throw new Error();
+
+                catch (err)
+                {
+                    etapa(`${ RoomContentLoader.cargaBasica[type] } FALLO ${ (err as Error)?.message || '' }`.trim());
+
+                    if(intento >= intentos) throw err;
+                }
             }
+
+            const events = this._events.get(type);
+
+            if(!events) return;
+
+            events.dispatchEvent(new RoomContentLoadedEvent(RoomContentLoadedEvent.RCLE_SUCCESS, type));
         }
 
         catch (err)
@@ -613,6 +641,9 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
             soltar();
         }
     }
+
+    // etapa de carga de cada librería básica (para el informe de arranque fallido del cliente)
+    public static cargaBasica: Record<string, string> = ((globalThis as any).__nitroCargaBasica = {});
 
     private async processAsset(baseTexture: BaseTexture, data: IAssetData): Promise<void>
     {
@@ -640,11 +671,17 @@ export class RoomContentLoader implements IFurnitureDataListener, IRoomContentLo
         }
         else
         {
+            // sin 'error' ni tope esto esperaba para siempre si la imagen no llegaba a cargar
             await new Promise<void>((resolve, reject) =>
             {
+                const tope = setTimeout(() => reject(new Error('textura sin cargar')), 15000);
+
+                baseTexture.once('error', () => { clearTimeout(tope); reject(new Error('textura con error')); });
                 baseTexture.once('update', async () =>
                 {
-                    await createAsset();
+                    clearTimeout(tope);
+
+                    try { await createAsset(); } catch (err) { return reject(err); }
 
                     return resolve();
                 });
