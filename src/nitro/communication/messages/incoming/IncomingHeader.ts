@@ -28,6 +28,8 @@ export class IncomingHeader
     public static ROOM_SPLASH = 9635;
     public static HOTELVIEW_RECLAMO = 9637;
     public static HOTELVIEW_ACTUALIZAR = 9638;
+    public static VARIABLE_LEADERBOARD_LISTA = 9639;
+    public static VARIABLE_LEADERBOARD_TROZO = 9640;
     public static COLORES_NOMBRE = 9631;
     public static ROOM_COLOR_NOMBRE = 9632;
 

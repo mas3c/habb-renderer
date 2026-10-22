@@ -278,6 +278,7 @@ export class OutgoingHeader
     public static ESTELAS = 9627;
     public static SPLASH = 9633;
     public static HOTELVIEW_RECLAMAR = 9636;
+    public static VARIABLE_LEADERBOARD_SUSCRIBIR = 9641;
     public static COLORES_NOMBRE = 9630;
 
     // Menciones y bloqueados (emulador: Events.MencionesCommandMessageEvent)
