@@ -202,6 +202,9 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
 
         if(this.updatePlanes(geometry, geometryUpdate, time)) needsUpdate = true;
 
+        // poner o quitar el resaltado de zona cambia los sprites: avisar al lienzo (si no, la zona se quedaba pintada)
+        if(highlightChanged) needsUpdate = true;
+
         if(needsUpdate)
         {
             let index = 0;
