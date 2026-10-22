@@ -1,5 +1,6 @@
 import { BLEND_MODES } from '@pixi/constants';
-import { Resource, Texture } from '@pixi/core';
+import { Filter, Resource, Texture } from '@pixi/core';
+import { AlphaFilter } from '@pixi/filter-alpha';
 import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, RoomObjectSpriteType, RoomObjectVariable } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { SplashAddition } from './additions/SplashAddition';
@@ -97,6 +98,14 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     // Como Hobbaz: el aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
     // AvatarLogic pone al pasar por encima). Así como mucho hay una en pantalla y no 30 filtros.
     private _auraVisible: boolean = false;
+    // wired Transparencia/Resaltado (RoomObjectVariable.WIRED_VISUAL_*): el alpha va en un AlphaFilter
+    // sobre todos los sprites del keko (sombra y efectos incluidos); los filtros del cliente, solo en el keko
+    private _wiredAlfa: AlphaFilter = null;
+    private _wiredSoloAlfa: Filter[] = null;
+    private _wiredFiltros: Filter[] = null;
+    private _wiredClic = false;
+    private _filtrosCache: any[] = null;
+    private _filtrosClave: any[] = [];
     private _needsUpdate: boolean;
     private _geometryUpdateCounter: number;
 
@@ -192,6 +201,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         this.animarEstela(geometry);
 
         if(time < (this._lastUpdate + AvatarVisualization.UPDATE_TIME_INCREASER)) return;
+
+        // los sprites de efectos se crean y se rehacen: el wired se les vuelve a poner
+        if(this._wiredSoloAlfa || this._wiredFiltros || this._wiredClic) this.aplicarWired();
 
         this._lastUpdate += AvatarVisualization.UPDATE_TIME_INCREASER;
 
@@ -961,9 +973,68 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             needsUpdate = true;
         }
 
+        if(this.leerWired(model)) needsUpdate = true;
+
         this.updateModelCounter = model.updateCounter;
 
         return needsUpdate;
+    }
+
+    /** true si cambia qué filtros lleva el keko; el valor del alpha se toca en el filtro y no hace falta más */
+    private leerWired(model: IRoomObjectModel): boolean
+    {
+        const alpha = model.getValue<number>(RoomObjectVariable.WIRED_VISUAL_ALPHA);
+        const filtros = (model.getValue<Filter[]>(RoomObjectVariable.WIRED_VISUAL_FILTERS) || null);
+        const clic = (model.getValue<number>(RoomObjectVariable.WIRED_VISUAL_CLICK_THROUGH) === 1);
+        const conAlfa = ((typeof alpha === 'number') && !isNaN(alpha) && (alpha < 1));
+        const cambia = ((filtros !== this._wiredFiltros) || (clic !== this._wiredClic) || (conAlfa !== !!this._wiredSoloAlfa));
+
+        this._wiredFiltros = filtros;
+        this._wiredClic = clic;
+
+        if(conAlfa)
+        {
+            if(!this._wiredAlfa) this._wiredAlfa = new AlphaFilter(1);
+            if(!this._wiredSoloAlfa) this._wiredSoloAlfa = [ this._wiredAlfa ];
+
+            this._wiredAlfa.alpha = Math.max(0, alpha);
+        }
+        else
+        {
+            this._wiredSoloAlfa = null;
+        }
+
+        if(cambia) this.aplicarWired();
+
+        return cambia;
+    }
+
+    /** filtros y clic del wired en los sprites propios del keko (las burbujas y la estela, no) */
+    private aplicarWired(): void
+    {
+        const hasta = Math.min(this.totalSprites, (this._extraSpritesStartIndex || this.totalSprites));
+
+        for(let i = 0; i < hasta; i++)
+        {
+            const sprite = this.getSprite(i);
+
+            if(!sprite) continue;
+
+            if(i === AvatarVisualization.SPRITE_INDEX_AVATAR)
+            {
+                const filtros = this.filtrosAvatar();
+
+                if(sprite.filters !== filtros) sprite.filters = filtros;
+
+                sprite.alphaTolerance = (this._wiredClic ? AlphaTolerance.MATCH_NOTHING : AlphaTolerance.MATCH_OPAQUE_PIXELS);
+
+                continue;
+            }
+
+            const filtros = (this._wiredSoloAlfa || null);
+
+            if(filtros ? (sprite.filters !== filtros) : (sprite.filters && sprite.filters.length)) sprite.filters = (filtros || []);
+        }
     }
 
     protected setDirection(direction: number): void
@@ -1122,8 +1193,26 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         }
     }
 
-    /** los filtros del sprite del avatar: el aura (si la hay) y, mientras dura, el del Splash */
+    /** los filtros del sprite del avatar: el aura (si la hay), mientras dura el del Splash, y los del wired (resaltado y alpha) */
     private filtrosAvatar(): any[]
+    {
+        const base = this.filtrosSinWired();
+
+        if(!this._wiredFiltros && !this._wiredSoloAlfa) return base;
+
+        const clave = [ base, this._wiredFiltros, this._wiredSoloAlfa ];
+
+        // la misma lista mientras no cambie nada: el sprite compara por identidad
+        if(!this._filtrosCache || clave.some((v, i) => (v !== this._filtrosClave[i])))
+        {
+            this._filtrosClave = clave;
+            this._filtrosCache = [ ...base, ...(this._wiredFiltros || []), ...(this._wiredSoloAlfa || []) ];
+        }
+
+        return this._filtrosCache;
+    }
+
+    private filtrosSinWired(): any[]
     {
         const base = ((this._aura && this._auraVisible) ? this._aura.filters : AvatarVisualization.SIN_FILTROS);
 

@@ -1,3 +1,4 @@
+import { Filter } from '@pixi/core';
 import { AlphaTolerance, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObjectSprite, RoomObjectVariable, RoomObjectVisualizationType } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { ColorData, LayerData } from '../data';
@@ -18,6 +19,9 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
     protected _furnitureLift: number;
     protected _alphaMultiplier: number;
     protected _areaHidden: boolean = false;
+    // wired Resaltado/Transparencia (RoomObjectVariable.WIRED_VISUAL_*)
+    protected _wiredFiltros: Filter[] = null;
+    protected _wiredClic: boolean = false;
     protected _alphaChanged: boolean;
     protected _clickUrl: string;
     protected _clickHandling: boolean;
@@ -227,6 +231,10 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
 
         if(isNaN(alphaMultiplier)) alphaMultiplier = 1;
 
+        const wiredAlpha = model.getValue<number>(RoomObjectVariable.WIRED_VISUAL_ALPHA);
+
+        if((typeof wiredAlpha === 'number') && !isNaN(wiredAlpha)) alphaMultiplier *= wiredAlpha;
+
         if(this._alphaMultiplier !== alphaMultiplier)
         {
             this._alphaMultiplier = alphaMultiplier;
@@ -236,6 +244,9 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
 
         // conf_area_hide (RoomEngine.applyAreaHide): ni se pinta ni se puede pulsar
         this._areaHidden = (model.getValue<number>(RoomObjectVariable.FURNITURE_AREA_HIDE_HIDDEN) === 1);
+
+        this._wiredFiltros = (model.getValue<Filter[]>(RoomObjectVariable.WIRED_VISUAL_FILTERS) || null);
+        this._wiredClic = (model.getValue<number>(RoomObjectVariable.WIRED_VISUAL_CLICK_THROUGH) === 1);
 
         this.updateModelCounter = model.updateCounter;
 
@@ -273,6 +284,8 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
 
         this._alphaChanged = false;
 
+        this.aplicarWired();
+
         if(this._areaHidden)
         {
             for(let layerId = 0; layerId < this.totalSprites; layerId++)
@@ -281,6 +294,24 @@ export class FurnitureVisualization extends RoomObjectSpriteVisualization
 
                 if(sprite) sprite.visible = false;
             }
+        }
+    }
+
+    /** wired Resaltado (filtros del cliente, menos en la sombra) y clics que atraviesan (Transparencia) */
+    private aplicarWired(): void
+    {
+        for(let layerId = 0; layerId < this.totalSprites; layerId++)
+        {
+            const sprite = this.getSprite(layerId);
+
+            if(!sprite) continue;
+
+            const filtros = ((this._wiredFiltros && (layerId !== this._shadowLayerIndex)) ? this._wiredFiltros : null);
+
+            // sin wired no se toca: una capa sin filtros se queda con los suyos (vacíos)
+            if(filtros ? (sprite.filters !== filtros) : (sprite.filters && sprite.filters.length)) sprite.filters = (filtros || []);
+
+            if(this._wiredClic) sprite.alphaTolerance = AlphaTolerance.MATCH_NOTHING;
         }
     }
 

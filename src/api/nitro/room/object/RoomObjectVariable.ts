@@ -86,6 +86,11 @@ export class RoomObjectVariable
     public static FURNITURE_BADGE_VISIBLE_IN_STATE: string = 'furniture_badge_visible_in_state';
     public static FURNITURE_ALPHA_MULTIPLIER: string = 'furniture_alpha_multiplier';
     public static FURNITURE_AREA_HIDE_HIDDEN: string = 'furniture_area_hide_hidden';
+    // wired «Transparencia» (AIR 61) y «Resaltado» (AIR 62): los pone el cliente (WiredVisualView) sobre furnis y avatares.
+    // alpha 0..1 (1 = normal), filtros de Pixi del cliente (se suman a los que haya), clic 1 = los clics lo atraviesan
+    public static WIRED_VISUAL_ALPHA: string = 'wired_visual_alpha';
+    public static WIRED_VISUAL_FILTERS: string = 'wired_visual_filters';
+    public static WIRED_VISUAL_CLICK_THROUGH: string = 'wired_visual_click_through';
     public static FURNITURE_USAGE_POLICY: string = 'furniture_usage_policy';
     public static FURNITURE_OWNER_ID: string = 'furniture_owner_id';
     public static FURNITURE_OWNER_NAME: string = 'furniture_owner_name';
