@@ -5,6 +5,8 @@ import { ObjectMoveUpdateMessage } from '../../messages';
 export class MovingObjectLogic extends RoomObjectLogicBase
 {
     public static DEFAULT_UPDATE_INTERVAL: number = 500;
+    /** Curva 7 de «Curva de movimiento»: salto (la fuerza llega en el hueco del arco). */
+    public static CURVE_JUMP: number = 7;
     private static TEMP_VECTOR: Vector3d = new Vector3d();
 
     private _liftAmount: number;
@@ -86,8 +88,14 @@ export class MovingObjectLogic extends RoomObjectLogicBase
                 vector.multiply(MovingObjectLogic.ease(t, this._curve, this._intensity));
                 vector.add(this._location);
 
+                // Salto (curva 7, JumpStrength del AIR): arco vertical de altura fuerza / 250 baldosas
+                // (1000 = 4 de alto, 80 por defecto ≈ 0,3); una fuerza negativa hunde en vez de subir
+                if(this._arc && (this._curve === MovingObjectLogic.CURVE_JUMP))
+                {
+                    vector.z += 4 * t * (1 - t) * (this._arc / 250);
+                }
                 // Proyectil con curva: se aparta a un lado del trazo y vuelve (seno), en baldosas
-                if(this._arc)
+                else if(this._arc)
                 {
                     const dx = this._locationDelta.x, dy = this._locationDelta.y;
                     const len = Math.sqrt((dx * dx) + (dy * dy));
@@ -193,7 +201,7 @@ export class MovingObjectLogic extends RoomObjectLogicBase
         this._locationDelta.subtract(this._location);
     }
 
-    /** Curvas de «Curva de Movimiento» (Octane): 0 lineal · 1 entrada · 2 salida · 3 entrada y salida · 4 rebote · 5 elástica · 6 caída. */
+    /** Curvas de «Curva de Movimiento» (Octane): 0 lineal · 1 entrada · 2 salida · 3 entrada y salida · 4 rebote · 5 elástica · 6 caída · 7 salto (lineal en el plano). */
     public static ease(t: number, curve: number, intensity: number): number
     {
         if(!curve || (t <= 0) || (t >= 1)) return t;
