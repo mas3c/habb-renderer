@@ -55,6 +55,8 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     private _thumbnailCallbacks: Map<string, IGetImageListener[]>;
     private _activeRoomId: number;
     private _pendingPlaneVisibility: Map<number, { wallVisible: boolean, floorVisible: boolean }> = new Map();
+    // escaleras y desniveles con las caras rellenas (macizos) o con el canto fino de siempre, por sala
+    private _rellenoSuelo: Map<number, boolean> = new Map();
     private _pinnedCameraLocations: Map<number, IVector3D> = new Map();
     private _cameraFollowDisabled: Set<number> = new Set();
     private _activeRoomActiveCanvas: number;
@@ -340,6 +342,8 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
 
         if(pendingVisibility) this.updateRoomInstancePlaneVisibility(roomId, pendingVisibility.wallVisible, pendingVisibility.floorVisible);
 
+        if(this._rellenoSuelo.has(roomId)) this.setRoomFloorFill(roomId, this._rellenoSuelo.get(roomId));
+
         this.events.dispatchEvent(new RoomEngineEvent(RoomEngineEvent.INITIALIZED, roomId));
     }
 
@@ -417,6 +421,26 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     }
 
     /** habb: que la cámara de la sala siga o no al avatar (Portales de salas la apagan). */
+    /**
+     * habb: escaleras y desniveles macizos (true, por defecto) o con el canto fino de siempre (false). Lo
+     * elige el dueño en el editor de planos; si la sala aún no existe se aplica al crearla.
+     */
+    public setRoomFloorFill(roomId: number, fill: boolean): void
+    {
+        this._rellenoSuelo.set(roomId, fill);
+
+        const object = this.getRoomOwnObject(roomId);
+
+        if(object) object.model.setValue(RoomEngine.RELLENO_SUELO, (fill ? 1 : 0));
+    }
+
+    public getRoomFloorFill(roomId: number): boolean
+    {
+        return (this._rellenoSuelo.get(roomId) ?? true);
+    }
+
+    public static RELLENO_SUELO: string = 'habb_floor_fill';
+
     public setRoomCameraFollow(roomId: number, enabled: boolean): void
     {
         if(enabled) this._cameraFollowDisabled.delete(roomId);
