@@ -455,6 +455,8 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
                 if(planeType === RoomPlaneData.PLANE_FLOOR)
                 {
                     plane = this.createFloorPlane(location, leftSide, rightSide, secondaryNormals, randomSeed);
+
+                    if(plane) plane.elevado = this._roomPlaneParser.getPlaneElevado(index);
                 }
 
                 else if(planeType === RoomPlaneData.PLANE_WALL)
@@ -789,6 +791,9 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
                         if(plane.visible)
                         {
                             depth = ((plane.relativeDepth + this.floorRelativeDepth) + (id / 1000));
+
+                            // suelo elevado: con su profundidad real, entre los muebles y avatares (tapa lo de detrás)
+                            if(plane.elevado) depth = (plane.relativeDepth + (id / 1000000));
 
                             if(plane.type !== RoomPlane.TYPE_FLOOR)
                             {

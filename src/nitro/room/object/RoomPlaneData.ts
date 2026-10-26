@@ -17,6 +17,8 @@ export class RoomPlaneData
     private _normalDirection: Vector3d = null;
     private _secondaryNormals: Vector3d[];
     private _masks: RoomPlaneMaskData[];
+    // suelo por encima del más bajo de la sala (o su cara lateral): se ordena con muebles y avatares
+    public elevado: boolean = false;
 
     constructor(k: number, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: IVector3D, _arg_5: IVector3D[])
     {

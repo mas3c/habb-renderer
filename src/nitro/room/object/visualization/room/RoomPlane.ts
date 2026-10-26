@@ -31,6 +31,8 @@ export class RoomPlane implements IRoomPlane
     private _secondaryNormals: Vector3d[];
     private _geometryUpdateId: number;
     private _type: number;
+    // suelo elevado: su profundidad es la geométrica (se ordena con muebles y avatares)
+    public elevado: boolean = false;
     private _isVisible: boolean;
     private _bitmapData: RenderTexture;
     private _hasTexture: boolean;
@@ -509,7 +511,7 @@ export class RoomPlane implements IRoomPlane
 
             let relativeDepth = (Math.max(this._cornerA.z, this._cornerB.z, this._cornerC.z, this._cornerD.z) - originZ);
 
-            if(this._type === RoomPlane.TYPE_FLOOR)
+            if((this._type === RoomPlane.TYPE_FLOOR) && !this.elevado)
             {
                 relativeDepth = (relativeDepth - ((this._location.z + Math.min(0, this._leftSide.z, this._rightSide.z)) * 8));
             }
