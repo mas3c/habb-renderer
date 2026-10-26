@@ -65,9 +65,17 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
     private _highlightPlanes: RoomPlane[];
     private _highlightDirty: boolean;
 
+    // Salas dibujadas a la vez (la activa, las vecinas de los portales, los visores de sala). Los
+    // rasterizadores de suelo y pared son comunes a todas: su caché solo se vacía al cerrarse la última.
+    private static _vivas = 0;
+    private _contada = false;
+
     constructor()
     {
         super();
+
+        RoomVisualization._vivas++;
+        this._contada = true;
 
         this._data = null;
 
@@ -148,9 +156,15 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
             this._roomPlaneBitmapMaskParser = null;
         }
 
+        if(this._contada)
+        {
+            this._contada = false;
+            RoomVisualization._vivas--;
+        }
+
         if(this._data)
         {
-            this._data.clearCache();
+            if(RoomVisualization._vivas <= 0) this._data.clearCache();
 
             this._data = null;
         }

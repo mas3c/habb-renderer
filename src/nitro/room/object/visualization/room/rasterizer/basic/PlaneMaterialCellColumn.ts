@@ -120,6 +120,10 @@ export class PlaneMaterialCellColumn
 
         if(!this._cachedBitmapNormal) this._cachedBitmapNormal = new Vector3d();
 
+        // la columna es común a todas las salas y su textura es de la sala que la pintó: si esa sala se
+        // cerró, está destruida (como ya mira PlaneMaterialCellMatrix)
+        if(this._cachedBitmapData && !this._cachedBitmapData.baseTexture) this._cachedBitmapData = null;
+
         if(this.isStatic)
         {
             if(this._cachedBitmapData)
