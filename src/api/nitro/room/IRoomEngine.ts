@@ -21,6 +21,7 @@ export interface IRoomEngine extends INitroManager
     createRoomInstance(roomId: number, roomMap: IRoomMapData): void;
     removeRoomInstance(roomId: number): void;
     pinRoomCameraLocation(roomId: number, location: IVector3D): void;
+    setRoomCameraFollow(roomId: number, enabled: boolean): void;
     createPreviewRoomInstance(roomId: number, rows: string[], wallHeight: number, door: { x: number, y: number }, floorType?: string, wallType?: string, landscapeType?: string): boolean;
     addPreviewFurnitureFloor(roomId: number, id: number, typeId: number, x: number, y: number, z: number, rotation: number, extra: string): boolean;
     getRoomInstanceDisplay(roomId: number, id: number, width: number, height: number, scale: number): DisplayObject;
