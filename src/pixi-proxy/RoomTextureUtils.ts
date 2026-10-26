@@ -76,6 +76,10 @@ export class PlaneTextureCache
 
         let renderTexture = this.RENDER_TEXTURE_POOL.get(planeId);
 
+        // la de la reserva puede estar destruida: las máscaras ('mask') se comparten por tamaño y el
+        // plano que se cierra destruye la suya aunque otro la siga pidiendo
+        if(renderTexture && !renderTexture.baseTexture) renderTexture = null;
+
         if(!renderTexture)
         {
             renderTexture = RenderTexture.create({
