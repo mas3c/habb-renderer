@@ -1213,34 +1213,56 @@ export class RoomPlaneParser
         }
     }
 
-    private addFloor(k: IVector3D, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: boolean, _arg_5: boolean, _arg_6: boolean, _arg_7: boolean, highlight: boolean = false): void
+    /**
+     * caidas: cuánto baja cada cara lateral [derecha, izquierda, abajo, arriba] (en alturas). Sin ellas (o
+     * menos que el grosor) es el canto fino de siempre; con ellas, la cara llega hasta el suelo de al lado
+     * y un escalón se ve macizo (antes se veía el vacío negro por debajo). elevado: se ordena con los
+     * muebles y avatares en vez de quedar siempre detrás.
+     */
+    private addFloor(k: IVector3D, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: boolean, _arg_5: boolean, _arg_6: boolean, _arg_7: boolean, highlight: boolean = false, caidas: number[] = null, elevado: boolean = false): void
     {
-        let _local_9: number;
-        let _local_10: Vector3d;
-        let _local_11: Vector3d;
         const _local_8: RoomPlaneData = this.addPlane(RoomPlaneData.PLANE_FLOOR, k, _arg_2, _arg_3, null, highlight);
         if(_local_8 != null)
         {
-            _local_9 = (RoomPlaneParser.FLOOR_THICKNESS * this._floorThicknessMultiplier);
-            _local_10 = new Vector3d(0, 0, _local_9);
-            _local_11 = Vector3d.dif(k, _local_10);
-            if(_arg_6)
+            _local_8.elevado = elevado;
+
+            const grosor = (RoomPlaneParser.FLOOR_THICKNESS * this._floorThicknessMultiplier);
+            const cara = (lado: number, inicio: (abajo: Vector3d) => IVector3D, eje: IVector3D) =>
             {
-                this.addPlane(RoomPlaneData.PLANE_FLOOR, _local_11, _arg_2, _local_10, null, highlight);
-            }
-            if(_arg_7)
-            {
-                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, Vector3d.sum(_arg_2, _arg_3)), Vector3d.product(_arg_2, -1), _local_10, null, highlight);
-            }
-            if(_arg_4)
-            {
-                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, _arg_3), Vector3d.product(_arg_3, -1), _local_10, null, highlight);
-            }
-            if(_arg_5)
-            {
-                this.addPlane(RoomPlaneData.PLANE_FLOOR, Vector3d.sum(_local_11, _arg_2), _arg_3, _local_10, null, highlight);
-            }
+                const alto = Math.max(grosor, ((caidas && caidas[lado]) || 0));
+                const arriba = new Vector3d(0, 0, alto);
+                const plano = this.addPlane(RoomPlaneData.PLANE_FLOOR, inicio(Vector3d.dif(k, arriba)), eje, arriba, null, highlight);
+
+                if(plano) plano.elevado = elevado;
+            };
+
+            if(_arg_6) cara(2, abajo => abajo, _arg_2);
+            if(_arg_7) cara(3, abajo => Vector3d.sum(abajo, Vector3d.sum(_arg_2, _arg_3)), Vector3d.product(_arg_2, -1));
+            if(_arg_4) cara(0, abajo => Vector3d.sum(abajo, _arg_3), Vector3d.product(_arg_3, -1));
+            if(_arg_5) cara(1, abajo => Vector3d.sum(abajo, _arg_2), _arg_3);
         }
+    }
+
+    /** Cuánto baja el suelo al otro lado de un borde: lo más bajo de las celdas vecinas (null si alguna es vacío). */
+    private static caida(k: number[][], altura: number, celdas: number[][]): number
+    {
+        let minimo = Infinity;
+
+        for(const [ fila, col ] of celdas)
+        {
+            const v = k[fila]?.[col];
+
+            if((v === undefined) || (v < 0)) return 0;
+
+            minimo = Math.min(minimo, v);
+        }
+
+        return ((minimo === Infinity) || (minimo >= altura)) ? 0 : ((altura - minimo) / 4);
+    }
+
+    public getPlaneElevado(k: number): boolean
+    {
+        return !!this._planes[k]?.elevado;
     }
 
     public initializeFromMapData(data: RoomMapData): boolean
@@ -1727,6 +1749,12 @@ export class RoomPlaneParser
     {
         const paso = (this.planeMaxTiles() * 4); // la matriz va en cuartos de baldosa
 
+        // el suelo más bajo: lo que esté por encima (escaleras, tarimas) va por baldosas y se ordena con
+        // los muebles y avatares, así tapa lo que queda detrás
+        let base = Infinity;
+
+        for(const fila of k) for(const v of fila) if(v >= 0) base = Math.min(base, v);
+
         let _local_7: number;
         let _local_8: number;
         let _local_9: number;
@@ -1815,15 +1843,32 @@ export class RoomPlaneParser
                         _local_16++;
                     }
                     // sala gigante: el rectángulo se pinta en trozos; las caras laterales solo en su contorno
-                    for(const [ x0, x1 ] of RoomPlaneParser.cortes(_local_7, _local_9, paso))
+                    const elevado = (_local_8 > base);
+                    const trozo = (elevado ? 4 : paso);
+
+                    for(const [ x0, x1 ] of RoomPlaneParser.cortes(_local_7, _local_9, trozo))
                     {
-                        for(const [ y0, y1 ] of RoomPlaneParser.cortes(_local_6, _local_10, paso))
+                        for(const [ y0, y1 ] of RoomPlaneParser.cortes(_local_6, _local_10, trozo))
                         {
                             _local_18 = ((x0 / 4) - 0.5);
                             _local_19 = ((y0 / 4) - 0.5);
                             _local_20 = ((x1 - x0) / 4);
                             _local_21 = ((y1 - y0) / 4);
-                            this.addFloor(new Vector3d((_local_18 + _local_20), (_local_19 + _local_21), (_local_8 / 4)), new Vector3d(-(_local_20), 0, 0), new Vector3d(0, -(_local_21), 0), (_local_13 && (x1 === _local_9)), (_local_11 && (x0 === _local_7)), (_local_14 && (y1 === _local_10)), (_local_12 && (y0 === _local_6)));
+
+                            const derecha = (_local_13 && (x1 === _local_9));
+                            const izquierda = (_local_11 && (x0 === _local_7));
+                            const abajo = (_local_14 && (y1 === _local_10));
+                            const arriba = (_local_12 && (y0 === _local_6));
+                            const filas = [ ...Array(y1 - y0).keys() ].map(i => (y0 + i));
+                            const cols = [ ...Array(x1 - x0).keys() ].map(i => (x0 + i));
+                            const caidas = [
+                                (derecha ? RoomPlaneParser.caida(k, _local_8, filas.map(f => [ f, x1 ])) : 0),
+                                (izquierda ? RoomPlaneParser.caida(k, _local_8, filas.map(f => [ f, (x0 - 1) ])) : 0),
+                                (abajo ? RoomPlaneParser.caida(k, _local_8, cols.map(c => [ y1, c ])) : 0),
+                                (arriba ? RoomPlaneParser.caida(k, _local_8, cols.map(c => [ (y0 - 1), c ])) : 0)
+                            ];
+
+                            this.addFloor(new Vector3d((_local_18 + _local_20), (_local_19 + _local_21), (_local_8 / 4)), new Vector3d(-(_local_20), 0, 0), new Vector3d(0, -(_local_21), 0), derecha, izquierda, abajo, arriba, false, caidas, elevado);
                         }
                     }
                 }
