@@ -39,6 +39,8 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
     private _directionY: number;
     private _directionZ: number;
     private _floorThickness: number;
+    // escaleras macizas (1) o con el canto fino de siempre (0); ver RoomEngine.setRoomFloorFill
+    private _relleno: number = 1;
     private _wallThickness: number;
     private _holeUpdateTime: number;
     private _planes: RoomPlane[];
@@ -294,6 +296,16 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
 
         const floorThickness = k.getValue<number>(RoomObjectVariable.ROOM_FLOOR_THICKNESS);
         const wallThickness = k.getValue<number>(RoomObjectVariable.ROOM_WALL_THICKNESS);
+        const relleno = k.getValue<number>('habb_floor_fill');
+
+        if((relleno === 0 || relleno === 1) && (relleno !== this._relleno))
+        {
+            this._relleno = relleno;
+
+            this.clearPlanes();
+
+            return true;
+        }
 
         if((!isNaN(floorThickness) && !isNaN(wallThickness)) && ((floorThickness !== this._floorThickness) || (wallThickness !== this._wallThickness)))
         {
@@ -417,6 +429,7 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
         if(!this.object || this._isPlaneSet) return;
 
         if(!isNaN(this._floorThickness)) this._roomPlaneParser.floorThicknessMultiplier = this._floorThickness;
+        this._roomPlaneParser.relleno = (this._relleno !== 0);
         if(!isNaN(this._wallThickness)) this._roomPlaneParser.wallThicknessMultiplier = this._wallThickness;
 
         const mapData = this.object.model.getValue<RoomMapData>(RoomObjectVariable.ROOM_MAP_DATA);

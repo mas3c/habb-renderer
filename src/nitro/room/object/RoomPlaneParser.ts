@@ -1779,6 +1779,9 @@ export class RoomPlaneParser
         return tramos;
     }
 
+    // escaleras y desniveles con las caras hasta el suelo de al lado (si no, el canto fino de siempre)
+    public relleno: boolean = true;
+
     private extractPlanes(k: number[][]): void
     {
         const paso = (this.planeMaxTiles() * 4); // la matriz va en cuartos de baldosa
@@ -1895,7 +1898,7 @@ export class RoomPlaneParser
                             const arriba = (_local_12 && (y0 === _local_6));
                             const filas = [ ...Array(y1 - y0).keys() ].map(i => (y0 + i));
                             const cols = [ ...Array(x1 - x0).keys() ].map(i => (x0 + i));
-                            const caidas = [
+                            const caidas = !this.relleno ? null : [
                                 (derecha ? RoomPlaneParser.caida(k, _local_8, filas.map(f => [ f, x1 ])) : 0),
                                 (izquierda ? RoomPlaneParser.caida(k, _local_8, filas.map(f => [ f, (x0 - 1) ])) : 0),
                                 (abajo ? RoomPlaneParser.caida(k, _local_8, cols.map(c => [ y1, c ])) : 0),
