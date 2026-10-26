@@ -80,9 +80,12 @@ export class RoomLogic extends RoomObjectLogicBase
 
         this.object.model.setValue(RoomObjectVariable.ROOM_MAP_DATA, roomMap);
         this.object.model.setValue(RoomObjectVariable.ROOM_BACKGROUND_COLOR, 0xFFFFFF);
-        this.object.model.setValue(RoomObjectVariable.ROOM_FLOOR_VISIBILITY, 1);
-        this.object.model.setValue(RoomObjectVariable.ROOM_WALL_VISIBILITY, 1);
-        this.object.model.setValue(RoomObjectVariable.ROOM_LANDSCAPE_VISIBILITY, 1);
+        // habb: solo el valor por defecto; si ya llegó «ocultar paredes» (o una sala de solo vista de
+        // un portal las ocultó) antes de inicializar, se respeta en vez de volver a mostrarlas.
+        for(const variable of [ RoomObjectVariable.ROOM_FLOOR_VISIBILITY, RoomObjectVariable.ROOM_WALL_VISIBILITY, RoomObjectVariable.ROOM_LANDSCAPE_VISIBILITY ])
+        {
+            if(this.object.model.getValue<number>(variable) === undefined) this.object.model.setValue(variable, 1);
+        }
 
         this._skipColorTransition = (NitroConfiguration.getValue<boolean>('room.color.skip.transition') === true);
     }

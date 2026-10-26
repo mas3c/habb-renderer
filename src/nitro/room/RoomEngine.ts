@@ -10,6 +10,8 @@ import { PetFigureData } from '../avatar';
 import { RenderRoomMessageComposer, RenderRoomThumbnailMessageComposer } from '../communication';
 import { FurniId } from '../utils';
 import { ImageResult } from './ImageResult';
+import { RoomPlaneParser } from './object/RoomPlaneParser';
+import { LegacyWallGeometry } from './utils';
 import { ObjectAvatarAuraUpdateMessage, ObjectAvatarEstelaUpdateMessage, ObjectAvatarSplashUpdateMessage, ObjectAvatarCarryObjectUpdateMessage, ObjectAvatarChatUpdateMessage, ObjectAvatarDanceUpdateMessage, ObjectAvatarEffectUpdateMessage, ObjectAvatarExperienceUpdateMessage, ObjectAvatarExpressionUpdateMessage, ObjectAvatarFigureUpdateMessage, ObjectAvatarFlatControlUpdateMessage, ObjectAvatarGestureUpdateMessage, ObjectAvatarGuideStatusUpdateMessage, ObjectAvatarHabbiconUpdateMessage, ObjectAvatarMutedUpdateMessage, ObjectAvatarOwnMessage, ObjectAvatarPetGestureUpdateMessage, ObjectAvatarPlayerValueUpdateMessage, ObjectAvatarPlayingGameUpdateMessage, ObjectAvatarPostureUpdateMessage, ObjectAvatarSignUpdateMessage, ObjectAvatarSleepUpdateMessage, ObjectAvatarTypingUpdateMessage, ObjectAvatarUpdateMessage, ObjectAvatarUseObjectUpdateMessage, ObjectDataUpdateMessage, ObjectGroupBadgeUpdateMessage, ObjectHeightUpdateMessage, ObjectItemDataUpdateMessage, ObjectModelDataUpdateMessage, IWiredMoveStyle, ObjectMoveUpdateMessage, ObjectRoomColorUpdateMessage, ObjectRoomFloorHoleUpdateMessage, ObjectRoomMaskUpdateMessage, ObjectRoomPlanePropertyUpdateMessage, ObjectRoomPlaneVisibilityUpdateMessage, ObjectRoomUpdateMessage, ObjectStateUpdateMessage } from './messages';
 import { FurnitureAreaHideLogic, RoomLogic, RoomMapData, RoomObjectVisualizationFactory } from './object';
 import { RoomContentLoader } from './RoomContentLoader';
@@ -52,6 +54,8 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     private _thumbnailObjectIdBank: NumberBank;
     private _thumbnailCallbacks: Map<string, IGetImageListener[]>;
     private _activeRoomId: number;
+    private _pendingPlaneVisibility: Map<number, { wallVisible: boolean, floorVisible: boolean }> = new Map();
+    private _pinnedCameraLocations: Map<number, IVector3D> = new Map();
     private _activeRoomActiveCanvas: number;
     private _activeRoomActiveCanvasMouseX: number;
     private _activeRoomActiveCanvasMouseY: number;
@@ -331,7 +335,96 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
             this._roomAllowsDragging = true;
         }
 
+        const pendingVisibility = this._pendingPlaneVisibility.get(roomId);
+
+        if(pendingVisibility) this.updateRoomInstancePlaneVisibility(roomId, pendingVisibility.wallVisible, pendingVisibility.floorVisible);
+
         this.events.dispatchEvent(new RoomEngineEvent(RoomEngineEvent.INITIALIZED, roomId));
+    }
+
+    /**
+     * habb: Portales de salas (26-10-2026). Monta una sala de SOLO VISTA (la vecina de un portal) a
+     * partir del plano que manda el servidor (op portalVecinas): mismas cuentas que
+     * RoomMessageHandler.onRoomModelEvent, sin sesión, sin avatares y sin paredes. La sala vive con
+     * su propio id (negativo, para no chocar con salas reales) y la pinta quien la pida con
+     * getRoomInstanceDisplay; el cliente la coloca y la oscurece.
+     */
+    public createPreviewRoomInstance(roomId: number, rows: string[], wallHeight: number, door: { x: number, y: number }, floorType: string = null, wallType: string = null, landscapeType: string = null): boolean
+    {
+        if(!this._ready || !rows || !rows.length || this.getRoomInstance(roomId)) return false;
+
+        const height = rows.length;
+        const width = Math.max(...rows.map(row => row.length));
+        const tileAt = (x: number, y: number): number =>
+        {
+            if((y < 0) || (y >= height)) return RoomPlaneParser.TILE_BLOCKED;
+
+            const char = rows[y].charAt(x);
+
+            if(!char || (char === 'x') || (char === 'X')) return RoomPlaneParser.TILE_BLOCKED;
+
+            const value = parseInt(char, 36);
+
+            return isNaN(value) ? RoomPlaneParser.TILE_BLOCKED : value;
+        };
+
+        const wallGeometry = this.getLegacyWallGeometry(roomId) as LegacyWallGeometry;
+        const planeParser = new RoomPlaneParser();
+
+        if(!wallGeometry) return false;
+
+        planeParser.initializeTileMap(width, height);
+
+        for(let y = 0; y < height; y++)
+        {
+            for(let x = 0; x < width; x++) planeParser.setTileHeight(x, y, tileAt(x, y));
+        }
+
+        const doorX = (door && (tileAt(door.x, door.y) !== RoomPlaneParser.TILE_BLOCKED)) ? door.x : -1;
+        const doorY = (doorX >= 0) ? door.y : -1;
+        const doorZ = (doorX >= 0) ? tileAt(doorX, doorY) : 0;
+
+        planeParser.initializeFromTileData((wallHeight >= 0) ? wallHeight : -1);
+
+        wallGeometry.scale = LegacyWallGeometry.DEFAULT_SCALE;
+        wallGeometry.initialize(width, height, planeParser.floorHeight);
+
+        for(let y = (height - 1); y >= 0; y--)
+        {
+            for(let x = (width - 1); x >= 0; x--) wallGeometry.setHeight(x, y, planeParser.getTileHeight(x, y));
+        }
+
+        const roomMap = planeParser.getMapData();
+
+        if(doorX >= 0) roomMap.doors.push({ x: doorX, y: doorY, z: doorZ, dir: 0 });
+
+        this.createRoomInstance(roomId, roomMap);
+
+        if(!this.getRoomInstance(roomId)) return false;
+
+        this.updateRoomInstancePlaneType(roomId, floorType, wallType, landscapeType);
+        this.updateRoomInstancePlaneVisibility(roomId, false, true);
+
+        return true;
+    }
+
+    /** habb: la primera vez que la cámara de la sala siga al avatar, empieza en esta posición (Portales de salas). */
+    public pinRoomCameraLocation(roomId: number, location: IVector3D): void
+    {
+        if(location) this._pinnedCameraLocations.set(roomId, new Vector3d(location.x, location.y, location.z));
+        else this._pinnedCameraLocations.delete(roomId);
+    }
+
+    /** habb: furni de suelo en una sala de solo vista (Portales de salas). */
+    public addPreviewFurnitureFloor(roomId: number, id: number, typeId: number, x: number, y: number, z: number, rotation: number, extra: string): boolean
+    {
+        const data = new LegacyDataType();
+
+        data.setString(extra || '');
+
+        const state = parseFloat(extra);
+
+        return this.addFurnitureFloor(roomId, id, typeId, new Vector3d(x, y, z), new Vector3d(((rotation % 8) * 45)), (isNaN(state) ? 0 : state), data);
     }
 
     /**
@@ -713,7 +806,16 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     {
         const object = this.getRoomOwnObject(roomId);
 
-        if(!object) return false;
+        // habb: el aviso de «ocultar paredes» puede llegar antes de que la sala esté montada; se
+        // guarda y se aplica al montarla (createRoomInstance). Antes se perdía sin decir nada.
+        if(!object)
+        {
+            this._pendingPlaneVisibility.set(roomId, { wallVisible, floorVisible });
+
+            return false;
+        }
+
+        this._pendingPlaneVisibility.delete(roomId);
 
         object.processUpdateMessage(new ObjectRoomPlaneVisibilityUpdateMessage(ObjectRoomPlaneVisibilityUpdateMessage.WALL_VISIBILITY, wallVisible));
         object.processUpdateMessage(new ObjectRoomPlaneVisibilityUpdateMessage(ObjectRoomPlaneVisibilityUpdateMessage.FLOOR_VISIBILITY, floorVisible));
@@ -1557,6 +1659,15 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
                 _local_15.y = (Math.round((_local_23.y * 2)) / 2);
                 if(!roomCamera.location)
                 {
+                    // habb: llegada por un Portal de salas: la cámara empieza donde estaba la vista de la sala
+                    const pinned = this._pinnedCameraLocations.get(roomId);
+
+                    if(pinned)
+                    {
+                        this._pinnedCameraLocations.delete(roomId);
+                        _local_15.assign(pinned);
+                    }
+
                     roomGeometry.location = _local_15;
                     if(this.useOffsetScrolling)
                     {

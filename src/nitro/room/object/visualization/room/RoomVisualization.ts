@@ -365,7 +365,13 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
         const wallVisibility = (model.getValue<number>(RoomObjectVariable.ROOM_WALL_VISIBILITY) === 1);
         const landscapeVisibility = (model.getValue<number>(RoomObjectVariable.ROOM_LANDSCAPE_VISIBILITY) === 1);
 
-        return (this.updatePlaneTypes(floorType, wallType, landscapeType) || this.updatePlaneVisibility(floorVisibility, wallVisibility, landscapeVisibility));
+        // habb: las dos, sin cortocircuito. Con «||», si en la misma pasada cambiaban el tipo de suelo/pared
+        // y la visibilidad (sala de solo vista de un portal, o «ocultar paredes» que llega antes de
+        // montar la sala), la visibilidad no se aplicaba nunca y las paredes seguían viéndose.
+        const typesChanged = this.updatePlaneTypes(floorType, wallType, landscapeType);
+        const visibilityChanged = this.updatePlaneVisibility(floorVisibility, wallVisibility, landscapeVisibility);
+
+        return (typesChanged || visibilityChanged);
     }
 
     private clearPlanes(): void
