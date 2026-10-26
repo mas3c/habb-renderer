@@ -456,7 +456,11 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
                 {
                     plane = this.createFloorPlane(location, leftSide, rightSide, secondaryNormals, randomSeed);
 
-                    if(plane) plane.elevado = this._roomPlaneParser.getPlaneElevado(index);
+                    if(plane)
+                    {
+                        plane.elevado = this._roomPlaneParser.getPlaneElevado(index);
+                        plane.anclaje = this._roomPlaneParser.getPlaneAnclaje(index);
+                    }
                 }
 
                 else if(planeType === RoomPlaneData.PLANE_WALL)

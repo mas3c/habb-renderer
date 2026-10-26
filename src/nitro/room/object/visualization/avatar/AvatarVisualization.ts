@@ -1443,7 +1443,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                     sprite.offsetX = offsetX;
                     sprite.offsetY = offsetY;
                     sprite.alpha = Math.round(50 * this._sombra);
-                    sprite.relativeDepth = 1;
+                    // en un suelo elevado (escaleras), que va ordenado con los objetos, 1 la dejaba debajo de su escalón
+                    sprite.relativeDepth = (((this.object?.getLocation()?.z || 0) > 0) ? 0.005 : 1);
                 }
                 else
                 {
