@@ -33,6 +33,8 @@ export class RoomPlane implements IRoomPlane
     private _type: number;
     // suelo elevado: su profundidad es la geométrica (se ordena con muebles y avatares)
     public elevado: boolean = false;
+    // con qué punto se ordena un trozo de suelo elevado (null: su esquina más lejana)
+    public anclaje: IVector3D = null;
     private _isVisible: boolean;
     private _bitmapData: RenderTexture;
     private _hasTexture: boolean;
@@ -510,6 +512,13 @@ export class RoomPlane implements IRoomPlane
             const originZ = originPos.z;
 
             let relativeDepth = (Math.max(this._cornerA.z, this._cornerB.z, this._cornerC.z, this._cornerD.z) - originZ);
+
+            if(this.anclaje)
+            {
+                const anclado = geometry.getScreenPosition(this.anclaje);
+
+                if(anclado) relativeDepth = (anclado.z - originZ);
+            }
 
             if((this._type === RoomPlane.TYPE_FLOOR) && !this.elevado)
             {

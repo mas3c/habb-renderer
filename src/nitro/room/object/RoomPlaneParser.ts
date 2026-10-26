@@ -1219,12 +1219,13 @@ export class RoomPlaneParser
      * y un escalón se ve macizo (antes se veía el vacío negro por debajo). elevado: se ordena con los
      * muebles y avatares en vez de quedar siempre detrás.
      */
-    private addFloor(k: IVector3D, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: boolean, _arg_5: boolean, _arg_6: boolean, _arg_7: boolean, highlight: boolean = false, caidas: number[] = null, elevado: boolean = false): void
+    private addFloor(k: IVector3D, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: boolean, _arg_5: boolean, _arg_6: boolean, _arg_7: boolean, highlight: boolean = false, caidas: number[] = null, elevado: boolean = false, anclaje: Vector3d = null): void
     {
         const _local_8: RoomPlaneData = this.addPlane(RoomPlaneData.PLANE_FLOOR, k, _arg_2, _arg_3, null, highlight);
         if(_local_8 != null)
         {
             _local_8.elevado = elevado;
+            _local_8.anclaje = anclaje;
 
             const grosor = (RoomPlaneParser.FLOOR_THICKNESS * this._floorThicknessMultiplier);
             const cara = (lado: number, inicio: (abajo: Vector3d) => IVector3D, eje: IVector3D) =>
@@ -1233,7 +1234,12 @@ export class RoomPlaneParser
                 const arriba = new Vector3d(0, 0, alto);
                 const plano = this.addPlane(RoomPlaneData.PLANE_FLOOR, inicio(Vector3d.dif(k, arriba)), eje, arriba, null, highlight);
 
-                if(plano) plano.elevado = elevado;
+                if(plano)
+                {
+                    plano.elevado = elevado;
+                    // sus caras, como su baldosa: las de los escalones de la rampa tapaban lo que está encima
+                    plano.anclaje = anclaje;
+                }
             };
 
             if(_arg_6) cara(2, abajo => abajo, _arg_2);
@@ -1263,6 +1269,34 @@ export class RoomPlaneParser
     public getPlaneElevado(k: number): boolean
     {
         return !!this._planes[k]?.elevado;
+    }
+
+    public getPlaneAnclaje(k: number): Vector3d
+    {
+        return (this._planes[k]?.anclaje || null);
+    }
+
+    /**
+     * Las rampas de escalera parten una baldosa en trozos de cuarto con alturas distintas: todos los de la
+     * baldosa se ordenan como ella entera (su esquina de atrás, a su altura mínima: lo más alto cuenta como más cerca). Si no, los trozos de
+     * delante quedan más cerca que su centro y tapan lo que está encima (el cursor, los pies).
+     */
+    private static anclajeBaldosa(k: number[][], cx: number, cy: number): Vector3d
+    {
+        const tx = Math.floor(cx / 4), ty = Math.floor(cy / 4);
+        let minimo = Infinity;
+
+        for(let f = (ty * 4); f < ((ty * 4) + 4); f++)
+        {
+            for(let c = (tx * 4); c < ((tx * 4) + 4); c++)
+            {
+                const v = k[f]?.[c];
+
+                if((v !== undefined) && (v >= 0)) minimo = Math.min(minimo, v);
+            }
+        }
+
+        return new Vector3d((tx - 0.5), (ty - 0.5), ((minimo === Infinity) ? 0 : (minimo / 4)));
     }
 
     public initializeFromMapData(data: RoomMapData): boolean
@@ -1868,7 +1902,7 @@ export class RoomPlaneParser
                                 (arriba ? RoomPlaneParser.caida(k, _local_8, cols.map(c => [ (y0 - 1), c ])) : 0)
                             ];
 
-                            this.addFloor(new Vector3d((_local_18 + _local_20), (_local_19 + _local_21), (_local_8 / 4)), new Vector3d(-(_local_20), 0, 0), new Vector3d(0, -(_local_21), 0), derecha, izquierda, abajo, arriba, false, caidas, elevado);
+                            this.addFloor(new Vector3d((_local_18 + _local_20), (_local_19 + _local_21), (_local_8 / 4)), new Vector3d(-(_local_20), 0, 0), new Vector3d(0, -(_local_21), 0), derecha, izquierda, abajo, arriba, false, caidas, elevado, (elevado ? RoomPlaneParser.anclajeBaldosa(k, x0, y0) : null));
                         }
                     }
                 }

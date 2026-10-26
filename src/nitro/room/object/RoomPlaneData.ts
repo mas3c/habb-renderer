@@ -19,6 +19,8 @@ export class RoomPlaneData
     private _masks: RoomPlaneMaskData[];
     // suelo por encima del más bajo de la sala (o su cara lateral): se ordena con muebles y avatares
     public elevado: boolean = false;
+    // punto con el que se ordena (la esquina de atrás de su baldosa, a la altura mínima de esta)
+    public anclaje: Vector3d = null;
 
     constructor(k: number, _arg_2: IVector3D, _arg_3: IVector3D, _arg_4: IVector3D, _arg_5: IVector3D[])
     {
