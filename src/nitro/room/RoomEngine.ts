@@ -56,6 +56,7 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     private _activeRoomId: number;
     private _pendingPlaneVisibility: Map<number, { wallVisible: boolean, floorVisible: boolean }> = new Map();
     private _pinnedCameraLocations: Map<number, IVector3D> = new Map();
+    private _cameraFollowDisabled: Set<number> = new Set();
     private _activeRoomActiveCanvas: number;
     private _activeRoomActiveCanvasMouseX: number;
     private _activeRoomActiveCanvasMouseY: number;
@@ -413,6 +414,13 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
     {
         if(location) this._pinnedCameraLocations.set(roomId, new Vector3d(location.x, location.y, location.z));
         else this._pinnedCameraLocations.delete(roomId);
+    }
+
+    /** habb: que la cámara de la sala siga o no al avatar (Portales de salas la apagan). */
+    public setRoomCameraFollow(roomId: number, enabled: boolean): void
+    {
+        if(enabled) this._cameraFollowDisabled.delete(roomId);
+        else this._cameraFollowDisabled.add(roomId);
     }
 
     /** habb: furni de suelo en una sala de solo vista (Portales de salas). */
@@ -1424,6 +1432,9 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
             const camera = instanceData.roomCamera;
 
             if(!camera) continue;
+
+            // habb: en las salas con Portales de salas la cámara no sigue al avatar (como en el vídeo de referencia)
+            if(this._cameraFollowDisabled.has(instanceData.roomId)) continue;
 
             let location: IVector3D = null;
 
