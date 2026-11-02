@@ -1,5 +1,5 @@
 import { Point } from '@pixi/math';
-import { AvatarDirectionAngle, IActionDefinition, IActiveActionData, IAssetAnimation, IAssetManager, IAvatarFigureContainer, IAvatarImage, IAvatarRenderManager, IFigureData, IFigurePartSet, IPartColor, IStructureData } from '../../api';
+import { AvatarDirectionAngle, IActionDefinition, IActiveActionData, IAssetAnimation, IAssetManager, IAvatarFigureContainer, IAvatarImage, IAvatarRenderManager, IFigureData, IFigurePartSet, IPartColor, IStructureData, NitroConfiguration } from '../../api';
 import { EventDispatcher } from '../../core';
 import { ActionDefinition, AvatarActionManager } from './actions';
 import { Animation, AnimationManager, AvatarAnimationLayerData } from './animation';
@@ -435,7 +435,10 @@ export class AvatarStructure extends EventDispatcher
 
                                 if(_local_29 && (_local_29.length > (_local_33.colorLayerIndex - 1)))
                                 {
-                                    _local_36 = _local_31.getColor(_local_29[(_local_33.colorLayerIndex - 1)]);
+                                    // caras «del color de la piel» (avatar.skin.colored.sets): el número es de la paleta de hd, no de la suya
+                                    const paleta = (NitroConfiguration.getValue<number[]>('avatar.skin.colored.sets', []).indexOf(_local_28) > -1) ? (this._figureData.getPalette(this._figureData.getSetType('hd')?.paletteID) ?? _local_31) : _local_31;
+
+                                    _local_36 = paleta.getColor(_local_29[(_local_33.colorLayerIndex - 1)]);
                                 }
 
                                 const _local_37 = (_local_33.colorLayerIndex > 0);
