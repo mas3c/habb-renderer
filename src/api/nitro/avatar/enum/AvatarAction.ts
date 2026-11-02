@@ -10,6 +10,7 @@ export class AvatarAction
     public static EXPRESSION_LAUGH = 'laugh';
     public static EXPRESSION_RESPECT = 'respect';
     public static EXPRESSION_RIDE_JUMP = 'ridejump';
+    public static HUG = 'abz';
     public static EXPRESSION_SNOWBOARD_OLLIE = 'sbollie';
     public static EXPRESSION_SNOWBORD_360 = 'sb360';
     public static EXPRESSION_WAVE = 'wave';

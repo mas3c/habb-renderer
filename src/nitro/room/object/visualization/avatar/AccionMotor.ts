@@ -285,6 +285,8 @@ class Lienzo
 interface Accion
 {
     duracion: number;
+    /** mientras dura, el avatar estira los dos brazos y se arrima al que tiene delante (:abrazar) */
+    brazos?: boolean;
     crear: (azar: () => number) => any;
     dibujar: (l: Lienzo, t: number, d: any, lado: number) => void;
 }
@@ -359,7 +361,8 @@ const ACCIONES: { [nombre: string]: Accion } = {
 
     // abrazo: anillos rosas que se abren desde el pecho y corazones dando vueltas alrededor
     abrazo: {
-        duracion: 2800,
+        duracion: 3200,
+        brazos: true,
         crear: azar => ({ orbita: Array.from({ length: 6 }, (_, i) => ({ fase: (i / 6) * VUELTA, alto: PECHO_Y - 10 + (azar() * 2 - 1) * 10 })) }),
         dibujar: (l, t, d) =>
         {
