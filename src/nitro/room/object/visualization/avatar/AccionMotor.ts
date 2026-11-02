@@ -78,13 +78,32 @@ const CALAVERA: Dibujo = { filas: [
     '.w.w.w.'
 ], paleta: { w: '#c9ced8', W: '#ffffff', k: '#1c1f2b' } };
 
+/** revólver mirando a la derecha: acero con brillo, tambor, guardamonte y culata de madera */
+const REVOLVER: Dibujo = { filas: [
+    '.kkkkkkkkkkkkkkk.',
+    'kwwwwwwwwwwwwwwGk',
+    'kGGGGGGGGGGGGGGgk',
+    'kkgGGGGGgkkkkkkkk',
+    '.kgGwwGGgk.......',
+    '.kgGGGGGgk.......',
+    'kBBkkkkkkk.......',
+    'kBbBk.k.k........',
+    'kBbBk..k.........',
+    'kkkk.............'
+], paleta: { k: '#16181e', w: '#e3e8ef', G: '#8d97a8', g: '#4a5160', B: '#9a5d34', b: '#6b3f22' } };
+
+/** dónde está la boca del cañón en el dibujo (celdas desde el centro) */
+const BOCA_CANON = { x: 8, y: -3.5 };
+
 /** letras de 3x5 para los rótulos de cómic */
 const LETRAS: { [l: string]: string[] } = {
     P: [ 'XX.', 'X.X', 'XX.', 'X..', 'X..' ],
     O: [ '.X.', 'X.X', 'X.X', 'X.X', '.X.' ],
     W: [ 'X.X', 'X.X', 'X.X', 'XXX', 'X.X' ],
     '!': [ 'X', 'X', 'X', '.', 'X' ],
-    Z: [ 'XXX', '..X', '.X.', 'X..', 'XXX' ]
+    Z: [ 'XXX', '..X', '.X.', 'X..', 'XXX' ],
+    K: [ 'X.X', 'X.X', 'XX.', 'X.X', 'X.X' ],
+    '.': [ '.', '.', '.', '.', 'X' ]
 };
 
 const ROSAS = [ '#ff3b6b', '#ff6f91', '#ff9fb8', '#ffd1dc', '#ff2f5c', '#ffc0cb' ];
@@ -396,34 +415,123 @@ const ACCIONES: { [nombre: string]: Accion } = {
         }
     },
 
-    // muerte: tajo rojo en diagonal, calavera que salta y el alma que sube haciendo eses
-    muerte: {
-        duracion: 3600,
-        crear: () => ({}),
+    // :kill (el que dispara): saca el revólver, fogonazo con retroceso, trazo de la bala, casquillo que rebota, humo y lo guarda
+    disparo: {
+        duracion: 2000,
+        crear: azar => ({ humo: Array.from({ length: 7 }, (_, i) => ({ t0: 400 + i * 120 + azar() * 60, dx: (azar() * 2 - 1) * 3, r: 1.5 + azar() * 1.5 })), giro: azar() < 0.5 }),
         dibujar: (l, t, d, lado) =>
         {
-            const v = entre(t, 0, 220);
+            const PX = 1.4;
+            const sacar = salida(entre(t, 0, 220));
+            const guardar = entre(t, 1500, 1900);
+            const retroceso = (t >= 320) ? Math.max(0, 1 - entre(t, 320, 470)) : 0;
+            const gx = lado * (10 + sacar * 8 - retroceso * 3), gy = -30 - sacar * 10 - retroceso * 2 + guardar * 8;
+            const a = Math.min(sacar * 1.5, 1 - guardar);
+            const bx = gx + lado * BOCA_CANON.x * PX, by = gy + BOCA_CANON.y * PX;
 
-            for(let i = 0; i < 22; i++)
+            // humo del cañón (detrás del arma)
+            for(const h of d.humo)
             {
-                const k = i / 22;
+                const v = entre(t, h.t0, h.t0 + 1200);
 
-                if(k > v) break;
+                if(v <= 0 || v >= 1) continue;
 
-                l.punto(lado * (-18 + k * 36), PECHO_Y - 22 + k * 30, 3.2 - k * 1.4, k < v - 0.15 ? '#ff2b2b' : '#ffffff', tramo(t, 0, 40, 500, 900));
+                l.punto(bx + lado * 2 + h.dx + Math.sin(v * 6) * 2, by - v * 22, h.r + v * 4, '#cfd4dc', (1 - v) * 0.5);
             }
 
-            l.sumar(true);
-            l.luz(0, PECHO_Y - 8, 24, [ 255, 40, 40 ], 0.45 * tramo(t, 150, 220, 300, 700));
-            l.sumar(false);
+            l.dibujo(REVOLVER, gx, gy, PX, a, lado < 0);
 
-            const salto = entre(t, 250, 650);
+            // fogonazo: tres capas de estrella y un resplandor
+            const f = entre(t, 320, 440);
 
-            l.dibujo(CALAVERA, 0, CABEZA_Y - 16 - Math.sin(salto * Math.PI) * 10, 1.8, tramo(t, 250, 350, 1300, 1700));
+            if(f > 0 && f < 1)
+            {
+                const r = (1 - f) * 10 + 3;
 
-            const alma = entre(t, 1200, 3600);
+                l.sumar(true);
+                l.luz(bx + lado * 4, by, 18, [ 255, 200, 90 ], (1 - f) * 0.9);
+                l.sumar(false);
+                l.estrellaComic(bx + lado * 5, by, r + 2, 7, t / 60, '#ff7a1a', 1 - f);
+                l.estrellaComic(bx + lado * 5, by, r, 7, t / 60 + 0.4, '#ffd23f', 1 - f);
+                l.estrellaComic(bx + lado * 5, by, r * 0.45, 7, 0, '#ffffff', 1 - f);
+            }
 
-            if(alma > 0) l.dibujo(FANTASMA, Math.sin(alma * 9) * 6, PECHO_Y - 10 - alma * 70, 1.6, Math.min(entre(t, 1200, 1500), 1 - alma) * 0.9);
+            // trazo de la bala hasta el otro
+            const b = entre(t, 320, 380), bf = entre(t, 380, 560);
+
+            if(b > 0 && bf < 1)
+            {
+                for(let k = 0; k <= 24; k++)
+                {
+                    const q = k / 24;
+
+                    if(q > b) break;
+
+                    l.punto(bx + lado * (4 + q * 26), by + q * 6, 1.6, q > b - 0.15 ? '#ffffff' : '#ffe08a', (1 - bf) * (0.4 + q * 0.6));
+                }
+            }
+
+            // casquillo: sale hacia atrás y arriba, gira y rebota en el suelo
+            const c = entre(t, 340, 1300);
+
+            if(c > 0 && c < 1)
+            {
+                const tt = c * 0.96;
+                let cy = gy - 6 - 120 * tt + 180 * tt * tt;
+                const cx = gx - lado * (2 + tt * 34);
+
+                if(cy > -2) cy = -2 - Math.abs(Math.sin(tt * 18)) * 6 * (1 - tt);
+
+                const vertical = (Math.floor(t / 60) % 2 === 0) !== d.giro;
+
+                l.punto(cx, cy, vertical ? 1.2 : 2.2, '#d4a017', 1 - entre(t, 1100, 1300));
+                l.punto(cx + (vertical ? 0 : lado * 0.8), cy + (vertical ? 0.8 : 0), 1, '#fff1a8', 1 - entre(t, 1100, 1300));
+            }
+        }
+    },
+
+    // :kill (el que recibe): impacto con destello y chispas al llegar la bala, «K.O.» de cómic y el alma que sube
+    muerte: {
+        duracion: 3500,
+        crear: azar => ({ chispas: Array.from({ length: 12 }, () => ({ ang: azar() * VUELTA, v: 12 + azar() * 16, c: [ '#ffffff', '#ffd23f', '#ff7a1a' ][Math.floor(azar() * 3)] })) }),
+        dibujar: (l, t, d, lado) =>
+        {
+            const ix = lado * 4, iy = PECHO_Y - 6;
+            const golpe = entre(t, 330, 430);
+
+            if(golpe > 0 && golpe < 1)
+            {
+                l.sumar(true);
+                l.luz(ix, iy, 20, [ 255, 255, 255 ], (1 - golpe) * 0.9);
+                l.sumar(false);
+            }
+
+            const onda = entre(t, 330, 650);
+
+            if(onda > 0 && onda < 1) l.anillo(ix, iy, 4 + salida(onda) * 18, (4 + salida(onda) * 18) * 0.6, 1.6, '#ffffff', (1 - onda) * 0.8);
+
+            for(const ch of d.chispas)
+            {
+                const v = entre(t, 330, 900);
+
+                if(v <= 0 || v >= 1) continue;
+
+                l.punto(ix + Math.cos(ch.ang) * salida(v) * ch.v, iy + Math.sin(ch.ang) * salida(v) * ch.v + v * v * 16, 2, ch.c, 1 - v);
+            }
+
+            // «K.O.»: salta grande y se asienta
+            const ko = entre(t, 420, 620);
+
+            if(ko > 0)
+            {
+                const escala = 2.8 + (1 - salida(ko)) * 1.6;
+
+                l.texto('K.O.', 0, CABEZA_Y - 34 - Math.sin(ko * Math.PI) * 6, escala, '#e8231d', '#ffffff', Math.min(ko * 3, 1 - entre(t, 1600, 2000)));
+            }
+
+            const alma = entre(t, 1300, 3500);
+
+            if(alma > 0) l.dibujo(FANTASMA, Math.sin(alma * 9) * 6, PECHO_Y - 4 - alma * 70, 1.6, Math.min(entre(t, 1300, 1600), 1 - alma) * 0.9);
         }
     },
 
