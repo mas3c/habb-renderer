@@ -4,6 +4,8 @@ import { AlphaFilter } from '@pixi/filter-alpha';
 import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, RoomObjectSpriteType, RoomObjectVariable } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { SplashAddition } from './additions/SplashAddition';
+import { AccionAddition } from './additions/AccionAddition';
+import { AccionMotor } from './AccionMotor';
 import { SplashFiltro } from './SplashFiltro';
 import { SplashMotor } from './SplashMotor';
 import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition, VipAddition } from './additions';
@@ -24,6 +26,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private static ESTELA_ID: number = 9;
     private static SPLASH_ID: number = 10;
     private static VIP_ID: number = 11;
+    private static ACCION_ID: number = 12;
     private static OWN_USER_ID: number = 4;
     private static UPDATE_TIME_INCREASER: number = 41;
     private static SIN_FILTROS: any[] = [];
@@ -96,6 +99,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private _splashFiltros: any[] = null;
     private _splashBase: any[] = null;
     private _splashOculto = false;
+    // animación de un comando de interacción (:besar, :punch…): fase «accion» del mismo paquete, sin tocar al keko
+    private _accion: any = null;
+    private _accionInicio = 0;
     private _sombra = 1;
     private _auraSpec: string = '';
     // Como Hobbaz: el aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
@@ -184,6 +190,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         if(this._disposed) return;
 
         this.acabarSplash();
+        this.acabarAccion();
 
         super.dispose();
 
@@ -1239,6 +1246,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     {
         if(this._splash || this._splashOculto) this.animarSplash();
 
+        if(this._accion) this.animarAccion();
+
         if(!this._additions || !this._additions.has(AvatarVisualization.ESTELA_ID)) return;
 
         let index = this._extraSpritesStartIndex;
@@ -1289,6 +1298,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private empezarSplash(valor: string): boolean
     {
         const partes = valor.split('|');
+
+        if(partes[0] === 'accion') return this.empezarAccion(partes.slice(2).join('|'));
+
         const fase = ((partes[0] === 'exit') ? 'exit' : 'entry');
         const spec = partes.slice(2).join('|');
         const efecto = SplashMotor.efecto(spec);
@@ -1308,6 +1320,55 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         if(efecto.dibujar) this.addAddition(new SplashAddition(AvatarVisualization.SPLASH_ID, efecto, SplashMotor.datos(efecto, this.object.model.getValue<number>(RoomObjectVariable.OBJECT_ROOM_ID) || 0, this.object.id, fase), fase));
 
         return true;
+    }
+
+    private empezarAccion(spec: string): boolean
+    {
+        const efecto = AccionMotor.efecto(spec);
+
+        this.acabarAccion();
+
+        if(!efecto) return false;
+
+        this._accion = efecto.accion;
+        this._accionInicio = performance.now();
+        this.addAddition(new AccionAddition(AvatarVisualization.ACCION_ID, efecto.accion, AccionMotor.datos(efecto.accion, (this.object.id * 7919) + Math.floor(this._accionInicio)), efecto.lado));
+
+        return true;
+    }
+
+    private acabarAccion(): void
+    {
+        if(!this._accion) return;
+
+        this._accion = null;
+        this.removeAddition(AvatarVisualization.ACCION_ID);
+    }
+
+    private animarAccion(): void
+    {
+        const t = (performance.now() - this._accionInicio);
+
+        if(t >= this._accion.duracion)
+        {
+            this.acabarAccion();
+            this.updateSpriteCounter++;
+
+            return;
+        }
+
+        if(!this._additions || !this._additions.has(AvatarVisualization.ACCION_ID)) return;
+
+        let index = this._extraSpritesStartIndex;
+
+        for(const addition of this._additions.values())
+        {
+            if(addition.id === AvatarVisualization.ACCION_ID) (addition as AccionAddition).pintar(this.getSprite(index), t);
+
+            index++;
+        }
+
+        this.updateSpriteCounter++;
     }
 
     private acabarSplash(): void
