@@ -7,9 +7,10 @@
  */
 
 const VUELTA = Math.PI * 2;
-const CABEZA_Y = -86;
-const BOCA_Y = -76;
-const PECHO_Y = -50;
+// el keko mide unos 88 px desde los pies (como en el Splash): la cara queda hacia -66
+const CABEZA_Y = -66;
+const BOCA_Y = -54;
+const PECHO_Y = -36;
 
 type Color = string;
 
@@ -235,7 +236,7 @@ const mareo = (l: Lienzo, t: number, desde: number, hasta: number) =>
         const ang = (t / 380) + (i / 3) * VUELTA;
         const delante = Math.sin(ang) > 0;
 
-        l.dibujo(ESTRELLA, Math.cos(ang) * 13, CABEZA_Y - 18 + Math.sin(ang) * 4, delante ? 1.4 : 1, a * (delante ? 1 : 0.6));
+        l.dibujo(ESTRELLA, Math.cos(ang) * 13, CABEZA_Y - 26 + Math.sin(ang) * 4, delante ? 1.4 : 1, a * (delante ? 1 : 0.6));
     }
 };
 
@@ -247,7 +248,7 @@ const ACCIONES: { [nombre: string]: Accion } = {
         dibujar: (l, t, d, lado) =>
         {
             const f = salida(entre(t, 150, 1100));
-            const x = lado * f * 48, y = BOCA_Y - Math.sin(f * Math.PI) * 22;
+            const x = lado * f * 30, y = BOCA_Y - Math.sin(f * Math.PI) * 14;
 
             for(const e of d.estela)
             {
@@ -257,12 +258,12 @@ const ACCIONES: { [nombre: string]: Accion } = {
 
                 const fx = salida(entre(e.t0, 150, 1100));
 
-                l.dibujo(CORAZON_PEQUE, lado * fx * 48 + e.dx, BOCA_Y - Math.sin(fx * Math.PI) * 22 - v * e.sube, 1.5, 1 - v);
+                l.dibujo(CORAZON_PEQUE, lado * fx * 30 + e.dx, BOCA_Y - Math.sin(fx * Math.PI) * 14 - v * e.sube, 1.5, 1 - v);
             }
 
             const latido = 1 + Math.sin(t / 70) * 0.12;
 
-            l.dibujo(LABIOS, x, y, 2.3 * latido, tramo(t, 150, 300, 1100, 1400), lado < 0);
+            l.dibujo(LABIOS, x, y, 1.8 * latido, tramo(t, 150, 300, 1100, 1400), lado < 0);
             l.sumar(true);
             l.luz(x, y, 14, [ 255, 90, 140 ], 0.35 * tramo(t, 150, 300, 1100, 1400));
             l.sumar(false);
@@ -272,7 +273,7 @@ const ACCIONES: { [nombre: string]: Accion } = {
     // el besado: marca de labios en la mejilla que late y luego revientan corazones hacia arriba
     beso_recibe: {
         duracion: 2600,
-        crear: azar => ({ corazones: Array.from({ length: 10 }, (_, i) => ({ ang: -Math.PI / 2 + (azar() * 2 - 1) * 1.2, v: 26 + azar() * 22, tam: azar() < 0.4 ? 1.3 : 0.9, giro: azar() * VUELTA, t0: 1000 + i * 40 })) }),
+        crear: azar => ({ corazones: Array.from({ length: 10 }, (_, i) => ({ ang: -Math.PI / 2 + (azar() * 2 - 1) * 1.2, v: 16 + azar() * 14, tam: azar() < 0.4 ? 1.3 : 0.9, giro: azar() * VUELTA, t0: 1000 + i * 40 })) }),
         dibujar: (l, t, d, lado) =>
         {
             const marca = tramo(t, 900, 1000, 2000, 2500);
