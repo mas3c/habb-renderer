@@ -99,6 +99,10 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     // animación de un comando de interacción (:besar, :punch…): fase «accion» del mismo paquete, sin tocar al keko
     private _accion: any = null;
     private _accionInicio = 0;
+    private _brazos = false;
+
+    /** cuánto se arrima al abrazar, hacia donde mira (a escala 64): un tercio del camino a la casilla de delante */
+    private static ARRIMAR: number[][] = [ [ 10, -5 ], [ 20, 0 ], [ 10, 5 ], [ 0, 10 ], [ -10, 5 ], [ -20, 0 ], [ -10, -5 ], [ 0, -10 ] ];
     private _sombra = 1;
     private _auraSpec: string = '';
     // Como Hobbaz: el aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
@@ -225,7 +229,16 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         let otherUpdate = false;
         let objectUpdate = false;
 
-        const updateModel = this.updateModel(model, scale);
+        let updateModel = this.updateModel(model, scale);
+
+        // los brazos del abrazo entran y salen sin que el servidor cambie nada del avatar
+        const brazos = !!(this._accion && this._accion.brazos);
+
+        if(brazos !== this._brazos)
+        {
+            this._brazos = brazos;
+            updateModel = true;
+        }
 
         if((updateModel || (scale !== this._scale)) || !this._avatarImage)
         {
@@ -349,6 +362,14 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                 {
                     sprite.offsetX = ((((-1 * scale) / 2) + _local_20[0]) - ((sprite.texture.width - scale) / 2));
                     sprite.offsetY = (((-(sprite.texture.height) + (scale / 4)) + _local_20[1]) + this._postureOffset);
+
+                    if(this._brazos)
+                    {
+                        const arrimar = AvatarVisualization.ARRIMAR[(((this._direction % 8) + 8) % 8)];
+
+                        sprite.offsetX += Math.round((arrimar[0] * scale) / 64);
+                        sprite.offsetY += Math.round((arrimar[1] * scale) / 64);
+                    }
                 }
 
                 if(this._isLaying)
@@ -1094,6 +1115,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         if(this._sign > -1) this._avatarImage.appendAction(AvatarAction.SIGN, this._sign);
 
         if(this._carryObject > 0) this._avatarImage.appendAction(AvatarAction.CARRY_OBJECT, this._carryObject);
+
+        if(this._brazos) this._avatarImage.appendAction(AvatarAction.HUG);
 
         if(this._useObject > 0) this._avatarImage.appendAction(AvatarAction.USE_OBJECT, this._useObject);
 

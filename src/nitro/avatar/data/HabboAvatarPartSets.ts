@@ -319,6 +319,14 @@ export const HabboAvatarPartSets = {
                 ]
             },
             {
+                // :abrazar: las dos manos a la vez (sin 'ri'/'li', que no llevan nada)
+                'id': 'handBoth',
+                'activeParts': [
+                    { 'setType': 'rh' }, { 'setType': 'rhs' }, { 'setType': 'rs' }, { 'setType': 'rc' },
+                    { 'setType': 'lh' }, { 'setType': 'lhs' }, { 'setType': 'ls' }, { 'setType': 'lc' }
+                ]
+            },
+            {
                 'id': 'handLeft',
                 'activeParts': [
                     {

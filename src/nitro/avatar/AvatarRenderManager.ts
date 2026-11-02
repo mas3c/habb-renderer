@@ -1,4 +1,4 @@
-import { AvatarSetType, GetAssetManager, IAssetManager, IAvatarEffectListener, IAvatarFigureContainer, IAvatarImage, IAvatarImageListener, IAvatarRenderManager, IFigureData, IFigurePartSet, IFigureSetData, IGraphicAsset, INitroEvent, IStructureData, NitroConfiguration, NitroLogger } from '../../api';
+import { AvatarAction, AvatarSetType, GetAssetManager, IAssetManager, IAvatarEffectListener, IAvatarFigureContainer, IAvatarImage, IAvatarImageListener, IAvatarRenderManager, IFigureData, IFigurePartSet, IFigureSetData, IGraphicAsset, INitroEvent, IStructureData, NitroConfiguration, NitroLogger } from '../../api';
 import { NitroManager } from '../../core';
 import { AvatarRenderEvent, NitroEvent } from '../../events';
 import { FigureDataContainer } from '../utils';
@@ -150,6 +150,9 @@ export class AvatarRenderManager extends NitroManager implements IAvatarRenderMa
                 if(!this._structure) return;
 
                 this._structure.updateActions(JSON.parse(request.responseText));
+
+                // :abrazar: los dos brazos hacia delante (la postura de llevar algo, en las dos manos)
+                this._structure.updateActions({ actions: [ { id: 'Hug', state: AvatarAction.HUG, precedence: 206, geometryType: 'vertical', activePartSet: 'handBoth', assetPartDefinition: 'crr', prevents: [ 'dance' ] } ] });
 
                 this._actionsReady = true;
 
