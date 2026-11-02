@@ -35,6 +35,7 @@ export class IncomingHeader
 
     // Menciones y bloqueados (emulador: Composers.MencionesMessageComposer)
     public static MENCIONES_MESSAGE = 9607;
+    public static EVENTO_VIVO = 9642;
 
     // SnowStorm clásico (emulador: game/snowwar, Outgoing de compat)
     public static SNOWWAR_QUEUE_POSITION = 5001;
