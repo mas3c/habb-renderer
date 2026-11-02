@@ -107,6 +107,31 @@ const RUMBO: { x: number, y: number }[] = [
     { x: -0.89, y: 0.45 }, { x: -1, y: 0 }, { x: -0.89, y: -0.45 }, { x: 0, y: -1 }
 ];
 
+/** cigarrillo: filtro naranja, papel, ceniza y brasa (la brasa la pinta aparte el resplandor) */
+const CIGARRILLO: Dibujo = { filas: [ 'oowwwwwwga' ], paleta: { o: '#e0903a', w: '#f4f4f0', g: '#9a9a9a', a: '#ff6a1a' } };
+
+/** porro: boquilla fina en la boca y se abre hacia la punta */
+const PORRO = (papel: string): Dibujo => ({ filas: [
+    '....pppgg.',
+    'kpppPPPPga',
+    '....pppgg.'
+], paleta: { k: '#d9c49a', p: papel, P: '#ffffff', g: '#8a8a8a', a: '#ff6a1a' } });
+
+/** puro: grueso, marrón, con vitola roja */
+const PURO: Dibujo = { filas: [
+    'bBBrBBBBBga',
+    'bBBrBBBBBga'
+], paleta: { b: '#5e3a1f', B: '#8a5a2e', r: '#c0282d', g: '#9a9a9a', a: '#ff6a1a' } };
+
+/** hoja pequeña de 5x5 */
+const HOJA: Dibujo = { filas: [
+    '..g..',
+    'g.g.g',
+    '.ggg.',
+    '..g..',
+    '..g..'
+], paleta: { g: '#4caf50' } };
+
 /** letras de 3x5 para los rótulos de cómic */
 const LETRAS: { [l: string]: string[] } = {
     P: [ 'XX.', 'X.X', 'XX.', 'X..', 'X..' ],
@@ -115,6 +140,13 @@ const LETRAS: { [l: string]: string[] } = {
     '!': [ 'X', 'X', 'X', '.', 'X' ],
     Z: [ 'XXX', '..X', '.X.', 'X..', 'XXX' ],
     K: [ 'X.X', 'X.X', 'XX.', 'X.X', 'X.X' ],
+    C: [ '.XX', 'X..', 'X..', 'X..', '.XX' ],
+    F: [ 'XXX', 'X..', 'XX.', 'X..', 'X..' ],
+    A: [ '.X.', 'X.X', 'XXX', 'X.X', 'X.X' ],
+    H: [ 'X.X', 'X.X', 'XXX', 'X.X', 'X.X' ],
+    I: [ 'X', 'X', 'X', 'X', 'X' ],
+    S: [ '.XX', 'X..', '.X.', '..X', 'XX.' ],
+    '¡': [ 'X', '.', 'X', 'X', 'X' ],
     '.': [ '.', '.', '.', '.', 'X' ]
 };
 
@@ -427,6 +459,7 @@ const ACCIONES: { [nombre: string]: Accion } = {
         }
     },
 
+    // :smoke según lo que le toque (fumar.<tipo>): ver FUMAR más abajo
     // :kill (el que dispara): saca el revólver, fogonazo con retroceso, trazo de la bala, casquillo que rebota, humo y lo guarda
     disparo: {
         duracion: 2000,
@@ -726,6 +759,174 @@ const ACCIONES: { [nombre: string]: Accion } = {
         }
     }
 };
+
+// :smoke — fuma de verdad: se lleva a la boca lo que le ha tocado, lo enciende, da dos caladas (la brasa se aviva) y echa
+// el humo hacia donde mira. Cada cosa con su humo y su efecto. «lado» = hacia dónde mira.
+interface Fumable { objeto: Dibujo, px: number, largo: number, humo: string[], denso: number, anillos: boolean, extra: string }
+
+const FUMABLES: { [tipo: string]: Fumable } = {
+    tabaco: { objeto: CIGARRILLO, px: 1, largo: 10, humo: [ '#c7ccd6', '#d9dde4', '#b3b9c4' ], denso: 0.8, anillos: true, extra: 'tos' },
+    puro: { objeto: PURO, px: 1.1, largo: 11, humo: [ '#b9bec8', '#a5acb8', '#cfd4dc' ], denso: 1.4, anillos: true, extra: '' },
+    porro: { objeto: PORRO('#f2f0e6'), px: 1, largo: 10, humo: [ '#b9c4b0', '#c9d2c1', '#aab6a2' ], denso: 1.1, anillos: false, extra: 'calma' },
+    marihuana: { objeto: PORRO('#f2f0e6'), px: 1, largo: 10, humo: [ '#9fc48e', '#b5d4a6', '#8ab27a' ], denso: 1.2, anillos: false, extra: 'hojas' },
+    chocolate: { objeto: PORRO('#d9c3a5'), px: 1, largo: 10, humo: [ '#b8a48e', '#a8927a', '#c9b8a3' ], denso: 1.2, anillos: false, extra: 'remolino' },
+    polen: { objeto: PORRO('#f2f0e6'), px: 1, largo: 10, humo: [ '#e6d98a', '#efe4a6', '#d8c86e' ], denso: 1, anillos: false, extra: 'estornudo' }
+};
+
+const fumar = (f: Fumable): Accion => ({
+    duracion: 5600,
+    crear: azar => ({
+        caladas: [ 1200, 3300 ].map(t0 => ({ t0, puffs: Array.from({ length: Math.round(7 * f.denso) }, (_, i) => ({ t0: t0 + i * 90 + azar() * 50, sube: 22 + azar() * 16, va: 14 + azar() * 14, r: 2 + azar() * 2, c: f.humo[Math.floor(azar() * f.humo.length)], fase: azar() * VUELTA })) })),
+        hilo: Array.from({ length: 10 }, (_, i) => ({ t0: 400 + i * 480 + azar() * 120, fase: azar() * VUELTA })),
+        hojas: Array.from({ length: 7 }, () => ({ t0: 3400 + azar() * 1600, x: (azar() * 2 - 1) * 18, fase: azar() * VUELTA })),
+        motas: Array.from({ length: 14 }, () => ({ t0: 1200 + azar() * 3600, x: (azar() * 2 - 1) * 16, y: -20 - azar() * 50 }))
+    }),
+    dibujar: (l, t, d, lado) =>
+    {
+        const bx = lado * 4, by = BOCA_Y + 1;
+        const a = tramo(t, 0, 350, 5000, 5500);
+        const largoPx = f.largo * f.px;
+        const punta = { x: bx + lado * largoPx, y: by };
+
+        // hilo de humo que sale siempre de la punta encendida
+        for(const h of d.hilo)
+        {
+            const v = entre(t, h.t0, h.t0 + 1300);
+
+            if(v <= 0 || v >= 1) continue;
+
+            l.punto(punta.x + Math.sin(v * 7 + h.fase) * 2, punta.y - 2 - v * 22, 1 + v * 2, f.humo[0], (1 - v) * 0.45 * a);
+        }
+
+        // lo que fuma, en la boca
+        l.dibujo(f.objeto, bx + lado * largoPx / 2, by, f.px, a, lado < 0);
+
+        // brasa: se enciende al principio y se aviva en cada calada
+        const calando = Math.max(tramo(t, 500, 800, 1000, 1200), tramo(t, 2600, 2900, 3100, 3300));
+        const brasa = a * (0.45 + calando * 0.55 + Math.sin(t / 120) * 0.08);
+
+        l.sumar(true);
+        l.luz(punta.x, punta.y, 4 + calando * 3, [ 255, 110, 30 ], brasa);
+        l.sumar(false);
+
+        // llama del mechero al encender
+        const llama = tramo(t, 250, 330, 520, 640);
+
+        if(llama > 0)
+        {
+            l.sumar(true);
+            l.luz(punta.x + lado * 2, punta.y + 1, 6, [ 255, 190, 60 ], llama);
+            l.sumar(false);
+            l.punto(punta.x + lado * 2, punta.y - 1, 2, '#ffd23f', llama);
+            l.punto(punta.x + lado * 2, punta.y - 3, 1.4, '#fff3b0', llama);
+        }
+
+        // echar el humo: bocanadas que salen de la boca hacia donde mira y suben
+        for(const c of d.caladas)
+        {
+            for(const p of c.puffs)
+            {
+                const v = entre(t, p.t0, p.t0 + 1500);
+
+                if(v <= 0 || v >= 1) continue;
+
+                l.punto(bx + lado * (2 + salida(v) * p.va) + Math.sin(v * 5 + p.fase) * 2, by - 1 - v * p.sube, p.r + v * 6 * f.denso, p.c, (1 - v) * 0.6);
+            }
+
+            if(!f.anillos) continue;
+
+            const r0 = entre(t, c.t0 + 300, c.t0 + 1700);
+
+            if(r0 > 0 && r0 < 1)
+            {
+                const r = 2.5 + salida(r0) * 9;
+
+                l.anillo(bx + lado * (6 + r0 * 16), by - 6 - r0 * 30, r, r * 0.5, 1.6, '#e3e7ee', (1 - r0) * 0.85);
+            }
+        }
+
+        // el efecto de cada cosa
+        switch(f.extra)
+        {
+            case 'tos':
+            {
+                const k = entre(t, 4100, 4300);
+
+                if(k > 0) l.texto('COF COF', lado * 6, CABEZA_Y - 30 - Math.sin(t / 60) * 1.5, 1.6, '#7a7f88', '#ffffff', Math.min(k, 1 - entre(t, 5000, 5400)));
+                break;
+            }
+            case 'calma':
+            {
+                // nube tranquila alrededor de la cabeza que respira despacio
+                const n = tramo(t, 3600, 4200, 5000, 5600);
+
+                for(let i = 0; i < 8; i++)
+                {
+                    const ang = (i / 8) * VUELTA + t / 1600;
+
+                    l.punto(Math.cos(ang) * 14, CABEZA_Y - 6 + Math.sin(ang) * 5, 5 + Math.sin(t / 400 + i) * 1.5, f.humo[i % 3], n * 0.4);
+                }
+                break;
+            }
+            case 'hojas':
+            {
+                for(const h of d.hojas)
+                {
+                    const v = entre(t, h.t0, h.t0 + 1500);
+
+                    if(v <= 0 || v >= 1) continue;
+
+                    l.dibujo(HOJA, h.x + Math.sin(v * 6 + h.fase) * 4, CABEZA_Y - 10 - v * 30, 1, 1 - v);
+                }
+                break;
+            }
+            case 'remolino':
+            {
+                const v = tramo(t, 3600, 4100, 5000, 5600);
+
+                for(let i = 0; i < 18; i++)
+                {
+                    const k = i / 18, ang = k * VUELTA * 2 + t / 300;
+
+                    l.punto(Math.cos(ang) * (4 + k * 14), PECHO_Y - 20 - k * 22 + Math.sin(ang) * 3, 2.5, f.humo[i % 3], v * (1 - k) * 0.7);
+                }
+                break;
+            }
+            case 'estornudo':
+            {
+                const k = entre(t, 4200, 4320);
+
+                if(k > 0)
+                {
+                    l.texto('¡ACHIS!', lado * 4, CABEZA_Y - 30, 1.7, '#d4a017', '#ffffff', Math.min(k, 1 - entre(t, 5000, 5400)));
+
+                    for(let i = 0; i < 10; i++)
+                    {
+                        const v = entre(t, 4200, 4900), ang = -0.6 + (i / 10) * 1.2;
+
+                        if(v > 0 && v < 1) l.punto(bx + lado * Math.cos(ang) * salida(v) * 22, by + Math.sin(ang) * salida(v) * 10, 2, '#efe4a6', 1 - v);
+                    }
+                }
+                break;
+            }
+        }
+
+        // motas brillantes del polen
+        if(f.extra === 'estornudo')
+        {
+            for(const m of d.motas)
+            {
+                const v = entre(t, m.t0, m.t0 + 900);
+
+                if(v <= 0 || v >= 1) continue;
+
+                l.punto(m.x + lado * 6, m.y + CABEZA_Y + 40 - v * 10, 1.5, '#fff59d', Math.sin(v * Math.PI));
+            }
+        }
+    }
+});
+
+for(const tipo of Object.keys(FUMABLES)) ACCIONES['fumar.' + tipo] = fumar(FUMABLES[tipo]);
 
 export class AccionMotor
 {
