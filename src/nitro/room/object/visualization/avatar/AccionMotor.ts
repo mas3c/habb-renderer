@@ -95,6 +95,18 @@ const REVOLVER: Dibujo = { filas: [
 /** dónde está la boca del cañón en el dibujo (celdas desde el centro) */
 const BOCA_CANON = { x: 8, y: -3.5 };
 
+/** punta del cañón del efecto 164 (pistola de Habbo) según la rotación del keko, medida en el juego a zoom 1 */
+const CANON_164: { x: number, y: number }[] = [
+    { x: 36, y: -44 }, { x: 36, y: -44 }, { x: 16, y: -25 }, { x: 16, y: -25 },
+    { x: -30, y: -30 }, { x: -30, y: -30 }, { x: -24, y: -38 }, { x: -24, y: -38 }
+];
+
+/** hacia dónde va la bala en pantalla según la rotación */
+const RUMBO: { x: number, y: number }[] = [
+    { x: 0.89, y: -0.45 }, { x: 1, y: 0 }, { x: 0.89, y: 0.45 }, { x: 0, y: 1 },
+    { x: -0.89, y: 0.45 }, { x: -1, y: 0 }, { x: -0.89, y: -0.45 }, { x: 0, y: -1 }
+];
+
 /** letras de 3x5 para los rótulos de cómic */
 const LETRAS: { [l: string]: string[] } = {
     P: [ 'XX.', 'X.X', 'XX.', 'X..', 'X..' ],
@@ -490,6 +502,67 @@ const ACCIONES: { [nombre: string]: Accion } = {
         }
     },
 
+    // :kill con la pistola del efecto 164 (p = rotación del keko): fogonazo y bala en la punta del cañón, chispitas y el humito
+    tiro: {
+        duracion: 2400,
+        crear: azar => ({
+            humo: Array.from({ length: 9 }, (_, i) => ({ t0: 80 + i * 110 + azar() * 60, dx: (azar() * 2 - 1) * 2.5, r: 1.6 + azar() * 1.4, fase: azar() * VUELTA })),
+            chispas: Array.from({ length: 6 }, () => ({ ang: (azar() * 2 - 1) * 0.9, v: 6 + azar() * 8 }))
+        }),
+        dibujar: (l, t, d, rot) =>
+        {
+            const c = CANON_164[rot] || CANON_164[2], r = RUMBO[rot] || RUMBO[2];
+
+            for(const h of d.humo)
+            {
+                const v = entre(t, h.t0, h.t0 + 1400);
+
+                if(v <= 0 || v >= 1) continue;
+
+                l.punto(c.x + r.x * 3 + h.dx + Math.sin(v * 5 + h.fase) * 3, c.y - 2 - v * 26, h.r + v * 4.5, '#d3d8df', (1 - v) * 0.55);
+            }
+
+            const f = entre(t, 0, 130);
+
+            if(f < 1)
+            {
+                const fx = c.x + r.x * 4, fy = c.y + r.y * 4, tam = (1 - f) * 8 + 2;
+
+                l.sumar(true);
+                l.luz(fx, fy, 16, [ 255, 200, 90 ], (1 - f) * 0.9);
+                l.sumar(false);
+                l.estrellaComic(fx, fy, tam + 2, 7, t / 50, '#ff7a1a', 1 - f);
+                l.estrellaComic(fx, fy, tam, 7, t / 50 + 0.4, '#ffd23f', 1 - f);
+                l.estrellaComic(fx, fy, tam * 0.45, 7, 0, '#ffffff', 1 - f);
+            }
+
+            const b = entre(t, 0, 70), bf = entre(t, 70, 260);
+
+            if(bf < 1)
+            {
+                for(let k = 0; k <= 20; k++)
+                {
+                    const q = k / 20;
+
+                    if(q > b) break;
+
+                    l.punto(c.x + r.x * (5 + q * 28), c.y + r.y * (5 + q * 28), 1.5, q > b - 0.2 ? '#ffffff' : '#ffe08a', (1 - bf) * (0.4 + q * 0.6));
+                }
+            }
+
+            for(const sp of d.chispas)
+            {
+                const v = entre(t, 0, 350);
+
+                if(v <= 0 || v >= 1) continue;
+
+                const ang = Math.atan2(r.y, r.x) + sp.ang;
+
+                l.punto(c.x + Math.cos(ang) * (4 + salida(v) * sp.v), c.y + Math.sin(ang) * (4 + salida(v) * sp.v) + v * v * 5, 1.4, '#ffd23f', 1 - v);
+            }
+        }
+    },
+
     // :kill (el que recibe): impacto con destello y chispas al llegar la bala, «K.O.» de cómic y el alma que sube
     muerte: {
         duracion: 3500,
@@ -666,7 +739,10 @@ export class AccionMotor
 
         if(!accion) return null;
 
-        return { accion, lado: (lado === '-1') ? -1 : 1 };
+        const n = parseInt(lado, 10);
+
+        // «lado» (-1 / 1) en casi todas; en «tiro» es la rotación del keko (0-7)
+        return { accion, lado: (nombre === 'tiro') ? (isNaN(n) ? 2 : n) : ((lado === '-1') ? -1 : 1) };
     }
 
     public static datos(accion: Accion, semilla: number): any
