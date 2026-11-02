@@ -1,6 +1,8 @@
 import { Point } from '@pixi/math';
 import { AvatarDirectionAngle, IActionDefinition, IActiveActionData, IAssetAnimation, IAssetManager, IAvatarFigureContainer, IAvatarImage, IAvatarRenderManager, IFigureData, IFigurePartSet, IPartColor, IStructureData, NitroConfiguration } from '../../api';
+import { Sprite } from '@pixi/sprite';
 import { EventDispatcher } from '../../core';
+import { TextureUtils } from '../../pixi-proxy';
 import { ActionDefinition, AvatarActionManager } from './actions';
 import { Animation, AnimationManager, AvatarAnimationLayerData } from './animation';
 import { AvatarImagePartContainer } from './AvatarImagePartContainer';
@@ -10,6 +12,8 @@ import { AnimationAction, AvatarAnimationData, AvatarAnimationFrame, AvatarCanva
 
 export class AvatarStructure extends EventDispatcher
 {
+    private static _tonosDeCabeza: Map<number, IPartColor> = new Map();
+
     private _renderManager: AvatarRenderManager;
     private _geometry: AvatarModelGeometry;
     private _figureData: FigureSetData;
@@ -435,10 +439,11 @@ export class AvatarStructure extends EventDispatcher
 
                                 if(_local_29 && (_local_29.length > (_local_33.colorLayerIndex - 1)))
                                 {
-                                    // caras «del color de la piel» (avatar.skin.colored.sets): el número es de la paleta de hd, no de la suya
-                                    const paleta = (NitroConfiguration.getValue<number[]>('avatar.skin.colored.sets', []).indexOf(_local_28) > -1) ? (this._figureData.getPalette(this._figureData.getSetType('hd')?.paletteID) ?? _local_31) : _local_31;
+                                    const colorId = _local_29[(_local_33.colorLayerIndex - 1)];
 
-                                    _local_36 = paleta.getColor(_local_29[(_local_33.colorLayerIndex - 1)]);
+                                    // caras «del color de la piel» (avatar.skin.colored.sets): el número es de la paleta de hd, no de la suya
+                                    if(NitroConfiguration.getValue<number[]>('avatar.skin.colored.sets', []).indexOf(_local_28) > -1) _local_36 = this.colorDePiel(_arg_2, colorId) ?? _local_31.getColor(colorId);
+                                    else _local_36 = _local_31.getColor(colorId);
                                 }
 
                                 const _local_37 = (_local_33.colorLayerIndex > 0);
@@ -638,5 +643,67 @@ export class AvatarStructure extends EventDispatcher
     public get animationManager(): AnimationManager
     {
         return this._animationManager;
+    }
+
+    // Color de piel del avatar: el de la paleta de hd o, si su cabeza es un dibujo sin color (oro, esqueleto, Grinch...), el tono del propio dibujo
+    private colorDePiel(figure: IAvatarFigureContainer, colorId: number): IPartColor
+    {
+        const tipo = this._figureData.getSetType('hd');
+        const cabeza = tipo?.getPartSet(figure.getPartSetId('hd'))?.parts.find(part => (part.type === 'hd'));
+
+        if(cabeza && (cabeza.colorLayerIndex === 0)) return this.tonoDeCabeza(cabeza.id);
+
+        return this._figureData.getPalette(tipo?.paletteID)?.getColor(colorId) ?? null;
+    }
+
+    // El color más repetido de la mitad de abajo de la cabeza (la mandíbula), sin contorno ni brillos; null si su arte aún no ha cargado
+    private tonoDeCabeza(id: number): IPartColor
+    {
+        if(AvatarStructure._tonosDeCabeza.has(id)) return AvatarStructure._tonosDeCabeza.get(id);
+
+        const asset = this._renderManager?.getAssetByName('h_std_hd_' + id + '_2_0');
+
+        if(!asset || !asset.texture || !asset.texture.valid) return null;
+
+        let tono: IPartColor = null;
+
+        try
+        {
+            const ancho = asset.texture.width, alto = asset.texture.height;
+            const pixeles = TextureUtils.getPixels(new Sprite(asset.texture));
+            const cuenta = new Map<number, number[]>();
+
+            for(let y = Math.floor(alto / 2); y < alto; y++)
+            {
+                for(let x = 0; x < ancho; x++)
+                {
+                    const i = ((y * ancho) + x) * 4;
+                    const r = pixeles[i], g = pixeles[i + 1], b = pixeles[i + 2];
+                    const luz = (r + g + b) / 3;
+
+                    if((pixeles[i + 3] < 200) || (luz < 45) || (luz > 245)) continue;
+
+                    const clave = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+                    const suma = cuenta.get(clave) ?? [ 0, 0, 0, 0 ];
+
+                    suma[0]++; suma[1] += r; suma[2] += g; suma[3] += b;
+                    cuenta.set(clave, suma);
+                }
+            }
+
+            let mejor: number[] = null;
+
+            for(const suma of cuenta.values()) if(!mejor || (suma[0] > mejor[0])) mejor = suma;
+
+            if(mejor) tono = { id: -1, index: 0, clubLevel: 0, isSelectable: false, rgb: (Math.round(mejor[1] / mejor[0]) << 16) | (Math.round(mejor[2] / mejor[0]) << 8) | Math.round(mejor[3] / mejor[0]) };
+        }
+        catch (error)
+        {
+            tono = null;
+        }
+
+        AvatarStructure._tonosDeCabeza.set(id, tono);
+
+        return tono;
     }
 }
