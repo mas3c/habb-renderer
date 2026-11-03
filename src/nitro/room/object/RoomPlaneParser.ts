@@ -1880,7 +1880,9 @@ export class RoomPlaneParser
                         _local_16++;
                     }
                     // sala gigante: el rectángulo se pinta en trozos; las caras laterales solo en su contorno
-                    const elevado = (_local_8 > base);
+                    // solo con «Escaleras macizas»: con el canto fino el suelo se dibuja exactamente como siempre (detrás de todo);
+                    // ordenado con los muebles, un suelo elevado tapaba las baldosas-furni puestas encima (Recibidor, sala 26)
+                    const elevado = (this.relleno && (_local_8 > base));
                     const trozo = (elevado ? 4 : paso);
 
                     for(const [ x0, x1 ] of RoomPlaneParser.cortes(_local_7, _local_9, trozo))
