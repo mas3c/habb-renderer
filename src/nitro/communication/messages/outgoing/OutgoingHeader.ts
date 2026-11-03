@@ -276,6 +276,7 @@ export class OutgoingHeader
     public static AURAS = 9621;
     public static ICONOS = 9624;
     public static ESTELAS = 9627;
+    public static VIP_DISTINTIVO = 9657; // distintivo VIP: pedir / mostrar / ocultar
     public static SPLASH = 9633;
     public static HOTELVIEW_RECLAMAR = 9636;
     public static VARIABLE_LEADERBOARD_SUSCRIBIR = 9641;

@@ -24,6 +24,8 @@ export class IncomingHeader
     public static ROOM_ICONO = 9626;
     public static ESTELAS = 9628;
     public static ROOM_ESTELA = 9629;
+    public static ROOM_VIP = 9656; // distintivo VIP flotante: índice en la sala + segundos de VIP
+    public static VIP_DISTINTIVO = 9658; // ajuste propio: oculta su distintivo VIP
     public static SPLASH = 9634;
     public static ROOM_SPLASH = 9635;
     public static HOTELVIEW_RECLAMO = 9637;

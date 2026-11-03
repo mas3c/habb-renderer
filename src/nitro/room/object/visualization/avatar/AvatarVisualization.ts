@@ -6,7 +6,7 @@ import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { SplashAddition } from './additions/SplashAddition';
 import { SplashFiltro } from './SplashFiltro';
 import { SplashMotor } from './SplashMotor';
-import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition } from './additions';
+import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition, VipAddition } from './additions';
 import { AvatarAura } from './AvatarAura';
 import { AvatarVisualizationData } from './AvatarVisualizationData';
 
@@ -23,6 +23,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private static HABBICON_ID: number = 8;
     private static ESTELA_ID: number = 9;
     private static SPLASH_ID: number = 10;
+    private static VIP_ID: number = 11;
     private static OWN_USER_ID: number = 4;
     private static UPDATE_TIME_INCREASER: number = 41;
     private static SIN_FILTROS: any[] = [];
@@ -872,6 +873,19 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             if(estelaAddition || estelaSpec) needsUpdate = true;
         }
 
+        // distintivo VIP: la placa flotante mientras dure (FIGURE_VIP = hasta cuándo en ms; 0 = sin VIP u oculto)
+        const vipHasta = (model.getValue<number>(RoomObjectVariable.FIGURE_VIP) || 0);
+        const vipAddition = this.getAddition(AvatarVisualization.VIP_ID) as VipAddition;
+
+        if((vipAddition ? vipAddition.hasta : 0) !== vipHasta)
+        {
+            if(vipAddition) this.removeAddition(AvatarVisualization.VIP_ID);
+
+            if(vipHasta) this.addAddition(new VipAddition(AvatarVisualization.VIP_ID, vipHasta, this));
+
+            needsUpdate = true;
+        }
+
         // Splash: cada valor nuevo (el número cambia aunque sea el mismo Splash) lo arranca
         const splashValor = (model.getValue<string>(RoomObjectVariable.FIGURE_SPLASH) || '');
 
@@ -1362,6 +1376,12 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
             index++;
         }
+    }
+
+    /** Hay otra burbuja en el sitio de la placa VIP (Habbicon o número de juego): la placa se aparta mientras tanto. */
+    public get cabezaOcupada(): boolean
+    {
+        return !!this._additions && (this._additions.has(AvatarVisualization.HABBICON_ID) || this._additions.has(AvatarVisualization.NUMBER_BUBBLE_ID));
     }
 
     private getAddition(id: number): IAvatarAddition

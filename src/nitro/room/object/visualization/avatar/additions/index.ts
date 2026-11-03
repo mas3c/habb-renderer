@@ -12,3 +12,4 @@ export * from './IExpressionAddition';
 export * from './MutedBubbleAddition';
 export * from './NumberBubbleAddition';
 export * from './TypingBubbleAddition';
+export * from './VipAddition';

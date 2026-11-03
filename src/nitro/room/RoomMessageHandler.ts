@@ -1,6 +1,6 @@
-import { AvatarGuideStatus, IConnection, IRoomCreator, IVector3D, LegacyDataType, ObjectRolling, PetType, RoomObjectType, RoomObjectUserType, RoomObjectVariable, Vector3d } from '../../api';
+import { AvatarGuideStatus, IConnection, IRoomCreator, IVector3D, LegacyDataType, ObjectRolling, PetType, RoomObjectCategory, RoomObjectType, RoomObjectUserType, RoomObjectVariable, Vector3d } from '../../api';
 import { Disposable } from '../../core';
-import { DiceValueMessageEvent, FloorHeightMapEvent, FurnitureAliasesComposer, FurnitureAliasesEvent, FurnitureDataEvent, FurnitureFloorAddEvent, FurnitureFloorDataParser, FurnitureFloorEvent, FurnitureFloorRemoveEvent, FurnitureFloorUpdateEvent, FurnitureWallAddEvent, FurnitureWallDataParser, FurnitureWallEvent, FurnitureWallRemoveEvent, FurnitureWallUpdateEvent, GetRoomEntryDataMessageComposer, GuideSessionEndedMessageEvent, GuideSessionErrorMessageEvent, GuideSessionStartedMessageEvent, IgnoreResultEvent, ItemDataUpdateMessageEvent, ObjectsDataUpdateEvent, ObjectsRollingEvent, OneWayDoorStatusMessageEvent, PetExperienceEvent, PetFigureUpdateEvent, RoomEntryTileMessageEvent, RoomEntryTileMessageParser, RoomHeightMapEvent, RoomHeightMapUpdateEvent, RoomPaintEvent, RoomReadyMessageEvent, RoomUnitChatEvent, RoomUnitChatShoutEvent, RoomUnitChatWhisperEvent, RoomUnitDanceEvent, RoomUnitEffectEvent, RoomUnitEvent, RoomUnitExpressionEvent, RoomUnitHandItemEvent, RoomUnitIdleEvent, RoomUnitInfoEvent, RoomUnitNumberEvent, RoomUnitRemoveEvent, RoomHabbiconMessageEvent, RoomAuraMessageEvent, RoomEstelaMessageEvent, RoomSplashMessageEvent, RoomUnitStatusEvent, RoomUnitTypingEvent, RoomVisualizationSettingsEvent, UserInfoEvent, YouArePlayingGameEvent } from '../communication';
+import { DiceValueMessageEvent, FloorHeightMapEvent, FurnitureAliasesComposer, FurnitureAliasesEvent, FurnitureDataEvent, FurnitureFloorAddEvent, FurnitureFloorDataParser, FurnitureFloorEvent, FurnitureFloorRemoveEvent, FurnitureFloorUpdateEvent, FurnitureWallAddEvent, FurnitureWallDataParser, FurnitureWallEvent, FurnitureWallRemoveEvent, FurnitureWallUpdateEvent, GetRoomEntryDataMessageComposer, GuideSessionEndedMessageEvent, GuideSessionErrorMessageEvent, GuideSessionStartedMessageEvent, IgnoreResultEvent, ItemDataUpdateMessageEvent, ObjectsDataUpdateEvent, ObjectsRollingEvent, OneWayDoorStatusMessageEvent, PetExperienceEvent, PetFigureUpdateEvent, RoomEntryTileMessageEvent, RoomEntryTileMessageParser, RoomHeightMapEvent, RoomHeightMapUpdateEvent, RoomPaintEvent, RoomReadyMessageEvent, RoomUnitChatEvent, RoomUnitChatShoutEvent, RoomUnitChatWhisperEvent, RoomUnitDanceEvent, RoomUnitEffectEvent, RoomUnitEvent, RoomUnitExpressionEvent, RoomUnitHandItemEvent, RoomUnitIdleEvent, RoomUnitInfoEvent, RoomUnitNumberEvent, RoomUnitRemoveEvent, RoomHabbiconMessageEvent, RoomAuraMessageEvent, RoomEstelaMessageEvent, RoomVipMessageEvent, RoomSplashMessageEvent, RoomUnitStatusEvent, RoomUnitTypingEvent, RoomVisualizationSettingsEvent, UserInfoEvent, YouArePlayingGameEvent } from '../communication';
 import { RoomPlaneParser } from './object/RoomPlaneParser';
 import { RoomVariableEnum } from './RoomVariableEnum';
 import { FurnitureStackingHeightMap, LegacyWallGeometry } from './utils';
@@ -21,6 +21,8 @@ export class RoomMessageHandler extends Disposable
     private _auras: Map<number, string> = new Map();
     // igual con las estelas al andar
     private _estelas: Map<number, string> = new Map();
+    // y con el distintivo VIP: hasta cuándo (ms del reloj local) dura el de cada índice
+    private _vip: Map<number, number> = new Map();
     // Splash de entrada que llega antes que el avatar: se pone al crearlo (así no se le ve ni un fotograma entero)
     private _splashPendientes: Map<number, string> = new Map();
     private _requesterId: number;
@@ -96,6 +98,7 @@ export class RoomMessageHandler extends Disposable
         this._connection.addMessageEvent(new RoomHabbiconMessageEvent(this.onRoomHabbiconEvent.bind(this)));
         this._connection.addMessageEvent(new RoomAuraMessageEvent(this.onRoomAuraEvent.bind(this)));
         this._connection.addMessageEvent(new RoomEstelaMessageEvent(this.onRoomEstelaEvent.bind(this)));
+        this._connection.addMessageEvent(new RoomVipMessageEvent(this.onRoomVipEvent.bind(this)));
         this._connection.addMessageEvent(new RoomSplashMessageEvent(this.onRoomSplashEvent.bind(this)));
         this._connection.addMessageEvent(new RoomUnitRemoveEvent(this.onRoomUnitRemoveEvent.bind(this)));
         this._connection.addMessageEvent(new RoomUnitStatusEvent(this.onRoomUnitStatusEvent.bind(this)));
@@ -124,6 +127,7 @@ export class RoomMessageHandler extends Disposable
         this._latestEntryTileEvent = null;
         this._auras.clear();
         this._estelas.clear();
+        this._vip.clear();
         this._splashPendientes.clear();
     }
 
@@ -133,6 +137,7 @@ export class RoomMessageHandler extends Disposable
         this._latestEntryTileEvent = null;
         this._auras.clear();
         this._estelas.clear();
+        this._vip.clear();
         this._splashPendientes.clear();
     }
 
@@ -676,6 +681,7 @@ export class RoomMessageHandler extends Disposable
 
             if(this._auras.has(user.roomIndex)) this._roomCreator.updateRoomObjectUserAura(this._currentRoomId, user.roomIndex, this._auras.get(user.roomIndex));
             if(this._estelas.has(user.roomIndex)) this._roomCreator.updateRoomObjectUserEstela(this._currentRoomId, user.roomIndex, this._estelas.get(user.roomIndex));
+            if(this._vip.has(user.roomIndex)) this.ponerVip(user.roomIndex, this._vip.get(user.roomIndex));
 
             if(this._splashPendientes.has(user.roomIndex))
             {
@@ -741,6 +747,28 @@ export class RoomMessageHandler extends Disposable
         this._roomCreator.updateRoomObjectUserEstela(this._currentRoomId, parser.roomIndex, parser.estela);
     }
 
+    /** Distintivo VIP: llegan los segundos que le quedan y se guarda hasta cuándo según el reloj local (así da igual la hora del equipo). */
+    private onRoomVipEvent(event: RoomVipMessageEvent): void
+    {
+        if(!(event instanceof RoomVipMessageEvent) || !event.connection || !this._roomCreator) return;
+
+        const parser = event.getParser();
+
+        if(!parser) return;
+
+        const hasta = (parser.segundos > 0) ? (Date.now() + (parser.segundos * 1000)) : 0;
+
+        if(hasta) this._vip.set(parser.roomIndex, hasta);
+        else this._vip.delete(parser.roomIndex);
+
+        this.ponerVip(parser.roomIndex, hasta);
+    }
+
+    private ponerVip(roomIndex: number, hasta: number): void
+    {
+        this._roomCreator.getRoomObject(this._currentRoomId, roomIndex, RoomObjectCategory.UNIT)?.model?.setValue(RoomObjectVariable.FIGURE_VIP, hasta);
+    }
+
     /** Splash: si el avatar aún no está (entrada), espera a que llegue */
     private onRoomSplashEvent(event: RoomSplashMessageEvent): void
     {
@@ -789,6 +817,7 @@ export class RoomMessageHandler extends Disposable
         // el índice lo puede heredar quien entre después
         this._auras.delete(event.getParser().unitId);
         this._estelas.delete(event.getParser().unitId);
+        this._vip.delete(event.getParser().unitId);
 
         this.updateGuideMarker();
     }
