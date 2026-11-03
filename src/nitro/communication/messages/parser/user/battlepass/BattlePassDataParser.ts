@@ -42,6 +42,14 @@ export interface IBattlePassLadderRow
     premium: IBattlePassRewardRef;
 }
 
+/** Periodo de un reto (diseño de economía §5): «daily», «weekly» o «season», y cuándo se renueva (unix, s; 0 = nunca). */
+export interface IBattlePassMissionPeriod
+{
+    missionId: number;
+    frequency: string;
+    periodEndsAt: number;
+}
+
 export class BattlePassDataParser implements IMessageParser
 {
     private _seasonName: string;
@@ -63,6 +71,14 @@ export class BattlePassDataParser implements IMessageParser
     private _missions: IBattlePassMissionRow[];
     private _claims: IBattlePassClaimRow[];
     private _ladder: IBattlePassLadderRow[];
+    private _collectorLevel: number;
+    private _collectorLevelsTotal: number;
+    private _levelsToNextCollector: number;
+    private _collectorBadge: string;
+    private _vipActive: boolean;
+    private _dailyResetAt: number;
+    private _weeklyResetAt: number;
+    private _missionPeriods: IBattlePassMissionPeriod[];
 
     public flush(): boolean
     {
@@ -85,6 +101,14 @@ export class BattlePassDataParser implements IMessageParser
         this._missions = [];
         this._claims = [];
         this._ladder = [];
+        this._collectorLevel = -1;
+        this._collectorLevelsTotal = 0;
+        this._levelsToNextCollector = 0;
+        this._collectorBadge = '';
+        this._vipActive = false;
+        this._dailyResetAt = 0;
+        this._weeklyResetAt = 0;
+        this._missionPeriods = [];
 
         return true;
     }
@@ -175,6 +199,30 @@ export class BattlePassDataParser implements IMessageParser
             });
         }
 
+        // Añadidos al final (economía §5). Un servidor viejo no los manda: collectorLevel queda en -1.
+        if(!wrapper.bytesAvailable) return true;
+
+        this._collectorLevel = wrapper.readInt();
+        this._collectorLevelsTotal = wrapper.readInt();
+        this._levelsToNextCollector = wrapper.readInt();
+        this._collectorBadge = wrapper.readString();
+        this._vipActive = wrapper.readBoolean();
+        this._dailyResetAt = wrapper.readInt();
+        this._weeklyResetAt = wrapper.readInt();
+
+        if(!wrapper.bytesAvailable) return true;
+
+        count = wrapper.readInt();
+
+        for(let i = 0; i < count; i++)
+        {
+            this._missionPeriods.push({
+                missionId: wrapper.readInt(),
+                frequency: wrapper.readString(),
+                periodEndsAt: wrapper.readInt()
+            });
+        }
+
         return true;
     }
 
@@ -197,4 +245,13 @@ export class BattlePassDataParser implements IMessageParser
     public get missions(): IBattlePassMissionRow[] { return this._missions; }
     public get claims(): IBattlePassClaimRow[] { return this._claims; }
     public get ladder(): IBattlePassLadderRow[] { return this._ladder; }
+    /** -1 si el servidor no manda los datos de coleccionista. */
+    public get collectorLevel(): number { return this._collectorLevel; }
+    public get collectorLevelsTotal(): number { return this._collectorLevelsTotal; }
+    public get levelsToNextCollector(): number { return this._levelsToNextCollector; }
+    public get collectorBadge(): string { return this._collectorBadge; }
+    public get vipActive(): boolean { return this._vipActive; }
+    public get dailyResetAt(): number { return this._dailyResetAt; }
+    public get weeklyResetAt(): number { return this._weeklyResetAt; }
+    public get missionPeriods(): IBattlePassMissionPeriod[] { return this._missionPeriods; }
 }
