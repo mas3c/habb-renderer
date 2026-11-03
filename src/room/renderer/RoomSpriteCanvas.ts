@@ -9,6 +9,7 @@ import { Nitro } from '../../nitro/Nitro';
 import { GetTicker, NitroContainer, NitroSprite, PixiApplicationProxy } from '../../pixi-proxy';
 import { RoomEnterEffect, RoomGeometry, RoomRotatingEffect, RoomShakingEffect } from '../utils';
 import { RoomObjectCache, RoomObjectCacheItem } from './cache';
+import { RoomLuces } from './RoomLuces';
 import { ExtendedSprite, ObjectMouseData, SortableSprite } from './utils';
 
 export class RoomSpriteCanvas implements IRoomRenderingCanvas
@@ -58,6 +59,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
     private _SafeStr_795: number = 0;
 
     private _restrictsScaling: boolean;
+    private _luces: RoomLuces = null;
     private _noSpriteVisibilityChecking: boolean;
     // Recorte con margen: al mover la cámara solo se recoloca el contenedor, y los sprites se
     // recalculan (todos los objetos) cuando se ha movido más de medio margen. Antes se recalculaban
@@ -148,6 +150,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
     public dispose(): void
     {
+        this.luces = null;
+
         this.cleanSprites(0, true);
 
         if(this._geometry)
@@ -416,6 +420,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
         this.cleanSprites(spriteCount);
 
+        if(this._luces) this._luces.terminar(this._display);
+
         // Solo si cambia algo (renderObject ya lo marca cuando un sprite cambia): antes también en cada fotograma de
         // animación, y la vista previa del catálogo/inventario sacaba un PNG de la GPU 24 veces por segundo sin cambios.
         if(update) this._canvasUpdated = true;
@@ -488,6 +494,8 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         if(cadaFotograma) cadaFotograma.call(visualization, this._geometry);
 
         if(locationCache.locationChanged) update = true;
+
+        if(this._luces) this._luces.objeto(object, identifier, (vector.x + Math.trunc(this._width / 2)), (vector.y + Math.trunc(this._height / 2)), this._geometry.scale);
 
         if(!sortableCache.needsUpdate(visualization.instanceId, visualization.updateSpriteCounter) && !update)
         {
@@ -639,8 +647,6 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
 
             if(extendedSprite.alpha !== alpha) extendedSprite.alpha = alpha;
 
-            if(extendedSprite.tint !== objectSprite.color) extendedSprite.tint = objectSprite.color;
-
             if(extendedSprite.blendMode !== objectSprite.blendMode) extendedSprite.blendMode = objectSprite.blendMode;
 
             if(extendedSprite.texture !== objectSprite.texture) extendedSprite.setTexture(objectSprite.texture);
@@ -677,6 +683,11 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
             this.updateEnterRoomEffect(extendedSprite, objectSprite);
         }
 
+        // fuera del «si cambió»: con la iluminación el tinte cambia sin que cambie el sprite (encender, ambiente)
+        const tinte = (this._luces ? this._luces.tinte(objectSprite, sprite.name) : objectSprite.color);
+
+        if(extendedSprite.tint !== tinte) extendedSprite.tint = tinte;
+
         if(extendedSprite.x !== sprite.x) extendedSprite.x = sprite.x;
         if(extendedSprite.y !== sprite.y) extendedSprite.y = sprite.y;
 
@@ -703,7 +714,7 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
         extendedSprite.tag = sprite.tag;
         extendedSprite.alphaTolerance = sprite.alphaTolerance;
         extendedSprite.alpha = (sprite.alpha / 255);
-        extendedSprite.tint = sprite.color;
+        extendedSprite.tint = (this._luces ? this._luces.tinte(sprite, sortableSprite.name) : sprite.color);
         extendedSprite.x = sortableSprite.x;
         extendedSprite.y = sortableSprite.y;
         extendedSprite.offsetX = sprite.offsetX;
@@ -1235,6 +1246,23 @@ export class RoomSpriteCanvas implements IRoomRenderingCanvas
     public get id(): number
     {
         return this._id;
+    }
+
+    /** iluminación dinámica (null = apagada: no se crea nada) */
+    public get luces(): RoomLuces
+    {
+        return this._luces;
+    }
+
+    public set luces(luces: RoomLuces)
+    {
+        if(this._luces === luces) return;
+
+        if(this._luces) this._luces.dispose();
+
+        this._luces = luces;
+
+        if(luces && this._master) this._master.addChild(luces.capa);
     }
 
     public get geometry(): IRoomGeometry
