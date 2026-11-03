@@ -478,7 +478,8 @@ export class SessionDataManager extends NitroManager implements ISessionDataMana
 
         for(const item of this._floorItems.values())
         {
-            if(!item || (item.className !== name)) continue;
+            // también por el nombre completo con variante de color («rubberchair*1»), que es el item_name del servidor
+            if(!item || ((item.className !== name) && (item.fullName !== name))) continue;
 
             return item;
         }
@@ -499,7 +500,8 @@ export class SessionDataManager extends NitroManager implements ISessionDataMana
 
         for(const item of this._wallItems.values())
         {
-            if(!item || (item.className !== name)) continue;
+            // también por el nombre completo con variante de color («rubberchair*1»), que es el item_name del servidor
+            if(!item || ((item.className !== name) && (item.fullName !== name))) continue;
 
             return item;
         }
