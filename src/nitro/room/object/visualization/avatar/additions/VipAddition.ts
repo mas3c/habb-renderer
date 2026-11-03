@@ -29,6 +29,7 @@ export class VipAddition implements IAvatarAddition
     private _ultimo = -2;
     private _base = -83; // borde de abajo de la placa por la postura (sin efecto encima)
     private _alto = ALTO;
+    private _cima = 0;
 
     constructor(id: number, hasta: number, visualization: AvatarVisualization)
     {
@@ -137,16 +138,12 @@ export class VipAddition implements IAvatarAddition
         const abajo = cima ? Math.min(this._base, cima - (this._pequena ? 1 : 2)) : this._base;
         const offsetY = abajo - this._alto + MARGEN;
 
-        // con el nombre o el menú del avatar en pantalla (van justo ahí) la placa se vuelve transparente pero sigue «visible»,
-        // así el recuadro del avatar no cambia y el nombre (o el menú) no salta
-        const alpha = this._visualization.resaltado ? 0 : 255;
-
-        if((fotograma === this._ultimo) && (sprite.offsetY === offsetY) && (sprite.alpha === alpha)) return false;
+        if((fotograma === this._ultimo) && (sprite.offsetY === offsetY)) return false;
 
         this._ultimo = fotograma;
+        this._cima = visible ? (offsetY + MARGEN) : 0;
         sprite.visible = visible;
         sprite.offsetY = offsetY;
-        sprite.alpha = alpha;
 
         if(visible) sprite.texture = texturas[fotograma];
 
@@ -178,6 +175,12 @@ export class VipAddition implements IAvatarAddition
         if(!sprite || !this._visualization) return false;
 
         return this.pintar(sprite);
+    }
+
+    /** Borde de arriba de la placa en lo más alto del flotar (0 = no se ve): fijo, para que lo que va encima no baile. */
+    public get cima(): number
+    {
+        return this._cima;
     }
 
     public get id(): number
