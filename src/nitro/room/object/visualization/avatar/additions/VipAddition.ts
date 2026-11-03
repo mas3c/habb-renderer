@@ -27,6 +27,8 @@ export class VipAddition implements IAvatarAddition
     private _visualization: AvatarVisualization;
     private _pequena = false;
     private _ultimo = -2;
+    private _base = -83; // borde de abajo de la placa por la postura (sin efecto encima)
+    private _alto = ALTO;
 
     constructor(id: number, hasta: number, visualization: AvatarVisualization)
     {
@@ -130,10 +132,21 @@ export class VipAddition implements IAvatarAddition
         const visible = !!texturas && (Date.now() < this._hasta) && !this._visualization.cabezaOcupada;
         const fotograma = visible ? (Math.floor(Date.now() / (CICLO_MS / FOTOGRAMAS)) % FOTOGRAMAS) : -1;
 
-        if(fotograma === this._ultimo) return false;
+        // apilada: si el efecto activo pinta algo sobre la cabeza (la placa del enable de staff...), justo encima
+        const cima = this._visualization.cimaEfecto;
+        const abajo = cima ? Math.min(this._base, cima - (this._pequena ? 1 : 2)) : this._base;
+        const offsetY = abajo - this._alto + MARGEN;
+
+        // con el cursor encima sale el nombre justo ahí: la placa se vuelve transparente pero sigue «visible»,
+        // así el recuadro del avatar no cambia y el nombre (o el menú) no salta
+        const alpha = this._visualization.resaltado ? 0 : 255;
+
+        if((fotograma === this._ultimo) && (sprite.offsetY === offsetY) && (sprite.alpha === alpha)) return false;
 
         this._ultimo = fotograma;
         sprite.visible = visible;
+        sprite.offsetY = offsetY;
+        sprite.alpha = alpha;
 
         if(visible) sprite.texture = texturas[fotograma];
 
@@ -153,11 +166,10 @@ export class VipAddition implements IAvatarAddition
         if(this._visualization.posture === AvatarAction.POSTURE_SIT) base += (this._pequena ? 16 : 32);
         else if(this._visualization.posture === AvatarAction.POSTURE_LAY) base += scale;
 
+        this._base = base;
+        this._alto = this._pequena ? ALTO_P : ALTO;
         sprite.offsetX = -Math.floor((this._pequena ? ANCHO_P : ANCHO) / 2);
-        sprite.offsetY = base - (this._pequena ? ALTO_P : ALTO) + MARGEN;
         sprite.relativeDepth = -0.02;
-        sprite.alpha = 255;
-
         this.pintar(sprite);
     }
 

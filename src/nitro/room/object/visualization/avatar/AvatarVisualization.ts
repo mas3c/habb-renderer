@@ -78,6 +78,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private _layInside: boolean;
     private _isAnimating: boolean;
     private _extraSpritesStartIndex: number;
+    // lo más alto que pinta el efecto activo sobre el avatar (offsetY, negativo = arriba; 0 = nada): la placa VIP se pone encima
+    private _cimaEfecto: number = 0;
     private _forcedAnimFrames: number;
     private _updatesUntilFrameUpdate: number;
 
@@ -486,7 +488,46 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                     _local_21++;
                 }
             }
+
+            this.medirCimaEfecto(scale, (updateModel || didScaleUpdate));
         }
+    }
+
+    /**
+     * Cuánto sube lo que el efecto activo pinta encima del keko (la placa del enable de staff, un cartel...):
+     * el borde de arriba de sus sprites propios, sin los brillos aditivos (ink 33, halos translúcidos). Se
+     * queda con el más alto visto mientras no cambie el modelo, para que una animación no haga bailar
+     * lo que va encima. Solo cuenta lo que llega por encima de los hombros (lo de los pies no estorba).
+     */
+    private medirCimaEfecto(scale: number, reiniciar: boolean): void
+    {
+        let cima = reiniciar ? 0 : this._cimaEfecto;
+        const hombros = -(scale * 0.75);
+        const hasta = Math.min(this.totalSprites, this._extraSpritesStartIndex);
+
+        for(let i = AvatarVisualization.INITIAL_RESERVED_SPRITES; i < hasta; i++)
+        {
+            const sprite = this.getSprite(i);
+
+            if(!sprite || !sprite.visible || !sprite.texture || (sprite.blendMode === BLEND_MODES.ADD)) continue;
+            if(sprite.offsetY > hombros) continue;
+
+            cima = Math.min(cima, sprite.offsetY);
+        }
+
+        this._cimaEfecto = cima;
+    }
+
+    /** Cursor encima del avatar: sale su nombre justo donde va la placa VIP. */
+    public get resaltado(): boolean
+    {
+        return this._auraVisible;
+    }
+
+    /** Borde de arriba de lo que el efecto pinta sobre la cabeza (0 = nada); con él se apila la placa VIP. */
+    public get cimaEfecto(): number
+    {
+        return this._effect ? this._cimaEfecto : 0;
     }
 
     private createAvatarImage(scale: number, effectId: number): IAvatarImage
