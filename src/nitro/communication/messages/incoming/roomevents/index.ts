@@ -13,6 +13,7 @@ export * from './WiredToolsAccessEvent';
 export * from './YoutubeTvStateEvent';
 export * from './StaffPinRequestEvent';
 export * from './MencionesMessageEvent';
+export * from './EventoVivoMessageEvent';
 export * from './ImpostorMessageEvent';
 export * from './RoomHabbiconMessageEvent';
 export * from './UnoMessageEvent';
