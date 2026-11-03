@@ -35,7 +35,7 @@ export interface ILuzFurni
 interface ILuzViva
 {
     luces: ILuzFurni[];
-    sprites: Sprite[];
+    sprites: Sprite[][]; // por luz
     visto: number;
     encendida: boolean;
     fase: number;
@@ -152,7 +152,14 @@ export class RoomLuces
         {
             viva = { luces, sprites: [], visto: 0, encendida: false, fase: ((object.id * 7.31) % 10) };
 
-            for(const luz of luces) for(const sprite of this.crear(luz)) { viva.sprites.push(sprite); this._capa.addChild(sprite); }
+            for(const luz of luces)
+            {
+                const sprites = this.crear(luz);
+
+                viva.sprites.push(sprites);
+
+                for(const sprite of sprites) this._capa.addChild(sprite);
+            }
 
             this._vivas.set(identificador, viva);
         }
@@ -167,10 +174,10 @@ export class RoomLuces
 
         viva.encendida = false;
 
-        let n = 0;
-
-        for(const luz of viva.luces)
+        for(let i = 0; i < viva.luces.length; i++)
         {
+            const luz = viva.luces[i];
+
             const encendida = ((luz.estados === undefined) || (luz.estados === 'siempre') || (Array.isArray(luz.estados) && luz.estados.includes(estado)));
 
             if(encendida) viva.encendida = true;
@@ -189,17 +196,18 @@ export class RoomLuces
             const py = (y + ((luz.desplazamiento?.y || 0) * k));
             const r = ((luz.radio ?? 80) * k);
 
-            for(const sprite of this.spritesDe(luz, viva.sprites, n))
+            for(const sprite of viva.sprites[i])
             {
                 sprite.visible = encendida;
-                n++;
 
                 if(!encendida) continue;
 
+                // ADD = brillo que se ve también sobre el negro (núcleo del halo, haz del foco); la «luz» va en dos pasadas:
+                // escena × (1 + i/2)², hasta ×4 con intensidad 2, para que la penumbra no se coma la luz
                 const nucleo = (sprite.blendMode === BLEND_MODES.ADD);
 
                 sprite.position.set(px, py);
-                sprite.alpha = (nucleo ? (intensidad * 0.35) : intensidad);
+                sprite.alpha = (nucleo ? (intensidad * 0.3) : Math.min(1, (intensidad / 2)));
 
                 switch(luz.tipo)
                 {
@@ -232,16 +240,6 @@ export class RoomLuces
         }
     }
 
-    private static cuantos(luz: ILuzFurni): number
-    {
-        return ((luz.tipo === 'glow' || luz.tipo === 'cone') ? 2 : 1);
-    }
-
-    private spritesDe(luz: ILuzFurni, sprites: Sprite[], desde: number): Sprite[]
-    {
-        return sprites.slice(desde, (desde + RoomLuces.cuantos(luz)));
-    }
-
     private crear(luz: ILuzFurni): Sprite[]
     {
         const { radial, haz, rect } = RoomLuces._texturas;
@@ -260,10 +258,10 @@ export class RoomLuces
 
         switch(luz.tipo)
         {
-            case 'area': return [ nuevo(radial, BLEND_LUZ) ];
-            case 'wall': return [ nuevo(rect, BLEND_LUZ) ];
-            case 'cone': return [ nuevo(haz, BLEND_LUZ, 0), nuevo(radial, BLEND_LUZ) ];
-            default: return [ nuevo(radial, BLEND_LUZ), nuevo(radial, BLEND_MODES.ADD) ]; // halo + brillo en el centro
+            case 'area': return [ nuevo(radial, BLEND_LUZ), nuevo(radial, BLEND_LUZ) ];
+            case 'wall': return [ nuevo(rect, BLEND_LUZ), nuevo(rect, BLEND_LUZ) ];
+            case 'cone': return [ nuevo(haz, BLEND_MODES.ADD, 0), nuevo(radial, BLEND_LUZ), nuevo(radial, BLEND_LUZ) ];
+            default: return [ nuevo(radial, BLEND_LUZ), nuevo(radial, BLEND_LUZ), nuevo(radial, BLEND_MODES.ADD) ]; // halo + brillo en el centro
         }
     }
 
@@ -274,7 +272,7 @@ export class RoomLuces
         {
             if(viva.visto === this._ronda) continue;
 
-            for(const sprite of viva.sprites) sprite.destroy(); // la textura es compartida: no se toca
+            for(const sprites of viva.sprites) for(const sprite of sprites) sprite.destroy(); // la textura es compartida: no se toca
 
             this._vivas.delete(id);
         }
