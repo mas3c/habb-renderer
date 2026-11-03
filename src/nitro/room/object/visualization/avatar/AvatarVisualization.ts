@@ -518,10 +518,10 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         this._cimaEfecto = cima;
     }
 
-    /** Cursor encima del avatar: sale su nombre justo donde va la placa VIP. */
+    /** El cliente tiene un nombre o un menú encima del avatar (ContextMenuView pone «vip_tapada»): la placa VIP se aparta. */
     public get resaltado(): boolean
     {
-        return this._auraVisible;
+        return ((this.object?.model?.getValue<number>('vip_tapada') || 0) > 0);
     }
 
     /** Borde de arriba de lo que el efecto pinta sobre la cabeza (0 = nada); con él se apila la placa VIP. */
