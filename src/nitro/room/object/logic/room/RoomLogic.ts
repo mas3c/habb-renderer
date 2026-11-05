@@ -70,11 +70,35 @@ export class RoomLogic extends RoomObjectLogicBase
         }
     }
 
+    /**
+     * habb: los planos de la lógica (los que convierten un clic en casilla) tienen que partirse igual que los que
+     * se dibujan. RoomVisualization usa el relleno de escaleras de la sala (habb_floor_fill); si aquí se quedaba el
+     * de por defecto (macizas), en una sala «huecas» con desniveles los índices de plano no casaban y los clics no
+     * llegaban a ninguna casilla (arenas de BattleBall: Castillo y Montaña enteras, medio Jardín y Cascada).
+     * Devuelve true si ha cambiado.
+     */
+    private sincronizarRelleno(): boolean
+    {
+        const valor = this.object?.model?.getValue<number>('habb_floor_fill');
+
+        if((valor !== 0) && (valor !== 1)) return false;
+
+        const relleno = (valor !== 0);
+
+        if(this._planeParser.relleno === relleno) return false;
+
+        this._planeParser.relleno = relleno;
+
+        return true;
+    }
+
     public initialize(roomMap: RoomMapData): void
     {
         if(!roomMap || !this.object) return;
 
         if(!(roomMap instanceof RoomMapData)) return;
+
+        this.sincronizarRelleno();
 
         if(!this._planeParser.initializeFromMapData(roomMap)) return;
 
@@ -95,6 +119,14 @@ export class RoomLogic extends RoomObjectLogicBase
         super.update(time);
 
         this.updateBackgroundColor(time);
+
+        // el relleno llega aparte (setRoomFloorFill): al cambiar, se rehacen los planos con el mismo mapa
+        if(this.sincronizarRelleno())
+        {
+            const mapData = this.object?.model?.getValue<RoomMapData>(RoomObjectVariable.ROOM_MAP_DATA);
+
+            if(mapData) this._planeParser.initializeFromMapData(mapData);
+        }
 
         if(this._needsMapUpdate)
         {
@@ -332,6 +364,7 @@ export class RoomLogic extends RoomObjectLogicBase
         this.object.model.setValue(RoomObjectVariable.ROOM_MAP_DATA, message.mapData);
         this.object.model.setValue(RoomObjectVariable.ROOM_FLOOR_HOLE_UPDATE_TIME, this.time);
 
+        this.sincronizarRelleno();
         this._planeParser.initializeFromMapData(message.mapData);
     }
 
