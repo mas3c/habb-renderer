@@ -150,28 +150,32 @@ const LETRAS: { [l: string]: string[] } = {
     '.': [ '.', '.', '.', '.', 'X' ]
 };
 
-/** corazón del beso (rojo del vídeo de referencia, con borde oscuro y brillo) */
+/** corazón del beso, 11 x 10 a escala 1 como el del vídeo de referencia: contorno oscuro y brillo blanco arriba a la izquierda */
 const CORAZON_BESO: Dibujo = { filas: [
+    '.kkk...kkk.',
+    'kRRRk.kRRRk',
+    'kRWRRkRRRRk',
+    'kWRRRRRRRRk',
+    'kRRRRRRRRDk',
+    '.kRRRRRRDk.',
+    '..kRRRRDk..',
+    '...kRRDk...',
+    '....kDk....',
+    '.....k.....'
+], paleta: { k: '#6e0a16', R: '#dc2a44', D: '#a8152c', W: '#ffffff' } };
+
+/** los pequeños (7 x 6, como los del vídeo medidos a escala 1): rellenos, con borde oscuro y un punto de brillo */
+const CORAZON_MINI: Dibujo = { filas: [
     '.kk.kk.',
     'kRWkRRk',
     'kRRRRRk',
     '.kRRRk.',
     '..kRk..',
     '...k...'
-], paleta: { k: '#86101a', R: '#d82840', W: '#f27a8c' } };
+], paleta: { k: '#6e0a16', R: '#dc2a44', W: '#ff9aa8' } };
 
-/** los pequeños del beso (7 x 6 a escala 1, como los del vídeo) */
-const CORAZON_MINI: Dibujo = { filas: [
-    '.kk.kk.',
-    'kRRkRRk',
-    'kRRRRRk',
-    '.kRRRk.',
-    '..kRk..',
-    '...k...'
-], paleta: { k: '#86101a', R: '#d82840' } };
-
-/** altura del corazón grande del beso: ~20 px por encima de la cabeza (medido en el vídeo de referencia) */
-const CORAZON_Y = -100;
+/** altura del corazón grande al salir (centro, desde los pies): en el vídeo sale a -96 y sube despacio hasta -110 */
+const CORAZON_Y = -96;
 
 const ROSAS = [ '#ff3b6b', '#ff6f91', '#ff9fb8', '#ffd1dc', '#ff2f5c', '#ffc0cb' ];
 const HUMOS = [ '#c7ccd6', '#b3b9c4', '#d9dde4', '#a5acb8' ];
@@ -410,47 +414,42 @@ const ACCIONES: { [nombre: string]: Accion } = {
     // brazos y los ojos cerrados; encima, un corazón grande que late con corazoncitos que suben y se abren, y al
     // separarse quedan dos corazoncitos apilados un momento
     besar: {
-        duracion: 2750,
+        duracion: 2900,
         pose: { arrimar: 0.32, entra: 250, quieto: 2050, sale: 400, brazos: [ 'abzm', 'abzi' ], ojos: true, centro: true, delante: true },
         crear: () => ({}),
+        // coreografía del vídeo (10 fps desde el primer corazón): sale uno pequeño que crece al grande y sube despacio;
+        // a los 0,4 s aparece un pequeño debajo a la izquierda y a los 0,7 s otro a la derecha (triángulo); se van
+        // apagando de uno en uno y al final quedan dos pequeños apilados en el centro hasta los 2,5 s
         dibujar: (l, t) =>
         {
             const k = t - 250;
 
             if(k < 0) return;
 
-            // el grande: sale pequeño, crece y late; se apaga hacia el final del beso
-            const grande = tramo(k, 0, 120, 1300, 1500);
-            const crece = 0.55 + salida(entre(k, 0, 250)) * 0.45;
-            const latido = 1 + Math.max(0, Math.sin(k / 95)) * 0.06;
+            const y = CORAZON_Y - (Math.min(k, 1400) / 1400) * 14;
+            const grande = 1 - entre(k, 1150, 1450);
 
-            l.dibujo(CORAZON_BESO, 0, CORAZON_Y - entre(k, 0, 400) * 3, 2 * crece * latido, grande);
+            if(k < 180) l.dibujo(CORAZON_MINI, 0, y, 1, entre(k, 0, 60));
+            else l.dibujo(CORAZON_BESO, 0, y, 1, grande);
 
-            // tandas de tres corazoncitos que suben y se separan
-            for(let tanda = 0; tanda < 3; tanda++)
-            {
-                const v = entre(k, 350 + tanda * 450, 1050 + tanda * 450);
+            const ladoIzq = tramo(k, 400, 460, 1100, 1250);
+            const ladoDer = tramo(k, 700, 760, 1200, 1350);
+            const abre = entre(k, 400, 1300) * 2;
 
-                if(v <= 0 || v >= 1) continue;
+            l.dibujo(CORAZON_MINI, -7 - abre, y + 8, 1, ladoIzq);
+            l.dibujo(CORAZON_MINI, 7 + abre, y + 10, 1, ladoDer);
 
-                for(const [ dx, dy ] of [ [ -8, 10 ], [ 7, 12 ], [ -12, 2 ] ])
-                {
-                    l.dibujo(CORAZON_MINI, dx * (1 + v * 0.6), CORAZON_Y + dy - v * 8, 1, 1 - Math.pow(v, 3));
-                }
-            }
+            const final = tramo(k, 1300, 1400, 2400, 2600);
 
-            // los dos apilados del final
-            const final = tramo(k, 1450, 1550, 2300, 2450);
-
-            l.dibujo(CORAZON_MINI, 0, CORAZON_Y + 2, 1, final);
-            l.dibujo(CORAZON_MINI, 0, CORAZON_Y + 8, 1, final);
+            l.dibujo(CORAZON_MINI, 0, CORAZON_Y + 10, 1, final);
+            l.dibujo(CORAZON_MINI, 0, CORAZON_Y + 14, 1, final);
         }
     },
 
     // la besada: medio paso hacia él, un brazo hacia él, ojos cerrados y saluda al volver (los corazones van en «besar»)
     besar_recibe: {
         duracion: 2500,
-        pose: { arrimar: 0.32, entra: 250, quieto: 2050, sale: 400, brazos: [ 'abzm' ], ojos: true, ola: true },
+        pose: { arrimar: 0.32, entra: 250, quieto: 2050, sale: 400, brazos: [ 'abzi' ], ojos: true, ola: true },
         crear: () => ({}),
         dibujar: () => {}
     },

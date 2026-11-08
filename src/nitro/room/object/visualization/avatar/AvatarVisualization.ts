@@ -105,6 +105,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     // lo que hace el propio keko durante la acción (medio paso, brazos, ojos): AccionMotor.pose
     private _pose: PoseAhora = null;
     private _poseClave = '';
+    // dónde va la sombra sin acción: con el medio paso se mueve igual que el cuerpo
+    private _sombraBase: number[] = null;
 
     /** la casilla de delante en pantalla según hacia dónde mira (a escala 64) */
     private static CASILLA: number[][] = [ [ 32, -16 ], [ 64, 0 ], [ 32, 16 ], [ 0, 32 ], [ -32, 16 ], [ -64, 0 ], [ -32, -16 ], [ 0, -32 ] ];
@@ -354,7 +356,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
             if(sprite)
             {
-                const highlightEnabled = ((this.object.model.getValue<number>(RoomObjectVariable.FIGURE_HIGHLIGHT_ENABLE) === 1) && (this.object.model.getValue<number>(RoomObjectVariable.FIGURE_HIGHLIGHT) === 1));
+                // durante una acción (beso, abrazo…) sin el contorno blanco de pasar el ratón: con los cuerpos solapados
+                // asomaba un trozo blanco entre los dos que parecía un vaso en la mano
+                const highlightEnabled = (!this._pose && (this.object.model.getValue<number>(RoomObjectVariable.FIGURE_HIGHLIGHT_ENABLE) === 1) && (this.object.model.getValue<number>(RoomObjectVariable.FIGURE_HIGHLIGHT) === 1));
 
                 const avatarImage = this._avatarImage.getImage(AvatarSetType.FULL, highlightEnabled);
 
@@ -377,6 +381,14 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
                     sprite.offsetX += arrimado[0];
                     sprite.offsetY += arrimado[1];
+
+                    const sombra = this.getSprite(AvatarVisualization.SHADOW_LAYER_ID);
+
+                    if(sombra && this._sombraBase)
+                    {
+                        sombra.offsetX = (this._sombraBase[0] + arrimado[0]);
+                        sombra.offsetY = (this._sombraBase[1] + arrimado[1]);
+                    }
                 }
 
                 if(this._isLaying)
@@ -1183,13 +1195,16 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         if(this._sign > -1) this._avatarImage.appendAction(AvatarAction.SIGN, this._sign);
 
-        if(this._carryObject > 0) this._avatarImage.appendAction(AvatarAction.CARRY_OBJECT, this._carryObject);
+        // con los brazos de una acción (beso, abrazo…) el objeto de mano no se pinta; no se toca _carryObject, así que vuelve al acabar
+        const manosLibres = !!(pose && pose.brazos.length);
+
+        if((this._carryObject > 0) && !manosLibres) this._avatarImage.appendAction(AvatarAction.CARRY_OBJECT, this._carryObject);
 
         if(pose) for(const brazo of pose.brazos) this._avatarImage.appendAction(brazo);
 
         if(pose && pose.ola) this._avatarImage.appendAction(AvatarAction.EXPRESSION_WAVE);
 
-        if(this._useObject > 0) this._avatarImage.appendAction(AvatarAction.USE_OBJECT, this._useObject);
+        if((this._useObject > 0) && !manosLibres) this._avatarImage.appendAction(AvatarAction.USE_OBJECT, this._useObject);
 
         if(this._talk) this._avatarImage.appendAction(AvatarAction.TALK);
 
@@ -1422,13 +1437,13 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
                 (addition as AccionAddition).pintar(sprite, t);
 
-                // los corazones del beso, entre los dos y algo más cerca del que besa (como en el vídeo): 0,4 de casilla
+                // los corazones del beso, centrados entre las dos cabezas (media casilla hacia donde mira)
                 if(sprite && this._accion.pose && this._accion.pose.centro)
                 {
                     const casilla = AvatarVisualization.CASILLA[this.direccion8()];
 
-                    sprite.offsetX += Math.round((casilla[0] * this._scale * 0.4) / 64);
-                    sprite.offsetY += Math.round((casilla[1] * this._scale * 0.4) / 64);
+                    sprite.offsetX += Math.round((casilla[0] * this._scale * 0.5) / 64);
+                    sprite.offsetY += Math.round((casilla[1] * this._scale * 0.5) / 64);
                 }
             }
 
@@ -1634,6 +1649,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                     sprite.texture = this._shadow.texture;
                     sprite.offsetX = offsetX;
                     sprite.offsetY = offsetY;
+                    this._sombraBase = [ offsetX, offsetY ];
                     sprite.alpha = Math.round(50 * this._sombra);
                     // en un suelo elevado (escaleras), que va ordenado con los objetos, 1 la dejaba debajo de su escalón
                     sprite.relativeDepth = (((this.object?.getLocation()?.z || 0) > 0) ? 0.005 : 1);
