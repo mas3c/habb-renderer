@@ -250,7 +250,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         }
 
         // mientras se arrima o se aparta, recolocar en cada fotograma
-        if(this._pose && this._pose.andando) this._forcedAnimFrames = Math.max(this._forcedAnimFrames, AvatarVisualization.ANIMATION_FRAME_UPDATE_INTERVAL);
+        if(this._pose && (this._pose.andando || this._pose.lado || this._accion.pose.curva)) this._forcedAnimFrames = Math.max(this._forcedAnimFrames, AvatarVisualization.ANIMATION_FRAME_UPDATE_INTERVAL);
 
         if((updateModel || (scale !== this._scale)) || !this._avatarImage)
         {
@@ -386,8 +386,11 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
                     if(sombra && this._sombraBase)
                     {
-                        sombra.offsetX = (this._sombraBase[0] + arrimado[0]);
-                        sombra.offsetY = (this._sombraBase[1] + arrimado[1]);
+                        // la sombra se queda en el suelo aunque salte
+                        const suelo = this.arrimado(scale, false);
+
+                        sombra.offsetX = (this._sombraBase[0] + suelo[0]);
+                        sombra.offsetY = (this._sombraBase[1] + suelo[1]);
                     }
                 }
 
@@ -1195,8 +1198,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         if(this._sign > -1) this._avatarImage.appendAction(AvatarAction.SIGN, this._sign);
 
-        // con los brazos de una acción (beso, abrazo…) el objeto de mano no se pinta; no se toca _carryObject, así que vuelve al acabar
-        const manosLibres = !!(pose && pose.brazos.length);
+        // durante una acción (beso, abrazo…) el objeto de mano no se pinta; no se toca _carryObject, así que vuelve al acabar
+        const manosLibres = !!pose;
 
         if((this._carryObject > 0) && !manosLibres) this._avatarImage.appendAction(AvatarAction.CARRY_OBJECT, this._carryObject);
 
@@ -1380,14 +1383,19 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     }
 
     /** cuánto se ha arrimado ahora hacia la casilla de delante, en píxeles de la escala actual */
-    private arrimado(scale: number): number[]
+    private arrimado(scale: number, conAlto = true): number[]
     {
-        if(!this._pose || !this._accion || !this._accion.pose || (this._pose.f <= 0)) return [ 0, 0 ];
+        if(!this._pose || !this._accion || !this._accion.pose) return [ 0, 0 ];
 
         const casilla = AvatarVisualization.CASILLA[this.direccion8()];
         const k = (this._pose.f * this._accion.pose.arrimar * scale) / 64;
+        // el vaivén (abrazo, tambaleo del golpeado) va de lado en pantalla
+        const lado = ((this._pose.lado || 0) * scale) / 64;
 
-        return [ Math.round(casilla[0] * k), Math.round(casilla[1] * k) ];
+        // el respingo del nalgueado sube unos px
+        const alto = conAlto ? (((this._pose.alto || 0) * scale) / 64) : 0;
+
+        return [ Math.round((casilla[0] * k) + lado), Math.round((casilla[1] * k) - alto) ];
     }
 
     private empezarAccion(spec: string): boolean
@@ -1436,6 +1444,15 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                 const sprite = this.getSprite(index);
 
                 (addition as AccionAddition).pintar(sprite, t);
+
+                // lo que va pegado al cuerpo (estrellas del golpeado) se mueve con él
+                if(sprite && this._accion.pose && this._accion.pose.sigue)
+                {
+                    const arrimado = this.arrimado(this._scale);
+
+                    sprite.offsetX += arrimado[0];
+                    sprite.offsetY += arrimado[1];
+                }
 
                 // los corazones del beso, centrados entre las dos cabezas (media casilla hacia donde mira)
                 if(sprite && this._accion.pose && this._accion.pose.centro)

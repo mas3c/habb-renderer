@@ -147,6 +147,7 @@ const LETRAS: { [l: string]: string[] } = {
     I: [ 'X', 'X', 'X', 'X', 'X' ],
     S: [ '.XX', 'X..', '.X.', '..X', 'XX.' ],
     '¡': [ 'X', '.', 'X', 'X', 'X' ],
+    L: [ 'X..', 'X..', 'X..', 'X..', 'XXX' ],
     '.': [ '.', '.', '.', '.', 'X' ]
 };
 
@@ -173,6 +174,23 @@ const CORAZON_MINI: Dibujo = { filas: [
     '..kRk..',
     '...k...'
 ], paleta: { k: '#6e0a16', R: '#dc2a44', W: '#ff9aa8' } };
+
+/** corazoncito rosa pálido del abrazo (mismo dibujo que los del beso) */
+const CORAZON_ROSA: Dibujo = { filas: [
+    '.kk.kk.',
+    'kRWkRRk',
+    'kRRRRRk',
+    '.kRRRk.',
+    '..kRk..',
+    '...k...'
+], paleta: { k: '#b8456a', R: '#ffa3bd', W: '#ffffff' } };
+
+/** chispita blanca */
+const CHISPA: Dibujo = { filas: [
+    '.w.',
+    'wWw',
+    '.w.'
+], paleta: { w: '#fff4d6', W: '#ffffff' } };
 
 /** altura del corazón grande al salir (centro, desde los pies): en el vídeo sale a -96 y sube despacio hasta -110 */
 const CORAZON_Y = -96;
@@ -318,9 +336,16 @@ class Lienzo
 export interface Pose
 {
     arrimar: number;
-    entra: number;
-    quieto: number;
-    sale: number;
+    entra?: number;
+    quieto?: number;
+    sale?: number;
+    /** en vez de entra/quieto/sale, la pose a mano en cada instante hasta «fin» (el golpe: atrás, se lanza y vuelve) */
+    curva?: (t: number) => PoseAhora;
+    fin?: number;
+    /** vaivén de lado a lado mientras están quietos (el abrazo): px a escala 64 y cuántas idas y vueltas */
+    balanceo?: { px: number, vaivenes: number };
+    /** el lienzo va con el cuerpo (las estrellas del golpeado siguen su cabeza al retroceder) */
+    sigue?: boolean;
     brazos?: string[];
     /** se dibuja por delante del otro mientras dura (el que besa tapa parte de la besada, como en el vídeo) */
     delante?: boolean;
@@ -331,8 +356,8 @@ export interface Pose
     centro?: boolean;
 }
 
-/** la pose en el instante t: f = cuánto está arrimado (0-1) */
-export interface PoseAhora { f: number, andando: boolean, brazos: string[], ojos: boolean, ola: boolean }
+/** la pose en el instante t: f = cuánto está arrimado (parte de «arrimar»; negativo = hacia atrás), lado = vaivén en px */
+export interface PoseAhora { f: number, andando: boolean, brazos: string[], ojos: boolean, ola: boolean, lado?: number, alto?: number }
 
 interface Accion
 {
@@ -454,41 +479,149 @@ const ACCIONES: { [nombre: string]: Accion } = {
         dibujar: () => {}
     },
 
-    // golpear (menú «Acciones»): el que golpea se lanza un tercio de casilla con el brazo por delante y vuelve; al otro
-    // le llega «bofetada» a la vez
+    // golpear (menú «Acciones»): medio paso ATRÁS despacio para coger impulso, se lanza rápido con el brazo por delante
+    // (impacto a los 680 ms, con destello en el punto de golpe) y vuelve andando a su sitio
     golpear: {
-        duracion: 900,
-        pose: { arrimar: 0.3, entra: 150, quieto: 500, sale: 300, brazos: [ 'abz1' ] },
+        duracion: 1300,
+        pose: { arrimar: 1, fin: 1250, curva: t =>
+        {
+            if(t < 450) return { f: -0.22 * salida(t / 450), andando: true, brazos: [], ojos: false, ola: false };
+            if(t < 560) return { f: -0.22, andando: false, brazos: [ 'abz1' ], ojos: false, ola: false };
+            if(t < 680) return { f: -0.22 + 0.6 * ((t - 560) / 120), andando: true, brazos: [ 'abz1' ], ojos: false, ola: false };
+            if(t < 850) return { f: 0.38, andando: false, brazos: [ 'abz1' ], ojos: false, ola: false };
+
+            return { f: 0.38 * (1 - entre(t, 850, 1250)), andando: true, brazos: [], ojos: false, ola: false };
+        }, centro: true },
+        crear: () => ({}),
+        dibujar: (l, t, d, lado) =>
+        {
+            // destello corto en el punto de golpe, a la altura de la cara del otro
+            const a = tramo(t, 660, 690, 760, 880);
+
+            if(a <= 0) return;
+
+            const crece = salida(entre(t, 660, 760));
+
+            // el lienzo va a media casilla; el puño llega a la cara del otro, un cuarto de casilla más allá
+            const x = lado * 16;
+
+            l.sumar(true);
+            l.luz(x, CABEZA_Y + 6, 16 * crece + 4, [ 255, 250, 220 ], 0.9 * a);
+            l.sumar(false);
+            l.estrellaComic(x, CABEZA_Y + 6, 4 + crece * 9, 8, t / 200, '#ffffff', a);
+            l.estrellaComic(x, CABEZA_Y + 6, 2 + crece * 5, 8, t / 200, '#ffe066', a);
+        }
+    },
+
+    // el golpeado: en el impacto (680 ms) retrocede un cuarto de casilla tambaleándose (dos vaivenes rápidos), con
+    // estrellitas de mareo encima de la cabeza, y vuelve a su sitio
+    golpeado: {
+        duracion: 3400,
+        pose: { arrimar: 1, fin: 1900, sigue: true, curva: t =>
+        {
+            if(t < 680) return { f: 0, andando: false, brazos: [], ojos: false, ola: false };
+            if(t < 800) return { f: -0.25 * salida((t - 680) / 120), andando: false, brazos: [], ojos: true, ola: false };
+            if(t < 1350)
+            {
+                const v = (t - 800) / 550;
+
+                return { f: -0.25 + Math.sin(v * VUELTA * 2) * 0.05 * (1 - v), andando: false, brazos: [], ojos: false, ola: false, lado: Math.sin(v * VUELTA * 2) * 2 * (1 - v) };
+            }
+
+            return { f: -0.25 * (1 - entre(t, 1350, 1900)), andando: true, brazos: [], ojos: false, ola: false };
+        } },
+        crear: () => ({}),
+        // lo de antes (barrido blanco, mano roja en la mejilla, estrellitas de mareo), ahora en el momento del impacto
+        dibujar: (l, t, d, lado) => ACCIONES.bofetada.dibujar(l, t - 680, d, lado)
+    },
+
+    // abrazo: los dos se rodean con los brazos, ojos cerrados, y se mecen despacio de lado a lado; de entre los dos, a
+    // la altura del pecho, suben en zigzag unos pocos corazoncitos rosa pálido y alguna chispita (nada de corazón grande)
+    abrazo: {
+        duracion: 3400,
+        pose: { arrimar: 0.36, entra: 300, quieto: 2900, sale: 400, brazos: [ 'abz' ], ojos: true, delante: true, centro: true, balanceo: { px: 2, vaivenes: 2.5 } },
+        crear: azar => ({ corazones: Array.from({ length: 6 }, (_, i) => ({ t0: 450 + i * 380, dx: (azar() * 2 - 1) * 4, fase: azar() * VUELTA, rosa: (i % 3) !== 2 })),
+            chispas: Array.from({ length: 7 }, () => ({ t0: 500 + azar() * 2200, x: (azar() * 2 - 1) * 16, y: PECHO_Y - 8 - azar() * 30 })) }),
+        dibujar: (l, t, d) =>
+        {
+            for(const c of d.corazones)
+            {
+                const v = entre(t, c.t0, c.t0 + 1700);
+
+                if(v <= 0 || v >= 1) continue;
+
+                const a = Math.min(entre(v, 0, 0.12), 1 - entre(v, 0.7, 1));
+
+                l.dibujo(c.rosa ? CORAZON_ROSA : CORAZON_MINI, c.dx + Math.sin(c.fase + v * VUELTA * 1.5) * 4, PECHO_Y - 6 - v * 66, 1, a);
+            }
+
+            for(const c of d.chispas)
+            {
+                const a = tramo(t, c.t0, c.t0 + 80, c.t0 + 180, c.t0 + 360);
+
+                if(a <= 0) continue;
+
+                l.dibujo(CHISPA, c.x, c.y, 1, a);
+            }
+        }
+    },
+
+    // nalguear (de broma): medio paso, levanta la mano (la de saludar) para coger impulso y palmada rápida con el brazo
+    // por delante; vuelve a su sitio
+    nalguear: {
+        duracion: 1100,
+        pose: { arrimar: 1, fin: 1050, curva: t =>
+        {
+            if(t < 250) return { f: 0.3 * (t / 250), andando: true, brazos: [], ojos: false, ola: false };
+            if(t < 470) return { f: 0.3, andando: false, brazos: [], ojos: false, ola: true };
+            if(t < 650) return { f: 0.3 + 0.05 * entre(t, 470, 520), andando: false, brazos: [ 'abz1' ], ojos: false, ola: false };
+
+            return { f: 0.35 * (1 - entre(t, 650, 1050)), andando: true, brazos: [], ojos: false, ola: false };
+        } },
         crear: () => ({}),
         dibujar: () => {}
     },
 
-    // abrazo: anillos rosas que se abren desde el pecho y corazones dando vueltas alrededor
-    abrazo: {
-        duracion: 3200,
-        pose: { arrimar: 0.3, entra: 250, quieto: 2800, sale: 400, brazos: [ 'abz' ] },
-        crear: azar => ({ orbita: Array.from({ length: 6 }, (_, i) => ({ fase: (i / 6) * VUELTA, alto: PECHO_Y - 10 + (azar() * 2 - 1) * 10 })) }),
-        dibujar: (l, t, d) =>
+    // el nalgueado: respingo (salta 3 px y vuelve) con ojos cerrados; manita roja a la altura de la cadera del lado del
+    // otro, estrellitas pequeñas y «¡PLAS!» en pixel art
+    nalgueado: {
+        duracion: 1500,
+        pose: { arrimar: 1, fin: 900, curva: t =>
         {
-            for(let i = 0; i < 3; i++)
+            const salto = (t >= 500 && t < 760) ? Math.sin(((t - 500) / 260) * Math.PI) * 3 : 0;
+
+            return { f: 0, andando: false, brazos: [], ojos: (t >= 500 && t < 800), ola: false, alto: salto };
+        } },
+        crear: azar => ({ estrellas: Array.from({ length: 4 }, () => ({ ang: -Math.PI / 2 + (azar() * 2 - 1) * 1.4, v: 8 + azar() * 6 })) }),
+        dibujar: (l, t, d, lado) =>
+        {
+            const a = tramo(t, 500, 540, 1150, 1450);
+
+            if(a <= 0) return;
+
+            const pop = 1 + Math.max(0, 1 - entre(t, 500, 620)) * 0.5;
+
+            l.dibujo(MANO, lado * 7, -30, 0.9 * pop, a * 0.9, lado > 0);
+
+            for(const e of d.estrellas)
             {
-                const v = entre(t, 150 + i * 350, 1250 + i * 350);
+                const v = entre(t, 520, 1100);
 
                 if(v <= 0 || v >= 1) continue;
 
-                l.anillo(0, PECHO_Y, 8 + salida(v) * 26, (8 + salida(v) * 26) * 0.45, 2, ROSAS[i], (1 - v) * 0.9);
+                l.dibujo(ESTRELLA, lado * 7 + Math.cos(e.ang) * e.v * salida(v), -30 + Math.sin(e.ang) * e.v * salida(v), 0.8, 1 - v);
             }
 
-            const a = tramo(t, 200, 500, 2200, 2800);
-
-            for(const o of d.orbita)
-            {
-                const ang = o.fase + t / 420;
-                const delante = Math.sin(ang) > 0;
-
-                l.dibujo(CORAZON_PEQUE, Math.cos(ang) * 20, o.alto - entre(t, 1800, 2800) * 20 + Math.sin(ang) * 6, delante ? 1.6 : 1.1, a * (delante ? 1 : 0.55));
-            }
+            l.texto('¡PLAS!', lado * 4, CABEZA_Y - 26 - salida(entre(t, 500, 700)) * 4, 2, '#e8231d', '#ffffff', a);
         }
+    },
+
+    // el abrazado: lo mismo sin dibujo (los corazones van en «abrazo»)
+    abrazo_recibe: {
+        duracion: 3300,
+        pose: { arrimar: 0.36, entra: 300, quieto: 2900, sale: 400, brazos: [ 'abz' ], ojos: true, balanceo: { px: 2, vaivenes: 2.5 } },
+        crear: () => ({}),
+        dibujar: () => {}
     },
 
     // bofetada: barrido blanco que cruza la cara, mano roja en la mejilla y estrellitas de mareo
@@ -1058,11 +1191,21 @@ export class AccionMotor
     {
         const p = accion && accion.pose;
 
-        if(!p || (t < 0) || (t >= (p.quieto + p.sale))) return null;
+        if(!p || (t < 0)) return null;
+
+        if(p.curva) return (t < p.fin) ? p.curva(t) : null;
+
+        if(t >= (p.quieto + p.sale)) return null;
 
         if(t < p.entra) return { f: t / p.entra, andando: true, brazos: [], ojos: false, ola: false };
 
-        if(t < p.quieto) return { f: 1, andando: false, brazos: (p.brazos || []), ojos: !!p.ojos, ola: false };
+        if(t < p.quieto)
+        {
+            // el vaivén empieza y acaba en el centro (seno de 0 a vaivenes vueltas)
+            const lado = p.balanceo ? (Math.sin(((t - p.entra) / (p.quieto - p.entra)) * VUELTA * p.balanceo.vaivenes) * p.balanceo.px) : 0;
+
+            return { f: 1, andando: false, brazos: (p.brazos || []), ojos: !!p.ojos, ola: false, lado };
+        }
 
         return { f: 1 - ((t - p.quieto) / p.sale), andando: true, brazos: [], ojos: false, ola: !!p.ola };
     }
