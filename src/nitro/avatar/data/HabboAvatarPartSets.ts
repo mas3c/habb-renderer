@@ -327,6 +327,11 @@ export const HabboAvatarPartSets = {
                 ]
             },
             {
+                // la derecha sola, sin 'ri' (no lleva nada en la mano)
+                'id': 'handRightBare',
+                'activeParts': [ { 'setType': 'rh' }, { 'setType': 'rhs' }, { 'setType': 'rs' }, { 'setType': 'rc' } ]
+            },
+            {
                 'id': 'handLeft',
                 'activeParts': [
                     {

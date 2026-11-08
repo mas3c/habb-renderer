@@ -152,7 +152,11 @@ export class AvatarRenderManager extends NitroManager implements IAvatarRenderMa
                 this._structure.updateActions(JSON.parse(request.responseText));
 
                 // :abrazar: los dos brazos hacia delante (la postura de llevar algo, en las dos manos)
-                this._structure.updateActions({ actions: [ { id: 'Hug', state: AvatarAction.HUG, precedence: 206, geometryType: 'vertical', activePartSet: 'handBoth', assetPartDefinition: 'crr', prevents: [ 'dance' ] } ] });
+                // y con una sola mano (la del beso que recibe, golpear)
+                this._structure.updateActions({ actions: [
+                    { id: 'Hug', state: AvatarAction.HUG, precedence: 206, geometryType: 'vertical', activePartSet: 'handBoth', assetPartDefinition: 'crr', prevents: [ 'dance' ] },
+                    { id: 'HugOne', state: AvatarAction.HUG_ONE, precedence: 206, geometryType: 'vertical', activePartSet: 'handRightBare', assetPartDefinition: 'crr', prevents: [ 'dance' ] }
+                ] });
 
                 this._actionsReady = true;
 

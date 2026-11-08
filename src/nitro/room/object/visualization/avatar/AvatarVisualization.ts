@@ -5,7 +5,7 @@ import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSet
 import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { SplashAddition } from './additions/SplashAddition';
 import { AccionAddition } from './additions/AccionAddition';
-import { AccionMotor } from './AccionMotor';
+import { AccionMotor, PoseAhora } from './AccionMotor';
 import { SplashFiltro } from './SplashFiltro';
 import { SplashMotor } from './SplashMotor';
 import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition, VipAddition } from './additions';
@@ -102,10 +102,12 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     // animación de un comando de interacción (:besar, :punch…): fase «accion» del mismo paquete, sin tocar al keko
     private _accion: any = null;
     private _accionInicio = 0;
-    private _brazos = false;
+    // lo que hace el propio keko durante la acción (medio paso, brazos, ojos): AccionMotor.pose
+    private _pose: PoseAhora = null;
+    private _poseClave = '';
 
-    /** cuánto se arrima al abrazar, hacia donde mira (a escala 64): un tercio del camino a la casilla de delante */
-    private static ARRIMAR: number[][] = [ [ 10, -5 ], [ 20, 0 ], [ 10, 5 ], [ 0, 10 ], [ -10, 5 ], [ -20, 0 ], [ -10, -5 ], [ 0, -10 ] ];
+    /** la casilla de delante en pantalla según hacia dónde mira (a escala 64) */
+    private static CASILLA: number[][] = [ [ 32, -16 ], [ 64, 0 ], [ 32, 16 ], [ 0, 32 ], [ -32, 16 ], [ -64, 0 ], [ -32, -16 ], [ 0, -32 ] ];
     private _sombra = 1;
     private _auraSpec: string = '';
     // Como Hobbaz: el aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
@@ -234,14 +236,19 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         let updateModel = this.updateModel(model, scale);
 
-        // los brazos del abrazo entran y salen sin que el servidor cambie nada del avatar
-        const brazos = !!(this._accion && this._accion.brazos);
+        // la pose de la acción (andar, brazos, ojos) entra y sale sin que el servidor cambie nada del avatar
+        this._pose = this._accion ? AccionMotor.pose(this._accion, (performance.now() - this._accionInicio)) : null;
 
-        if(brazos !== this._brazos)
+        const poseClave = this._pose ? `${ this._pose.andando }|${ this._pose.brazos }|${ this._pose.ojos }|${ this._pose.ola }` : '';
+
+        if(poseClave !== this._poseClave)
         {
-            this._brazos = brazos;
+            this._poseClave = poseClave;
             updateModel = true;
         }
+
+        // mientras se arrima o se aparta, recolocar en cada fotograma
+        if(this._pose && this._pose.andando) this._forcedAnimFrames = Math.max(this._forcedAnimFrames, AvatarVisualization.ANIMATION_FRAME_UPDATE_INTERVAL);
 
         if((updateModel || (scale !== this._scale)) || !this._avatarImage)
         {
@@ -366,13 +373,10 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                     sprite.offsetX = ((((-1 * scale) / 2) + _local_20[0]) - ((sprite.texture.width - scale) / 2));
                     sprite.offsetY = (((-(sprite.texture.height) + (scale / 4)) + _local_20[1]) + this._postureOffset);
 
-                    if(this._brazos)
-                    {
-                        const arrimar = AvatarVisualization.ARRIMAR[(((this._direction % 8) + 8) % 8)];
+                    const arrimado = this.arrimado(scale);
 
-                        sprite.offsetX += Math.round((arrimar[0] * scale) / 64);
-                        sprite.offsetY += Math.round((arrimar[1] * scale) / 64);
-                    }
+                    sprite.offsetX += arrimado[0];
+                    sprite.offsetY += arrimado[1];
                 }
 
                 if(this._isLaying)
@@ -1164,7 +1168,11 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         avatar.initActionAppends();
 
-        avatar.appendAction(AvatarAction.POSTURE, this._posture, this._postureParameter);
+        const pose = this._pose;
+        // el medio paso de la acción se anda (solo si estaba de pie)
+        const posture = ((pose && pose.andando && (this._posture === AvatarAction.POSTURE_STAND)) ? AvatarAction.POSTURE_WALK : this._posture);
+
+        avatar.appendAction(AvatarAction.POSTURE, posture, this._postureParameter);
 
         if(this._gesture > 0) this._avatarImage.appendAction(AvatarAction.GESTURE, AvatarAction.getGesture(this._gesture));
 
@@ -1174,13 +1182,15 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         if(this._carryObject > 0) this._avatarImage.appendAction(AvatarAction.CARRY_OBJECT, this._carryObject);
 
-        if(this._brazos) this._avatarImage.appendAction(AvatarAction.HUG);
+        if(pose && pose.brazos) this._avatarImage.appendAction((pose.brazos === 'uno') ? AvatarAction.HUG_ONE : AvatarAction.HUG);
+
+        if(pose && pose.ola) this._avatarImage.appendAction(AvatarAction.EXPRESSION_WAVE);
 
         if(this._useObject > 0) this._avatarImage.appendAction(AvatarAction.USE_OBJECT, this._useObject);
 
         if(this._talk) this._avatarImage.appendAction(AvatarAction.TALK);
 
-        if(this._sleep || this._blink) this._avatarImage.appendAction(AvatarAction.SLEEP);
+        if(this._sleep || this._blink || (pose && pose.ojos)) this._avatarImage.appendAction(AvatarAction.SLEEP);
 
         if(this._expression > 0)
         {
@@ -1345,6 +1355,23 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         return true;
     }
 
+    /** hacia dónde mira el cuerpo (0-7, como la rotación de Habbo): la misma cuenta que le pasa el ángulo a AvatarImage */
+    private direccion8(): number
+    {
+        return (Math.floor((((((this._angle || 0) - 112.5) % 360) + 360) % 360) / 45) % 8);
+    }
+
+    /** cuánto se ha arrimado ahora hacia la casilla de delante, en píxeles de la escala actual */
+    private arrimado(scale: number): number[]
+    {
+        if(!this._pose || !this._accion || !this._accion.pose || (this._pose.f <= 0)) return [ 0, 0 ];
+
+        const casilla = AvatarVisualization.CASILLA[this.direccion8()];
+        const k = (this._pose.f * this._accion.pose.arrimar * scale) / 64;
+
+        return [ Math.round(casilla[0] * k), Math.round(casilla[1] * k) ];
+    }
+
     private empezarAccion(spec: string): boolean
     {
         const efecto = AccionMotor.efecto(spec);
@@ -1386,7 +1413,21 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         for(const addition of this._additions.values())
         {
-            if(addition.id === AvatarVisualization.ACCION_ID) (addition as AccionAddition).pintar(this.getSprite(index), t);
+            if(addition.id === AvatarVisualization.ACCION_ID)
+            {
+                const sprite = this.getSprite(index);
+
+                (addition as AccionAddition).pintar(sprite, t);
+
+                // los corazones del beso, en el punto medio entre los dos (media casilla hacia donde mira)
+                if(sprite && this._accion.pose && this._accion.pose.centro)
+                {
+                    const casilla = AvatarVisualization.CASILLA[this.direccion8()];
+
+                    sprite.offsetX += Math.round((casilla[0] * this._scale) / 128);
+                    sprite.offsetY += Math.round((casilla[1] * this._scale) / 128);
+                }
+            }
 
             index++;
         }

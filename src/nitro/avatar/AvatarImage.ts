@@ -772,6 +772,7 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
             case AvatarAction.EXPRESSION_SNOWBORD_360:
             case AvatarAction.EXPRESSION_RIDE_JUMP:
             case AvatarAction.HUG:
+            case AvatarAction.HUG_ONE:
                 if(_local_3 === AvatarAction.EFFECT)
                 {
                     if((((((_local_3 === '33') || (_local_3 === '34')) || (_local_3 === '35')) || (_local_3 === '36')) || (_local_3 === '38')) || (_local_3 === '39'))
