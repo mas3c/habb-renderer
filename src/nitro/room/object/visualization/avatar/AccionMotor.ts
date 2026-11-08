@@ -160,14 +160,18 @@ const CORAZON_BESO: Dibujo = { filas: [
     '...k...'
 ], paleta: { k: '#86101a', R: '#d82840', W: '#f27a8c' } };
 
+/** los pequeños del beso (7 x 6 a escala 1, como los del vídeo) */
 const CORAZON_MINI: Dibujo = { filas: [
-    'k.k',
-    'RRR',
-    '.k.'
-], paleta: { k: '#9a1424', R: '#d82840' } };
+    '.kk.kk.',
+    'kRRkRRk',
+    'kRRRRRk',
+    '.kRRRk.',
+    '..kRk..',
+    '...k...'
+], paleta: { k: '#86101a', R: '#d82840' } };
 
 /** altura del corazón grande del beso: ~20 px por encima de la cabeza (medido en el vídeo de referencia) */
-const CORAZON_Y = -94;
+const CORAZON_Y = -100;
 
 const ROSAS = [ '#ff3b6b', '#ff6f91', '#ff9fb8', '#ffd1dc', '#ff2f5c', '#ffc0cb' ];
 const HUMOS = [ '#c7ccd6', '#b3b9c4', '#d9dde4', '#a5acb8' ];
@@ -303,7 +307,8 @@ class Lienzo
 
 /**
  * Lo que hace el propio keko mientras dura la acción (piezas reales del avatar, no un dibujo): da medio paso hacia el otro
- * andando, se queda con los brazos estirados ('abz' = 'crr' en las dos manos; 'uno' = solo la derecha) y los ojos
+ * andando, se queda con los brazos puestos (estados de acción del keko: 'abz' = 'crr' en las dos manos, 'abz1' = la
+ * derecha, 'abzi' = la izquierda, 'abzm' = la derecha subida a la cara como al beber, 'drk') y los ojos
  * cerrados, y vuelve andando a su sitio. «arrimar» es la parte de la casilla de delante que avanza (sin cambiar de casilla).
  */
 export interface Pose
@@ -312,7 +317,9 @@ export interface Pose
     entra: number;
     quieto: number;
     sale: number;
-    brazos?: 'dos' | 'uno';
+    brazos?: string[];
+    /** se dibuja por delante del otro mientras dura (el que besa tapa parte de la besada, como en el vídeo) */
+    delante?: boolean;
     ojos?: boolean;
     /** saluda con la mano mientras vuelve (la del beso) */
     ola?: boolean;
@@ -321,7 +328,7 @@ export interface Pose
 }
 
 /** la pose en el instante t: f = cuánto está arrimado (0-1) */
-export interface PoseAhora { f: number, andando: boolean, brazos: string, ojos: boolean, ola: boolean }
+export interface PoseAhora { f: number, andando: boolean, brazos: string[], ojos: boolean, ola: boolean }
 
 interface Accion
 {
@@ -404,7 +411,7 @@ const ACCIONES: { [nombre: string]: Accion } = {
     // separarse quedan dos corazoncitos apilados un momento
     besar: {
         duracion: 2750,
-        pose: { arrimar: 0.27, entra: 250, quieto: 2050, sale: 400, brazos: 'dos', ojos: true, centro: true },
+        pose: { arrimar: 0.32, entra: 250, quieto: 2050, sale: 400, brazos: [ 'abzm', 'abzi' ], ojos: true, centro: true, delante: true },
         crear: () => ({}),
         dibujar: (l, t) =>
         {
@@ -417,7 +424,7 @@ const ACCIONES: { [nombre: string]: Accion } = {
             const crece = 0.55 + salida(entre(k, 0, 250)) * 0.45;
             const latido = 1 + Math.max(0, Math.sin(k / 95)) * 0.06;
 
-            l.dibujo(CORAZON_BESO, 0, CORAZON_Y - entre(k, 0, 400) * 3, 1.6 * crece * latido, grande);
+            l.dibujo(CORAZON_BESO, 0, CORAZON_Y - entre(k, 0, 400) * 3, 2 * crece * latido, grande);
 
             // tandas de tres corazoncitos que suben y se separan
             for(let tanda = 0; tanda < 3; tanda++)
@@ -426,24 +433,24 @@ const ACCIONES: { [nombre: string]: Accion } = {
 
                 if(v <= 0 || v >= 1) continue;
 
-                for(const [ dx, dy ] of [ [ -7, 6 ], [ 6, 8 ], [ -10, -1 ] ])
+                for(const [ dx, dy ] of [ [ -8, 10 ], [ 7, 12 ], [ -12, 2 ] ])
                 {
-                    l.dibujo(CORAZON_MINI, dx * (1 + v * 0.6), CORAZON_Y + dy - v * 8, 2, 1 - Math.pow(v, 3));
+                    l.dibujo(CORAZON_MINI, dx * (1 + v * 0.6), CORAZON_Y + dy - v * 8, 1, 1 - Math.pow(v, 3));
                 }
             }
 
             // los dos apilados del final
             const final = tramo(k, 1450, 1550, 2300, 2450);
 
-            l.dibujo(CORAZON_MINI, 0, CORAZON_Y + 4, 2, final);
-            l.dibujo(CORAZON_MINI, 0, CORAZON_Y + 10, 2, final);
+            l.dibujo(CORAZON_MINI, 0, CORAZON_Y + 2, 1, final);
+            l.dibujo(CORAZON_MINI, 0, CORAZON_Y + 8, 1, final);
         }
     },
 
     // la besada: medio paso hacia él, un brazo hacia él, ojos cerrados y saluda al volver (los corazones van en «besar»)
     besar_recibe: {
         duracion: 2500,
-        pose: { arrimar: 0.27, entra: 250, quieto: 2050, sale: 400, brazos: 'uno', ojos: true, ola: true },
+        pose: { arrimar: 0.32, entra: 250, quieto: 2050, sale: 400, brazos: [ 'abzm' ], ojos: true, ola: true },
         crear: () => ({}),
         dibujar: () => {}
     },
@@ -452,7 +459,7 @@ const ACCIONES: { [nombre: string]: Accion } = {
     // le llega «bofetada» a la vez
     golpear: {
         duracion: 900,
-        pose: { arrimar: 0.3, entra: 150, quieto: 500, sale: 300, brazos: 'uno' },
+        pose: { arrimar: 0.3, entra: 150, quieto: 500, sale: 300, brazos: [ 'abz1' ] },
         crear: () => ({}),
         dibujar: () => {}
     },
@@ -460,7 +467,7 @@ const ACCIONES: { [nombre: string]: Accion } = {
     // abrazo: anillos rosas que se abren desde el pecho y corazones dando vueltas alrededor
     abrazo: {
         duracion: 3200,
-        pose: { arrimar: 0.3, entra: 250, quieto: 2800, sale: 400, brazos: 'dos' },
+        pose: { arrimar: 0.3, entra: 250, quieto: 2800, sale: 400, brazos: [ 'abz' ] },
         crear: azar => ({ orbita: Array.from({ length: 6 }, (_, i) => ({ fase: (i / 6) * VUELTA, alto: PECHO_Y - 10 + (azar() * 2 - 1) * 10 })) }),
         dibujar: (l, t, d) =>
         {
@@ -1054,11 +1061,11 @@ export class AccionMotor
 
         if(!p || (t < 0) || (t >= (p.quieto + p.sale))) return null;
 
-        if(t < p.entra) return { f: t / p.entra, andando: true, brazos: '', ojos: false, ola: false };
+        if(t < p.entra) return { f: t / p.entra, andando: true, brazos: [], ojos: false, ola: false };
 
-        if(t < p.quieto) return { f: 1, andando: false, brazos: (p.brazos || ''), ojos: !!p.ojos, ola: false };
+        if(t < p.quieto) return { f: 1, andando: false, brazos: (p.brazos || []), ojos: !!p.ojos, ola: false };
 
-        return { f: 1 - ((t - p.quieto) / p.sale), andando: true, brazos: '', ojos: false, ola: !!p.ola };
+        return { f: 1 - ((t - p.quieto) / p.sale), andando: true, brazos: [], ojos: false, ola: !!p.ola };
     }
 
     public static datos(accion: Accion, semilla: number): any

@@ -332,6 +332,10 @@ export const HabboAvatarPartSets = {
                 'activeParts': [ { 'setType': 'rh' }, { 'setType': 'rhs' }, { 'setType': 'rs' }, { 'setType': 'rc' } ]
             },
             {
+                'id': 'handLeftBare',
+                'activeParts': [ { 'setType': 'lh' }, { 'setType': 'lhs' }, { 'setType': 'ls' }, { 'setType': 'lc' } ]
+            },
+            {
                 'id': 'handLeft',
                 'activeParts': [
                     {

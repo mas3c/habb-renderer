@@ -239,7 +239,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         // la pose de la acción (andar, brazos, ojos) entra y sale sin que el servidor cambie nada del avatar
         this._pose = this._accion ? AccionMotor.pose(this._accion, (performance.now() - this._accionInicio)) : null;
 
-        const poseClave = this._pose ? `${ this._pose.andando }|${ this._pose.brazos }|${ this._pose.ojos }|${ this._pose.ola }` : '';
+        const poseClave = this._pose ? `${ this._pose.andando }|${ this._pose.brazos.join(',') }|${ this._pose.ojos }|${ this._pose.ola }` : '';
 
         if(poseClave !== this._poseClave)
         {
@@ -388,6 +388,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                 {
                     sprite.relativeDepth = (AvatarVisualization.AVATAR_SPRITE_DEFAULT_DEPTH + _local_20[2]);
                 }
+
+                // el que besa, por delante del otro aunque el otro sea el usuario propio
+                if(this._pose && this._accion && this._accion.pose && this._accion.pose.delante) sprite.relativeDepth -= (AvatarVisualization.AVATAR_OWN_DEPTH_ADJUST * 2);
 
                 if(this._ownUser)
                 {
@@ -1182,7 +1185,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         if(this._carryObject > 0) this._avatarImage.appendAction(AvatarAction.CARRY_OBJECT, this._carryObject);
 
-        if(pose && pose.brazos) this._avatarImage.appendAction((pose.brazos === 'uno') ? AvatarAction.HUG_ONE : AvatarAction.HUG);
+        if(pose) for(const brazo of pose.brazos) this._avatarImage.appendAction(brazo);
 
         if(pose && pose.ola) this._avatarImage.appendAction(AvatarAction.EXPRESSION_WAVE);
 
@@ -1419,13 +1422,13 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
                 (addition as AccionAddition).pintar(sprite, t);
 
-                // los corazones del beso, en el punto medio entre los dos (media casilla hacia donde mira)
+                // los corazones del beso, entre los dos y algo más cerca del que besa (como en el vídeo): 0,4 de casilla
                 if(sprite && this._accion.pose && this._accion.pose.centro)
                 {
                     const casilla = AvatarVisualization.CASILLA[this.direccion8()];
 
-                    sprite.offsetX += Math.round((casilla[0] * this._scale) / 128);
-                    sprite.offsetY += Math.round((casilla[1] * this._scale) / 128);
+                    sprite.offsetX += Math.round((casilla[0] * this._scale * 0.4) / 64);
+                    sprite.offsetY += Math.round((casilla[1] * this._scale * 0.4) / 64);
                 }
             }
 

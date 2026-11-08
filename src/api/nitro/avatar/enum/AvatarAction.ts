@@ -12,6 +12,8 @@ export class AvatarAction
     public static EXPRESSION_RIDE_JUMP = 'ridejump';
     public static HUG = 'abz';
     public static HUG_ONE = 'abz1';
+    public static HUG_LEFT = 'abzi';
+    public static HUG_FACE = 'abzm';
     public static EXPRESSION_SNOWBOARD_OLLIE = 'sbollie';
     public static EXPRESSION_SNOWBORD_360 = 'sb360';
     public static EXPRESSION_WAVE = 'wave';

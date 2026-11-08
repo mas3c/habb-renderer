@@ -155,7 +155,10 @@ export class AvatarRenderManager extends NitroManager implements IAvatarRenderMa
                 // y con una sola mano (la del beso que recibe, golpear)
                 this._structure.updateActions({ actions: [
                     { id: 'Hug', state: AvatarAction.HUG, precedence: 206, geometryType: 'vertical', activePartSet: 'handBoth', assetPartDefinition: 'crr', prevents: [ 'dance' ] },
-                    { id: 'HugOne', state: AvatarAction.HUG_ONE, precedence: 206, geometryType: 'vertical', activePartSet: 'handRightBare', assetPartDefinition: 'crr', prevents: [ 'dance' ] }
+                    { id: 'HugOne', state: AvatarAction.HUG_ONE, precedence: 206, geometryType: 'vertical', activePartSet: 'handRightBare', assetPartDefinition: 'crr', prevents: [ 'dance' ] },
+                    // el beso: la izquierda por delante y la derecha subida a la cara del otro (la postura de beber)
+                    { id: 'HugLeft', state: AvatarAction.HUG_LEFT, precedence: 206, geometryType: 'vertical', activePartSet: 'handLeftBare', assetPartDefinition: 'crr', prevents: [ 'dance' ] },
+                    { id: 'HugFace', state: AvatarAction.HUG_FACE, precedence: 207, geometryType: 'vertical', activePartSet: 'handRightBare', assetPartDefinition: 'drk', prevents: [ 'dance' ] }
                 ] });
 
                 this._actionsReady = true;
