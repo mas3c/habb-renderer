@@ -13,6 +13,7 @@ export class AvatarModelGeometry
     private _itemIdToBodyPartMap: Map<string, Map<string, GeometryBodyPart>>;
     private _transformation: Matrix4x4;
     private _canvases: Map<string, Map<string, AvatarCanvas>>;
+    private _orderBefore: Map<string, string>; // order-before del XML oficial de Habbo (petl/petr, la mascota de pt/ptl/ptr)
 
     constructor(k: any)
     {
@@ -22,6 +23,7 @@ export class AvatarModelGeometry
         this._itemIdToBodyPartMap = new Map();
         this._transformation = new Matrix4x4();
         this._canvases = new Map();
+        this._orderBefore = new Map();
 
         const camera = k.camera;
 
@@ -75,6 +77,8 @@ export class AvatarModelGeometry
                         const geometryBodyPart = new GeometryBodyPart(bodyPart);
 
                         bodyParts.set(geometryBodyPart.id, geometryBodyPart);
+
+                        if(bodyPart.orderBefore) this._orderBefore.set(geometryBodyPart.id, bodyPart.orderBefore);
 
                         for(const part of geometryBodyPart.getPartIds(null))
                         {
@@ -266,6 +270,19 @@ export class AvatarModelGeometry
             if(!set) continue;
 
             ids.push(set[1].id);
+        }
+
+        for(const [ id, before ] of this._orderBefore)
+        {
+            const index = ids.indexOf(id);
+
+            if(index === -1) continue;
+
+            ids.splice(index, 1);
+
+            const target = ids.indexOf(before);
+
+            if(target !== -1) ids.splice(target, 0, id);
         }
 
         return ids;

@@ -2,6 +2,28 @@ export const HabboAvatarPartSets = {
     'partSets': {
         'partSet': [
             {
+                'setType': 'mcr',
+                'flippedSetType': 'mcl'
+            },
+            {
+                'setType': 'ptr',
+                'flippedSetType': 'ptl'
+            },
+            {
+                'setType': 'pt'
+            },
+            {
+                'setType': 'mc'
+            },
+            {
+                'setType': 'mcl',
+                'flippedSetType': 'mcr'
+            },
+            {
+                'setType': 'ptl',
+                'flippedSetType': 'ptr'
+            },
+            {
                 'setType': 'ri',
                 'flippedSetType': 'ri'
             },
@@ -107,8 +129,54 @@ export const HabboAvatarPartSets = {
         ],
         'activePartSets': [
             {
+                'id': 'misc',
+                'activeParts': [
+                    {
+                        'setType': 'mc'
+                    },
+                    {
+                        'setType': 'mcr'
+                    },
+                    {
+                        'setType': 'mcl'
+                    }
+                ]
+            },
+            {
+                'id': 'pet',
+                'activeParts': [
+                    {
+                        'setType': 'pt'
+                    },
+                    {
+                        'setType': 'ptr'
+                    },
+                    {
+                        'setType': 'ptl'
+                    }
+                ]
+            },
+            {
                 'id': 'figure',
                 'activeParts': [
+                    {
+                        'setType': 'mcr'
+                    },
+                    {
+                        'setType': 'ptr'
+                    },
+                    {
+                        'setType': 'pt'
+                    },
+                    {
+                        'setType': 'mc'
+                    },
+                    {
+                        'setType': 'mcl'
+                    },
+                    {
+                        'setType': 'ptl'
+                    },
                     {
                         'setType': 'rh'
                     },
@@ -273,6 +341,9 @@ export const HabboAvatarPartSets = {
                 'id': 'handRight',
                 'activeParts': [
                     {
+                        'setType': 'mcr'
+                    },
+                    {
                         'setType': 'rh'
                     },
                     {
@@ -292,6 +363,9 @@ export const HabboAvatarPartSets = {
             {
                 'id': 'handRightAndHead',
                 'activeParts': [
+                    {
+                        'setType': 'mcr'
+                    },
                     {
                         'setType': 'rh'
                     },
@@ -339,6 +413,9 @@ export const HabboAvatarPartSets = {
                 'id': 'handLeft',
                 'activeParts': [
                     {
+                        'setType': 'mcl'
+                    },
+                    {
                         'setType': 'lh'
                     },
                     {
@@ -358,6 +435,24 @@ export const HabboAvatarPartSets = {
             {
                 'id': 'walk',
                 'activeParts': [
+                    {
+                        'setType': 'mcl'
+                    },
+                    {
+                        'setType': 'ptl'
+                    },
+                    {
+                        'setType': 'mcr'
+                    },
+                    {
+                        'setType': 'ptr'
+                    },
+                    {
+                        'setType': 'pt'
+                    },
+                    {
+                        'setType': 'mc'
+                    },
                     {
                         'setType': 'bd'
                     },
@@ -402,6 +497,18 @@ export const HabboAvatarPartSets = {
             {
                 'id': 'sit',
                 'activeParts': [
+                    {
+                        'setType': 'pt'
+                    },
+                    {
+                        'setType': 'ptr'
+                    },
+                    {
+                        'setType': 'ptl'
+                    },
+                    {
+                        'setType': 'mc'
+                    },
                     {
                         'setType': 'bd'
                     },

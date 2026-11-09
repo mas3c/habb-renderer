@@ -296,6 +296,132 @@ export const HabboAvatarAnimations = {
                             'assetPartDefinition': 'wlk'
                         }
                     ]
+                },
+                {
+                    'setType': 'mcl',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 2,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 3,
+                            'assetPartDefinition': 'wlk'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'mcr',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 2,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 3,
+                            'assetPartDefinition': 'wlk'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'pt',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 2,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 3,
+                            'assetPartDefinition': 'wlk'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'ptr',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 2,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 3,
+                            'assetPartDefinition': 'wlk'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'ptl',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 2,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 3,
+                            'assetPartDefinition': 'wlk'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'mc',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 2,
+                            'assetPartDefinition': 'wlk'
+                        },
+                        {
+                            'number': 3,
+                            'assetPartDefinition': 'wlk'
+                        }
+                    ]
                 }
             ]
         },
@@ -371,6 +497,71 @@ export const HabboAvatarAnimations = {
                         },
                         {
                             'number': 3,
+                            'assetPartDefinition': 'wav'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'mcl',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wav'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wav'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'pt',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wav'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wav'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'ptr',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wav'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wav'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'ptl',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wav'
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wav'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'mc',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wav'
+                        },
+                        {
+                            'number': 1,
                             'assetPartDefinition': 'wav'
                         }
                     ]
@@ -459,6 +650,15 @@ export const HabboAvatarAnimations = {
                             'assetPartDefinition': 'wav'
                         }
                     ]
+                },
+                {
+                    'setType': 'mcl',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wav'
+                        }
+                    ]
                 }
             ]
         },
@@ -497,6 +697,21 @@ export const HabboAvatarAnimations = {
                 },
                 {
                     'setType': 'lc',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'wav',
+                            'repeats': 15
+                        },
+                        {
+                            'number': 1,
+                            'assetPartDefinition': 'wav',
+                            'repeats': 15
+                        }
+                    ]
+                },
+                {
+                    'setType': 'mcl',
                     'frames': [
                         {
                             'number': 0,
@@ -586,6 +801,15 @@ export const HabboAvatarAnimations = {
                             'repeats': 10
                         }
                     ]
+                },
+                {
+                    'setType': 'mcr',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'drk'
+                        }
+                    ]
                 }
             ]
         },
@@ -644,6 +868,15 @@ export const HabboAvatarAnimations = {
                         {
                             'number': 0,
                             'assetPartDefinition': 'sml'
+                        }
+                    ]
+                },
+                {
+                    'setType': 'mcr',
+                    'frames': [
+                        {
+                            'number': 0,
+                            'assetPartDefinition': 'drk'
                         }
                     ]
                 }
