@@ -101,6 +101,18 @@ export class RoomObjectSpriteVisualization implements IRoomObjectSpriteVisualiza
         return sprite;
     }
 
+    /** quita un sprite de en medio: los de detrás bajan un puesto con lo que tenían */
+    protected removeSpriteAtIndex(index: number): void
+    {
+        if((index < 0) || (index >= this._sprites.length)) return;
+
+        const sprite = this._sprites[index] as RoomObjectSprite;
+
+        if(sprite) sprite.dispose();
+
+        this._sprites.splice(index, 1);
+    }
+
     protected createSprites(count: number): void
     {
         while(this._sprites.length > count)

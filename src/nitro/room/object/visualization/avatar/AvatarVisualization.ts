@@ -1244,7 +1244,10 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             if(sprite.id !== AvatarVisualization.AVATAR) spriteCount++;
         }
 
-        if(spriteCount !== this.totalSprites) this.createSprites(spriteCount);
+        // los sprites de las adiciones van detrás de las piezas y se rehacen siempre: se trunca hasta donde empezaban, así
+        // uno que era de una adición no pasa a ser pieza con su dibujo (si la pieza aún no tiene asset se quedaba a la vista)
+        this.createSprites(Math.min(spriteCount, this._extraSpritesStartIndex));
+        this.createSprites(spriteCount);
 
         this._extraSpritesStartIndex = spriteCount;
 
@@ -1616,7 +1619,12 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         if(!addition) return;
 
+        // cada adición pinta en el sprite de su puesto (desde _extraSpritesStartIndex, en el orden del Map): con ella se va
+        // su sprite y las de detrás bajan un puesto con el suyo. Antes el último se quedaba con su dibujo y la de delante
+        // pintaba en el de la quitada: la placa VIP salía doble al acabar el Splash de entrada (09-11).
+        this.removeSpriteAtIndex(this._extraSpritesStartIndex + [ ...this._additions.keys() ].indexOf(id));
         this._additions.delete(addition.id);
+        this.updateSpriteCounter++;
 
         addition.dispose();
     }
