@@ -50,6 +50,8 @@ export class RoomObjectVisualizationFactory implements IRoomObjectVisualizationF
                 visualization = FurnitureVisualization;
                 break;
             case RoomObjectVisualizationType.FURNITURE_ANIMATED:
+            case 'furniture_furnichest': // Cofres Wired (wf_storage_furni*): en el AIR, animado (0 cerrado, 1 abierto)
+            case 'furniture_coinschest': // Cofres Wired (wf_storage_coins*); sin esto el cofre no se pinta
                 visualization = FurnitureAnimatedVisualization;
                 break;
             case RoomObjectVisualizationType.FURNITURE_RESETTING_ANIMATED:
@@ -172,6 +174,8 @@ export class RoomObjectVisualizationFactory implements IRoomObjectVisualizationF
                 visualizationData = new FurnitureVisualizationData();
                 break;
             case RoomObjectVisualizationType.FURNITURE_ANIMATED:
+            case 'furniture_furnichest':
+            case 'furniture_coinschest':
             case RoomObjectVisualizationType.FURNITURE_RESETTING_ANIMATED:
             case RoomObjectVisualizationType.FURNITURE_POSTER:
             case RoomObjectVisualizationType.FURNITURE_HABBOWHEEL:
