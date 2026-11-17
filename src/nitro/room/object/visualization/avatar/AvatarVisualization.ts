@@ -110,6 +110,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
     /** la casilla de delante en pantalla según hacia dónde mira (a escala 64) */
     private static CASILLA: number[][] = [ [ 32, -16 ], [ 64, 0 ], [ 32, 16 ], [ 0, 32 ], [ -32, 16 ], [ -64, 0 ], [ -32, -16 ], [ 0, -32 ] ];
+    private static ARRIMAR_DIR: number[] = [ 0.5, 1, 0.5, 0.4, 0.5, 1, 0.5, 0.4 ];
     private _sombra = 1;
     private _auraSpec: string = '';
     // Como Hobbaz: el aura solo se pinta con el cursor encima del avatar (FIGURE_HIGHLIGHT, que
@@ -405,7 +406,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
                 }
 
                 // el que besa, por delante del otro aunque el otro sea el usuario propio
-                if(this._pose && this._accion && this._accion.pose && this._accion.pose.delante) sprite.relativeDepth -= (AvatarVisualization.AVATAR_OWN_DEPTH_ADJUST * 2);
+                if(this._pose && this._accion && this._accion.pose && this._accion.pose.delante && ((this.direccion8() % 4) === 1)) sprite.relativeDepth -= (AvatarVisualization.AVATAR_OWN_DEPTH_ADJUST * 2);
 
                 if(this._ownUser)
                 {
@@ -1390,15 +1391,22 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     {
         if(!this._pose || !this._accion || !this._accion.pose) return [ 0, 0 ];
 
-        const casilla = AvatarVisualization.CASILLA[this.direccion8()];
-        const k = (this._pose.f * this._accion.pose.arrimar * scale) / 64;
+        const dir = this.direccion8();
+        const casilla = AvatarVisualization.CASILLA[dir];
+        // «arrimar» está medido de lado (casilla de 64 px en pantalla); de frente en diagonal (N/S/E/O, 36 px) o uno delante
+        // del otro (32 px) se acercan menos para no taparse del todo
+        const k = (this._pose.f * this._accion.pose.arrimar * AvatarVisualization.ARRIMAR_DIR[dir] * scale) / 64;
         // el vaivén (abrazo, tambaleo del golpeado) va de lado en pantalla
         const lado = ((this._pose.lado || 0) * scale) / 64;
 
         // el respingo del nalgueado sube unos px
         const alto = conAlto ? (((this._pose.alto || 0) * scale) / 64) : 0;
 
-        return [ Math.round((casilla[0] * k) + lado), Math.round((casilla[1] * k) - alto) ];
+        // uno justo delante del otro (mirando 3 / 7): el de delante taparía entero al de detrás; en el beso y el abrazo cada uno se
+        // aparta un poco a su lado (el de delante a la izquierda) y se ven las dos caras
+        const aparte = (((dir % 4) === 3) && !this._accion.pose.curva) ? (((dir === 3) ? 1 : -1) * 10 * this._pose.f * scale) / 64 : 0;
+
+        return [ Math.round((casilla[0] * k) + lado + aparte), Math.round((casilla[1] * k) - alto) ];
     }
 
     private empezarAccion(spec: string): boolean

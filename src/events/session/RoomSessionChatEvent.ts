@@ -26,8 +26,9 @@ export class RoomSessionChatEvent extends RoomSessionEvent
     private _style: number;
     private _bubbleWidth: number;
     private _hideName: boolean;
+    private _accion: boolean;
 
-    constructor(type: string, session: IRoomSession, objectId: number, message: string, chatType: number, style: number = 0, links: string[] = null, extraParam: number = -1, bubbleWidth: number = -1, hideName: boolean = false)
+    constructor(type: string, session: IRoomSession, objectId: number, message: string, chatType: number, style: number = 0, links: string[] = null, extraParam: number = -1, bubbleWidth: number = -1, hideName: boolean = false, accion: boolean = false)
     {
         super(type, session);
 
@@ -39,6 +40,7 @@ export class RoomSessionChatEvent extends RoomSessionEvent
         this._style = style;
         this._bubbleWidth = bubbleWidth;
         this._hideName = hideName;
+        this._accion = accion;
     }
 
     /** Ancho forzado de la burbuja (wired «Mensaje»): 0 ancho, 1 normal, 2 estrecho; -1 = el de la sala. */
@@ -48,6 +50,11 @@ export class RoomSessionChatEvent extends RoomSessionEvent
     }
 
     /** La burbuja sale sin nombre (wired «Bot habla» con «ocultar nombre del bot»). */
+    public get accion(): boolean
+    {
+        return this._accion;
+    }
+
     public get hideName(): boolean
     {
         return this._hideName;

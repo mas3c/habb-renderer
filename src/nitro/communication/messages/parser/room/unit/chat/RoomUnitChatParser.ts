@@ -10,6 +10,8 @@ export class RoomUnitChatParser implements IMessageParser
     private _bubbleWidth: number = -1;
     // «ocultar nombre del bot» (wired Bot habla / Bot habla a usuario)
     private _hideName: boolean = false;
+    /** frase de acción del servidor («*Le ha dado un beso a X*»): la marca solo la pone el emulador, en la cola del paquete */
+    private _accion: boolean = false;
     private _urls: string[];
     private _messageLength: number;
 
@@ -23,6 +25,7 @@ export class RoomUnitChatParser implements IMessageParser
         this._messageLength = 0;
         this._bubbleWidth = -1;
         this._hideName = false;
+        this._accion = false;
 
         return true;
     }
@@ -43,6 +46,7 @@ export class RoomUnitChatParser implements IMessageParser
         // cola opcional (Polaris/Comet): el emulador viejo no la manda
         this._bubbleWidth = wrapper.bytesAvailable ? wrapper.readInt() : -1;
         this._hideName = wrapper.bytesAvailable ? wrapper.readBoolean() : false;
+        this._accion = wrapper.bytesAvailable ? wrapper.readBoolean() : false;
 
         return true;
     }
@@ -83,6 +87,11 @@ export class RoomUnitChatParser implements IMessageParser
     public get bubbleWidth(): number
     {
         return this._bubbleWidth;
+    }
+
+    public get accion(): boolean
+    {
+        return this._accion;
     }
 
     public get hideName(): boolean
