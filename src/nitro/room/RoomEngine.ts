@@ -2566,6 +2566,10 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
             case RoomObjectVariable.FIGURE_IS_PLAYING_GAME:
                 message = new ObjectAvatarPlayingGameUpdateMessage(value === 1);
                 break;
+            case RoomObjectVariable.FIGURE_JUEGO:
+                // el globo «está jugando»: un valor de texto en el modelo, sin mensaje propio (setValue no hace nada si no cambia)
+                object.model.setValue(RoomObjectVariable.FIGURE_JUEGO, (parameter || ''));
+                return true;
             case RoomObjectVariable.FIGURE_GUIDE_STATUS:
                 message = new ObjectAvatarGuideStatusUpdateMessage(value);
                 break;

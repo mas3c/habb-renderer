@@ -37,6 +37,8 @@ export class RoomObjectVariable
     public static FIGURE_SPLASH: string = 'figure_splash';
     public static FIGURE_VIP: string = 'figure_vip';
     public static FIGURE_IS_PLAYING_GAME: string = 'figure_is_playing_game';
+    /** Globo «está jugando»: classname del furni cuyo icono va dentro (vacío = no juega). Estado «jg» del avatar. */
+    public static FIGURE_JUEGO: string = 'figure_juego';
     public static FIGURE_GUIDE_STATUS: string = 'figure_guide_status';
     public static FIGURE_EXPRESSION: string = 'figure_expression';
     public static HEAD_DIRECTION: string = 'head_direction';

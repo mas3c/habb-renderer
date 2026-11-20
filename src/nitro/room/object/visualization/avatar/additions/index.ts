@@ -10,6 +10,7 @@ export * from './HabbiconAddition';
 export * from './HabbiconAssets';
 export * from './IAvatarAddition';
 export * from './IExpressionAddition';
+export * from './JugandoAddition';
 export * from './MutedBubbleAddition';
 export * from './NumberBubbleAddition';
 export * from './TypingBubbleAddition';

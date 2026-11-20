@@ -8,7 +8,7 @@ import { AccionAddition } from './additions/AccionAddition';
 import { AccionMotor, PoseAhora } from './AccionMotor';
 import { SplashFiltro } from './SplashFiltro';
 import { SplashMotor } from './SplashMotor';
-import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition, VipAddition } from './additions';
+import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, JugandoAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition, VipAddition } from './additions';
 import { AvatarAura } from './AvatarAura';
 import { AvatarVisualizationData } from './AvatarVisualizationData';
 
@@ -27,6 +27,7 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private static SPLASH_ID: number = 10;
     private static VIP_ID: number = 11;
     private static ACCION_ID: number = 12;
+    private static JUGANDO_ID: number = 13;
     private static OWN_USER_ID: number = 4;
     private static UPDATE_TIME_INCREASER: number = 41;
     private static SIN_FILTROS: any[] = [];
@@ -981,6 +982,19 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             needsUpdate = true;
         }
 
+        // globo «está jugando» (UNO, Parchís...): FIGURE_JUEGO = classname del furni cuyo icono lleva; vacío = no juega
+        const juego = (model.getValue<string>(RoomObjectVariable.FIGURE_JUEGO) || '');
+        const jugandoAddition = this.getAddition(AvatarVisualization.JUGANDO_ID) as JugandoAddition;
+
+        if((jugandoAddition ? jugandoAddition.icono : '') !== juego)
+        {
+            if(jugandoAddition) this.removeAddition(AvatarVisualization.JUGANDO_ID);
+
+            if(juego) this.addAddition(new JugandoAddition(AvatarVisualization.JUGANDO_ID, juego, this));
+
+            needsUpdate = true;
+        }
+
         // Splash: cada valor nuevo (el número cambia aunque sea el mismo Splash) lo arranca
         const splashValor = (model.getValue<string>(RoomObjectVariable.FIGURE_SPLASH) || '');
 
@@ -1591,6 +1605,12 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
             index++;
         }
+    }
+
+    /** Está saliendo la burbuja de «escribiendo»: el globo de juego se aparta mientras tanto. */
+    public get escribiendo(): boolean
+    {
+        return !!this._additions && this._additions.has(AvatarVisualization.TYPING_BUBBLE_ID);
     }
 
     /** Hay otra burbuja en el sitio de la placa VIP (Habbicon o número de juego): la placa se aparta mientras tanto. */

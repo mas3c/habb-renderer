@@ -858,6 +858,7 @@ export class RoomMessageHandler extends Disposable
             let postureUpdate = false;
             let postureType = RoomObjectVariable.STD;
             let parameter = '';
+            let juego = '';
 
             if(status.actions && status.actions.length)
             {
@@ -887,6 +888,10 @@ export class RoomMessageHandler extends Disposable
                             parameter = action.value;
                             break;
                         case 'trd': break;
+                        case 'jg':
+                            // «está jugando» (centro de juegos): no es una postura
+                            juego = action.value;
+                            break;
                         default:
                             postureUpdate = true;
                             postureType = action.action;
@@ -895,6 +900,8 @@ export class RoomMessageHandler extends Disposable
                     }
                 }
             }
+
+            this._roomCreator.updateRoomObjectUserAction(this._currentRoomId, status.id, RoomObjectVariable.FIGURE_JUEGO, 0, juego);
 
             if(postureUpdate) this._roomCreator.updateRoomObjectUserPosture(this._currentRoomId, status.id, postureType, parameter);
             else if(isPosture) this._roomCreator.updateRoomObjectUserPosture(this._currentRoomId, status.id, RoomObjectVariable.STD, '');
