@@ -67,6 +67,15 @@ export class RoomUnitStatusParser implements IMessageParser
             {
                 const parts = action.split(' ');
 
+                // estados propios de Habb con un espacio delante («/ jg icono/»): un cliente viejo los descarta enteros
+                // (clave vacía) en vez de tomarlos por una postura; aquí se leen como «jg icono»
+                if((parts[0] === '') && (parts.length >= 3) && parts[1])
+                {
+                    statusActions.push(new RoomUnitStatusAction(parts[1], parts[2]));
+
+                    continue;
+                }
+
                 if(parts[0] === '') continue;
 
                 if(parts.length >= 2)
