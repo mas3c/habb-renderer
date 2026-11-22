@@ -134,10 +134,10 @@ export class JugandoAddition implements IAvatarAddition
     {
         const texturas = JugandoAddition._texturas.get(this._icono);
         const textura = texturas ? (this._pequena ? texturas.pequena : texturas.grande) : null;
-        // si en su sitio hay otra burbuja (escribiendo, Habbicon, número), esa manda mientras dura
-        const visible = !!textura && !this._visualization.cabezaOcupada && !this._visualization.escribiendo;
-        // encima de la placa VIP o de lo que pinte el efecto sobre la cabeza, si lo hay
-        const cima = Math.min(this._visualization.cimaVip || 0, this._visualization.cimaEfecto || 0);
+        const visible = !!textura;
+        // siempre a la vista: encima de la placa VIP, de lo que pinte el efecto y de las burbujas de un rato
+        // (escribiendo, Habbicon, número), si las hay
+        const cima = Math.min(this._visualization.cimaVip || 0, this._visualization.cimaEfecto || 0, this._visualization.cimaBurbujas);
         const abajo = cima ? Math.min(this._base, cima - (this._pequena ? 1 : 2)) : this._base;
         const offsetY = visible ? (abajo - textura.height) : 0;
 

@@ -1607,10 +1607,28 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         }
     }
 
-    /** Está saliendo la burbuja de «escribiendo»: el globo de juego se aparta mientras tanto. */
-    public get escribiendo(): boolean
+    /**
+     * Borde de arriba de las burbujas que salen un rato sobre la cabeza («escribiendo», Habbicon, número de juego);
+     * 0 = ninguna. El globo de juego no se esconde: se pone encima mientras duran.
+     */
+    public get cimaBurbujas(): number
     {
-        return !!this._additions && this._additions.has(AvatarVisualization.TYPING_BUBBLE_ID);
+        if(!this._additions) return 0;
+
+        let cima = 0;
+        let index = this._extraSpritesStartIndex;
+
+        for(const addition of this._additions.values())
+        {
+            const id = addition.id;
+            const sprite = ((id === AvatarVisualization.TYPING_BUBBLE_ID) || (id === AvatarVisualization.HABBICON_ID) || (id === AvatarVisualization.NUMBER_BUBBLE_ID)) ? this.getSprite(index) : null;
+
+            if(sprite && sprite.visible && sprite.texture) cima = Math.min(cima, sprite.offsetY);
+
+            index++;
+        }
+
+        return cima;
     }
 
     /** Hay otra burbuja en el sitio de la placa VIP (Habbicon o número de juego): la placa se aparta mientras tanto. */
