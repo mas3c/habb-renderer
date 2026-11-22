@@ -180,6 +180,11 @@ export class PetVisualization extends FurnitureAnimatedVisualization
 
         if(alphaMultiplier === null || isNaN(alphaMultiplier)) alphaMultiplier = 1;
 
+        // «Enfocar» del cliente (components/room/widgets/foco): 0,5 a las mascotas no enfocadas
+        const focoAlpha = model.getValue<number>(RoomObjectVariable.FIGURE_FOCUS_ALPHA);
+
+        if((typeof focoAlpha === 'number') && !isNaN(focoAlpha)) alphaMultiplier *= focoAlpha;
+
         if(this._alphaMultiplier !== alphaMultiplier)
         {
             this._alphaMultiplier = alphaMultiplier;
