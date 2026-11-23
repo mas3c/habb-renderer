@@ -140,6 +140,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private _wiredSoloAlfa: Filter[] = null;
     private _wiredFiltros: Filter[] = null;
     private _wiredClic = false;
+    // «Enfocar»: el mismo alpha, en las adiciones (los sprites desde _extraSpritesStartIndex), que el wired no toca
+    private _focoAlfa: AlphaFilter = null;
+    private _focoSolo: Filter[] = null;
     private _filtrosCache: any[] = null;
     private _filtrosClave: any[] = [];
     private _needsUpdate: boolean;
@@ -340,6 +343,15 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             for(const addition of this._additions.values())
             {
                 const sprite = this.getSprite(index++);
+
+                // «Enfocar»: las adiciones de un no enfocado, a 0,5 como el resto del keko (ninguna usa filters propios)
+                const foco = (this._focoSolo || AvatarVisualization.SIN_FILTROS);
+
+                if(sprite && (sprite.filters !== foco))
+                {
+                    sprite.filters = foco;
+                    this.updateSpriteCounter++;
+                }
 
                 if(addition.id === AvatarVisualization.ESTELA_ID) continue;
 
@@ -1200,6 +1212,19 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
         // el «Enfocar» del cliente se multiplica por el del wired (mismo AlphaFilter, sin tocar sprite.alpha)
         const alpha = ((valido(wiredAlpha) ? wiredAlpha : 1) * (valido(focoAlpha) ? focoAlpha : 1));
         const filtros = (model.getValue<Filter[]>(RoomObjectVariable.WIRED_VISUAL_FILTERS) || null);
+
+        if(valido(focoAlpha) && (focoAlpha < 1))
+        {
+            if(!this._focoAlfa) this._focoAlfa = new AlphaFilter(1);
+            if(!this._focoSolo) this._focoSolo = [ this._focoAlfa ];
+
+            this._focoAlfa.alpha = Math.max(0, focoAlpha);
+        }
+        else
+        {
+            this._focoSolo = null;
+        }
+
         const clic = (model.getValue<number>(RoomObjectVariable.WIRED_VISUAL_CLICK_THROUGH) === 1);
         const conAlfa = ((typeof alpha === 'number') && !isNaN(alpha) && (alpha < 1));
         const cambia = ((filtros !== this._wiredFiltros) || (clic !== this._wiredClic) || (conAlfa !== !!this._wiredSoloAlfa));
