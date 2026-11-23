@@ -406,6 +406,11 @@ export const HabboAvatarPartSets = {
                 'activeParts': [ { 'setType': 'rh' }, { 'setType': 'rhs' }, { 'setType': 'rs' }, { 'setType': 'rc' } ]
             },
             {
+                // pescando (acción «fsh»): el brazo derecho y su manga, sin el objeto de la mano (como el original)
+                'id': 'handRightNoItem',
+                'activeParts': [ { 'setType': 'rh' }, { 'setType': 'rhs' }, { 'setType': 'rs' }, { 'setType': 'rc' }, { 'setType': 'mcr' } ]
+            },
+            {
                 'id': 'handLeftBare',
                 'activeParts': [ { 'setType': 'lh' }, { 'setType': 'lhs' }, { 'setType': 'ls' }, { 'setType': 'lc' } ]
             },

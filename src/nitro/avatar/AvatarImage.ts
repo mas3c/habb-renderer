@@ -775,6 +775,7 @@ export class AvatarImage implements IAvatarImage, IAvatarEffectListener
             case AvatarAction.HUG_ONE:
             case AvatarAction.HUG_LEFT:
             case AvatarAction.HUG_FACE:
+            case AvatarAction.FISHING: // pescando: el brazo derecho con la caña (como el renderer original)
                 if(_local_3 === AvatarAction.EFFECT)
                 {
                     if((((((_local_3 === '33') || (_local_3 === '34')) || (_local_3 === '35')) || (_local_3 === '36')) || (_local_3 === '38')) || (_local_3 === '39'))

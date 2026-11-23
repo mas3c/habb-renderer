@@ -1316,6 +1316,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
         if((this._useObject > 0) && !manosLibres) this._avatarImage.appendAction(AvatarAction.USE_OBJECT, this._useObject);
 
+        // pescando: el brazo derecho adelantado sujetando la caña (la acción «fsh» del original: la postura de llevar algo)
+        if(this._fishing) this._avatarImage.appendAction(AvatarAction.FISHING);
+
         if(this._talk) this._avatarImage.appendAction(AvatarAction.TALK);
 
         if(this._sleep || this._blink || (pose && pose.ojos)) this._avatarImage.appendAction(AvatarAction.SLEEP);

@@ -1,6 +1,8 @@
 export class AvatarAction
 {
     public static CARRY_OBJECT = 'cri';
+    /** Pescando: el brazo derecho adelantado con la caña (acción «Fishing» del renderer original). */
+    public static FISHING = 'fsh';
     public static DANCE = 'dance';
     public static EFFECT = 'fx';
     public static EXPRESSION = 'expression';
