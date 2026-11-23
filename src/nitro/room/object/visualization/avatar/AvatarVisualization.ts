@@ -1106,7 +1106,11 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     /** true si cambia qué filtros lleva el keko; el valor del alpha se toca en el filtro y no hace falta más */
     private leerWired(model: IRoomObjectModel): boolean
     {
-        const alpha = model.getValue<number>(RoomObjectVariable.WIRED_VISUAL_ALPHA);
+        const wiredAlpha = model.getValue<number>(RoomObjectVariable.WIRED_VISUAL_ALPHA);
+        const focoAlpha = model.getValue<number>(RoomObjectVariable.FIGURE_FOCUS_ALPHA);
+        const valido = (v: number) => ((typeof v === 'number') && !isNaN(v));
+        // el «Enfocar» del cliente se multiplica por el del wired (mismo AlphaFilter, sin tocar sprite.alpha)
+        const alpha = ((valido(wiredAlpha) ? wiredAlpha : 1) * (valido(focoAlpha) ? focoAlpha : 1));
         const filtros = (model.getValue<Filter[]>(RoomObjectVariable.WIRED_VISUAL_FILTERS) || null);
         const clic = (model.getValue<number>(RoomObjectVariable.WIRED_VISUAL_CLICK_THROUGH) === 1);
         const conAlfa = ((typeof alpha === 'number') && !isNaN(alpha) && (alpha < 1));

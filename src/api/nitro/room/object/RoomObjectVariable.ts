@@ -94,6 +94,10 @@ export class RoomObjectVariable
     public static WIRED_VISUAL_ALPHA: string = 'wired_visual_alpha';
     public static WIRED_VISUAL_FILTERS: string = 'wired_visual_filters';
     public static WIRED_VISUAL_CLICK_THROUGH: string = 'wired_visual_click_through';
+    // «Enfocar» del menú del avatar (cliente: components/room/widgets/foco): alpha 0..1 de usuarios y bots (AvatarVisualization)
+    // y mascotas (PetVisualization).
+    // Se MULTIPLICA por el del wired, así ninguno de los dos pisa al otro.
+    public static FIGURE_FOCUS_ALPHA: string = 'figure_focus_alpha';
     public static FURNITURE_USAGE_POLICY: string = 'furniture_usage_policy';
     public static FURNITURE_OWNER_ID: string = 'furniture_owner_id';
     public static FURNITURE_OWNER_NAME: string = 'furniture_owner_name';
