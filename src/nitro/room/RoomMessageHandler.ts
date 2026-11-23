@@ -1,4 +1,5 @@
 import { AvatarGuideStatus, IConnection, IRoomCreator, IVector3D, LegacyDataType, ObjectRolling, PetType, RoomObjectCategory, RoomObjectType, RoomObjectUserType, RoomObjectVariable, Vector3d } from '../../api';
+import { datosPesca, fasePesca } from './object/visualization/avatar/additions/PescaAddition';
 import { Disposable } from '../../core';
 import { DiceValueMessageEvent, FloorHeightMapEvent, FurnitureAliasesComposer, FurnitureAliasesEvent, FurnitureDataEvent, FurnitureFloorAddEvent, FurnitureFloorDataParser, FurnitureFloorEvent, FurnitureFloorRemoveEvent, FurnitureFloorUpdateEvent, FurnitureWallAddEvent, FurnitureWallDataParser, FurnitureWallEvent, FurnitureWallRemoveEvent, FurnitureWallUpdateEvent, GetRoomEntryDataMessageComposer, GuideSessionEndedMessageEvent, GuideSessionErrorMessageEvent, GuideSessionStartedMessageEvent, IgnoreResultEvent, ItemDataUpdateMessageEvent, ObjectsDataUpdateEvent, ObjectsRollingEvent, OneWayDoorStatusMessageEvent, PetExperienceEvent, PetFigureUpdateEvent, RoomEntryTileMessageEvent, RoomEntryTileMessageParser, RoomHeightMapEvent, RoomHeightMapUpdateEvent, RoomPaintEvent, RoomReadyMessageEvent, RoomUnitChatEvent, RoomUnitChatShoutEvent, RoomUnitChatWhisperEvent, RoomUnitDanceEvent, RoomUnitEffectEvent, RoomUnitEvent, RoomUnitExpressionEvent, RoomUnitHandItemEvent, RoomUnitIdleEvent, RoomUnitInfoEvent, RoomUnitNumberEvent, RoomUnitRemoveEvent, RoomHabbiconMessageEvent, RoomAuraMessageEvent, RoomEstelaMessageEvent, RoomVipMessageEvent, RoomSplashMessageEvent, RoomUnitStatusEvent, RoomUnitTypingEvent, RoomVisualizationSettingsEvent, UserInfoEvent, YouArePlayingGameEvent } from '../communication';
 import { RoomPlaneParser } from './object/RoomPlaneParser';
@@ -859,6 +860,7 @@ export class RoomMessageHandler extends Disposable
             let postureType = RoomObjectVariable.STD;
             let parameter = '';
             let juego = '';
+            let pesca: string = null;
 
             if(status.actions && status.actions.length)
             {
@@ -892,6 +894,10 @@ export class RoomMessageHandler extends Disposable
                             // «está jugando» (centro de juegos): no es una postura
                             juego = action.value;
                             break;
+                        case 'fsh':
+                            // pescando (la caña, el sedal y el flotador): tampoco es una postura
+                            pesca = action.value;
+                            break;
                         default:
                             postureUpdate = true;
                             postureType = action.action;
@@ -902,6 +908,7 @@ export class RoomMessageHandler extends Disposable
             }
 
             this._roomCreator.updateRoomObjectUserAction(this._currentRoomId, status.id, RoomObjectVariable.FIGURE_JUEGO, 0, juego);
+            this._roomCreator.updateRoomObjectUserAction(this._currentRoomId, status.id, RoomObjectVariable.FIGURE_FISHING, (pesca !== null) ? fasePesca(pesca) : 0, (pesca !== null) ? datosPesca(pesca) : '');
 
             if(postureUpdate) this._roomCreator.updateRoomObjectUserPosture(this._currentRoomId, status.id, postureType, parameter);
             else if(isPosture) this._roomCreator.updateRoomObjectUserPosture(this._currentRoomId, status.id, RoomObjectVariable.STD, '');

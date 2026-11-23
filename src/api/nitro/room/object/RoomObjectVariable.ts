@@ -39,6 +39,12 @@ export class RoomObjectVariable
     public static FIGURE_IS_PLAYING_GAME: string = 'figure_is_playing_game';
     /** Globo «está jugando»: classname del furni cuyo icono va dentro (vacío = no juega). Estado «jg» del avatar. */
     public static FIGURE_JUEGO: string = 'figure_juego';
+    /** Pesca (estado «fsh» del avatar): fase (0 no pesca, 1 esperando, 2 picada, 3 capturado, 4 escapado), destino «x,y,z»,
+     *  captura «código,perfecta,última» y skin de la caña. Los mismos nombres que el renderer original. */
+    public static FIGURE_FISHING: string = 'figure_fishing';
+    public static FIGURE_FISHING_TARGET: string = 'figure_fishing_target';
+    public static FIGURE_FISHING_CATCH: string = 'figure_fishing_catch';
+    public static FIGURE_FISHING_SKIN: string = 'figure_fishing_skin';
     public static FIGURE_GUIDE_STATUS: string = 'figure_guide_status';
     public static FIGURE_EXPRESSION: string = 'figure_expression';
     public static HEAD_DIRECTION: string = 'head_direction';

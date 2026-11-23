@@ -1,13 +1,14 @@
 import { BLEND_MODES } from '@pixi/constants';
 import { Filter, Resource, Texture } from '@pixi/core';
 import { AlphaFilter } from '@pixi/filter-alpha';
-import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, RoomObjectSpriteType, RoomObjectVariable } from '../../../../../api';
+import { AdvancedMap, AlphaTolerance, AvatarAction, AvatarGuideStatus, AvatarSetType, IAdvancedMap, IAvatarEffectListener, IAvatarImage, IAvatarImageListener, IGraphicAsset, IObjectVisualizationData, IRoomGeometry, IRoomObject, IRoomObjectModel, IVector3D, RoomObjectSpriteType, RoomObjectVariable, Vector3d } from '../../../../../api';
 import { RoomObjectSpriteVisualization } from '../../../../../room';
 import { SplashAddition } from './additions/SplashAddition';
 import { AccionAddition } from './additions/AccionAddition';
 import { AccionMotor, PoseAhora } from './AccionMotor';
 import { SplashFiltro } from './SplashFiltro';
 import { SplashMotor } from './SplashMotor';
+import { CanaPescaAddition, CapturaPescaAddition, CorchoPescaAddition, PescaCaptura, SedalPescaAddition, cargarLibreriaPesca, conFlotadorEnReposo, leerCaptura } from './additions/PescaAddition';
 import { EstelaAddition, ExpressionAdditionFactory, FloatingIdleZAddition, GameClickTargetAddition, GuideStatusBubbleAddition, HabbiconAddition, IAvatarAddition, JugandoAddition, MutedBubbleAddition, NumberBubbleAddition, TypingBubbleAddition, VipAddition } from './additions';
 import { AvatarAura } from './AvatarAura';
 import { AvatarVisualizationData } from './AvatarVisualizationData';
@@ -28,6 +29,12 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private static VIP_ID: number = 11;
     private static ACCION_ID: number = 12;
     private static JUGANDO_ID: number = 13;
+    private static FISHING_ROD_ID: number = 14;
+    private static FISHING_LINE_ID: number = 15;
+    private static FISHING_FISH_ID: number = 16;
+    private static FISHING_BOBBER_ID: number = 17;
+    private static FISHING_SPARKLES_ID: number = 18;
+    private static FISHING_RESTING_BOBBER_ID: number = 19;
     private static OWN_USER_ID: number = 4;
     private static UPDATE_TIME_INCREASER: number = 41;
     private static SIN_FILTROS: any[] = [];
@@ -51,6 +58,16 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     private _cachedAvatarEffects: IAdvancedMap<string, IAvatarImage>;
     private _shadow: IGraphicAsset;
     private _lastUpdate: number;
+    // pesca (como el original): fase, destino, skin, captura/escape en curso y el reloj de la sala
+    private _fishing = false;
+    private _fishingTarget = '';
+    private _fishingSkin = '';
+    private _fishingCatch: PescaCaptura = null;
+    private _fishingCatchKey = '';
+    private _fishingCatchStart = 0;
+    private _fishingRestingBobber = false;
+    private _time = 0;
+    private _lastGeometry: IRoomGeometry = null;
     private _disposed: boolean;
 
     private _figure: string;
@@ -213,6 +230,9 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     public update(geometry: IRoomGeometry, time: number, update: boolean, skipUpdate: boolean): void
     {
         if(!this.object || !geometry || !this._data) return;
+
+        this._lastGeometry = geometry;
+        this._time = time;
 
         // los colores y el pulso del aura cambian en cada fotograma, aunque el avatar no se mueva:
         // basta con tocar los filtros, el lienzo los repinta
@@ -978,6 +998,74 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
             if(vipAddition) this.removeAddition(AvatarVisualization.VIP_ID);
 
             if(vipHasta) this.addAddition(new VipAddition(AvatarVisualization.VIP_ID, vipHasta, this));
+
+            needsUpdate = true;
+        }
+
+        // pesca: la caña y el sedal mientras pesca; el pez, el flotador y las chispas durante una captura o un escape; el
+        // flotador en reposo con skin (bloque del renderer original, con sus ids)
+        const fase = (model.getValue<number>(RoomObjectVariable.FIGURE_FISHING) || 0);
+        const pescando = (fase > 0);
+
+        this._fishingTarget = (model.getValue<string>(RoomObjectVariable.FIGURE_FISHING_TARGET) || '');
+        this._fishingSkin = (model.getValue<string>(RoomObjectVariable.FIGURE_FISHING_SKIN) || '');
+
+        if(pescando !== this._fishing)
+        {
+            this._fishing = pescando;
+
+            if(pescando)
+            {
+                cargarLibreriaPesca();
+                this.addAddition(new CanaPescaAddition(AvatarVisualization.FISHING_ROD_ID, this));
+                this.addAddition(new SedalPescaAddition(AvatarVisualization.FISHING_LINE_ID, this));
+            }
+            else
+            {
+                this.removeAddition(AvatarVisualization.FISHING_ROD_ID);
+                this.removeAddition(AvatarVisualization.FISHING_LINE_ID);
+            }
+
+            needsUpdate = true;
+        }
+
+        const tipo = (fase === 3) ? 'caught' : ((fase === 4) ? 'escaped' : null);
+        const capturaTexto = (tipo && model.getValue<string>(RoomObjectVariable.FIGURE_FISHING_CATCH)) || '';
+        const captura = tipo ? leerCaptura(capturaTexto) : null;
+        const capturaClave = captura ? `${ tipo }|${ capturaTexto }` : '';
+
+        if(capturaClave !== this._fishingCatchKey)
+        {
+            const habia = !!this._fishingCatch;
+
+            this._fishingCatchKey = capturaClave;
+            this._fishingCatch = captura ? { ...captura, kind: tipo } : null;
+            this._fishingCatchStart = this._time;
+
+            if(this._fishingCatch && !habia)
+            {
+                this.addAddition(new CapturaPescaAddition(AvatarVisualization.FISHING_FISH_ID, this, 'fish'));
+                this.addAddition(new CapturaPescaAddition(AvatarVisualization.FISHING_BOBBER_ID, this, 'bobber'));
+                this.addAddition(new CapturaPescaAddition(AvatarVisualization.FISHING_SPARKLES_ID, this, 'sparkles'));
+            }
+            else if(!this._fishingCatch && habia)
+            {
+                this.removeAddition(AvatarVisualization.FISHING_FISH_ID);
+                this.removeAddition(AvatarVisualization.FISHING_BOBBER_ID);
+                this.removeAddition(AvatarVisualization.FISHING_SPARKLES_ID);
+            }
+
+            needsUpdate = true;
+        }
+
+        const enReposo = conFlotadorEnReposo(fase, this._fishingSkin);
+
+        if(enReposo !== this._fishingRestingBobber)
+        {
+            this._fishingRestingBobber = enReposo;
+
+            if(enReposo) this.addAddition(new CorchoPescaAddition(AvatarVisualization.FISHING_RESTING_BOBBER_ID, this));
+            else this.removeAddition(AvatarVisualization.FISHING_RESTING_BOBBER_ID);
 
             needsUpdate = true;
         }
@@ -1756,6 +1844,56 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
     public get posture(): string
     {
         return this._posture;
+    }
+
+    // ---- lo que leen las adiciones de la pesca (IPescaVisualizacion)
+
+    public get bodyDirection(): number
+    {
+        return this._avatarImage ? this._avatarImage.getDirection() : this._direction;
+    }
+
+    public get layerAlpha(): number
+    {
+        const sprite = this.getSprite(AvatarVisualization.AVATAR_LAYER_ID);
+
+        return sprite ? sprite.alpha : 255;
+    }
+
+    public get fishingTarget(): string
+    {
+        return this._fishingTarget;
+    }
+
+    public get fishingSkin(): string
+    {
+        return this._fishingSkin;
+    }
+
+    public get fishingCatch(): PescaCaptura
+    {
+        return this._fishingCatch;
+    }
+
+    public get fishingCatchElapsed(): number
+    {
+        return this._time - this._fishingCatchStart;
+    }
+
+    public get fishingTime(): number
+    {
+        return this._time;
+    }
+
+    /** Desplazamiento en pantalla del avatar a un punto de la sala (el agua donde pesca), con su z para la profundidad. */
+    public getScreenOffsetTo(x: number, y: number, z: number): IVector3D
+    {
+        if(!this._lastGeometry || !this.object) return null;
+
+        const a = this._lastGeometry.getScreenPosition(this.object.getLocation());
+        const b = this._lastGeometry.getScreenPosition(new Vector3d(x, y, z));
+
+        return (!a || !b) ? null : new Vector3d((Math.round(b.x) - Math.round(a.x)), (Math.round(b.y) - Math.round(a.y)), (b.z - a.z));
     }
 
     public get angle(): number

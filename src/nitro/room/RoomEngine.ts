@@ -1,4 +1,5 @@
 import { RenderTexture, Resource, Texture } from '@pixi/core';
+import { partirDatosPesca } from './object/visualization/avatar/additions/PescaAddition';
 import { Container, DisplayObject } from '@pixi/display';
 import { Matrix, Point, Rectangle } from '@pixi/math';
 import { IConnection, IDisposable, IFurnitureStackingHeightMap, IGetImageListener, IImageResult, ILegacyWallGeometry, IMessageComposer, INitroCommunicationManager, INitroEvent, IObjectData, IPetColorResult, IPetCustomPart, IRoomContentListener, IRoomContentLoader, IRoomCreator, IRoomEngine, IRoomEngineServices, IRoomGeometry, IRoomInstance, IRoomManager, IRoomManagerListener, IRoomObject, IRoomObjectController, IRoomObjectLogicFactory, IRoomObjectVisualizationFactory, IRoomRenderer, IRoomRendererFactory, IRoomRenderingCanvas, IRoomSessionManager, ISelectedRoomObjectData, ISessionDataManager, ITileObjectMap, IUpdateReceiver, IVector3D, LegacyDataType, MouseEventType, NitroConfiguration, NitroLogger, ObjectDataFactory, RoomControllerLevel, RoomObjectCategory, RoomObjectUserType, RoomObjectVariable, ToolbarIconEnum, Vector3d } from '../../api';
@@ -2570,6 +2571,16 @@ export class RoomEngine extends NitroManager implements IRoomEngine, IRoomCreato
                 // el globo «está jugando»: un valor de texto en el modelo, sin mensaje propio (setValue no hace nada si no cambia)
                 object.model.setValue(RoomObjectVariable.FIGURE_JUEGO, (parameter || ''));
                 return true;
+            case RoomObjectVariable.FIGURE_FISHING: {
+                const { target, fishCatch, skin } = partirDatosPesca(parameter);
+
+                object.model.setValue(RoomObjectVariable.FIGURE_FISHING, value);
+                object.model.setValue(RoomObjectVariable.FIGURE_FISHING_TARGET, target);
+                object.model.setValue(RoomObjectVariable.FIGURE_FISHING_CATCH, fishCatch);
+                object.model.setValue(RoomObjectVariable.FIGURE_FISHING_SKIN, skin);
+
+                return true;
+            }
             case RoomObjectVariable.FIGURE_GUIDE_STATUS:
                 message = new ObjectAvatarGuideStatusUpdateMessage(value);
                 break;
