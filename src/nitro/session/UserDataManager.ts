@@ -152,7 +152,10 @@ export class UserDataManager extends Disposable
 
         const existingType = this._userDataByType.get(existing.type);
 
-        if(existingType) existingType.delete(existing.webID);
+        // solo si sigue siendo ESTA entrada: si el mismo webID ya volvió con otro índice (doble entrada del :unload,
+        // el alta nueva llega antes que la baja vieja) no hay que borrar la nueva, o getUserData(webID) da null
+        // y el tradeo (y todo lo que busque por webID) falla en silencio
+        if(existingType && (existingType.get(existing.webID) === existing)) existingType.delete(existing.webID);
     }
 
     public getUserBadges(userId: number): string[]
