@@ -6,6 +6,7 @@ import { IMessageEvent } from './IMessageEvent';
 export interface IConnection extends IEventDispatcher
 {
     init(socketUrl: string): void;
+    reconnect(socketUrl: string): void;
     dispose(): void;
     onReady(): void;
     authenticated(): void;

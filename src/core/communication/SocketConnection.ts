@@ -52,6 +52,23 @@ export class SocketConnection extends EventDispatcher implements IConnection
         this.createSocket(socketUrl);
     }
 
+    /**
+     * Reconexión en caliente (24-11): socket nuevo en la MISMA conexión, así los receptores de mensajes ya registrados
+     * (renderer y UI) siguen valiendo sin duplicarse. Vuelve al estado de antes de autenticar: tras el AuthenticationOK
+     * lo que llegue o se mande espera en cola hasta onReady(), como en el arranque.
+     */
+    public reconnect(socketUrl: string): void
+    {
+        if(this.disposed) return;
+
+        this._isAuthenticated = false;
+        this._isReady = false;
+        this._pendingClientMessages = [];
+        this._pendingServerMessages = [];
+
+        this.createSocket(socketUrl);
+    }
+
     protected onDispose(): void
     {
         super.onDispose();
@@ -105,7 +122,7 @@ export class SocketConnection extends EventDispatcher implements IConnection
         this._socket.removeEventListener(WebSocketEventEnum.CONNECTION_ERROR, this.onError);
         this._socket.removeEventListener(WebSocketEventEnum.CONNECTION_MESSAGE, this.onMessage);
 
-        if(this._socket.readyState === WebSocket.OPEN) this._socket.close();
+        if((this._socket.readyState === WebSocket.OPEN) || (this._socket.readyState === WebSocket.CONNECTING)) this._socket.close();
 
         this._socket = null;
     }
@@ -131,12 +148,16 @@ export class SocketConnection extends EventDispatcher implements IConnection
 
         //this.dispatchConnectionEvent(SocketConnectionEvent.CONNECTION_MESSAGE, event);
 
+        const socket = this._socket;
         const reader = new FileReader();
 
         reader.readAsArrayBuffer(event.data);
 
         reader.onloadend = () =>
         {
+            // lo que quedara por leer de un socket ya sustituido (reconexión) no se mezcla con el nuevo
+            if(!socket || (socket !== this._socket)) return;
+
             this._dataBuffer = this.concatArrayBuffers(this._dataBuffer, (reader.result as ArrayBuffer));
 
             this.processReceivedData();
@@ -201,7 +222,7 @@ export class SocketConnection extends EventDispatcher implements IConnection
 
     private write(buffer: ArrayBuffer): void
     {
-        if(this._socket.readyState !== WebSocket.OPEN) return;
+        if(!this._socket || this._socket.readyState !== WebSocket.OPEN) return;
 
         this._socket.send(buffer);
     }

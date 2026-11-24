@@ -68,6 +68,9 @@ export class RoomPreviewer
     {
         this.reset(true);
 
+        // su sala en el motor también (antes se quedaba: una por cada ventana remontada en la reconexión en caliente)
+        if(this.isRoomEngineReady) this._roomEngine.removeRoomInstance(this._previewRoomId);
+
         if(this.isRoomEngineReady && this._roomEngine.events)
         {
             this._roomEngine.events.removeEventListener(RoomEngineObjectEvent.ADDED, this.onRoomObjectAdded);
