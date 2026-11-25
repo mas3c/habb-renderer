@@ -998,6 +998,29 @@ export class RoomVisualization extends RoomObjectSpriteVisualization implements 
         this._highlightDirty = true;
     }
 
+    /**
+     * Color del resaltado (herramienta de construcción: azul al mover un grupo, verde al copiar); null = el aclarado
+     * normal. Mezcla el suelo a partes iguales con el color. Solo cambia el filtro: los planos no se rehacen.
+     */
+    public setHighlightColor(color: number): void
+    {
+        if(color === null || color === undefined)
+        {
+            this._highlightFilters = RoomVisualization.createHighlightFilters();
+        }
+        else
+        {
+            const filter = new ColorMatrixFilter();
+            const r = ((color >> 16) & 0xFF) / 255, g = ((color >> 8) & 0xFF) / 255, b = (color & 0xFF) / 255;
+
+            filter.matrix = [ 0.5, 0, 0, 0, (r * 0.5), 0, 0.5, 0, 0, (g * 0.5), 0, 0, 0.5, 0, (b * 0.5), 0, 0, 0, 1, 0 ];
+            this._highlightFilters = [ filter ];
+        }
+
+        // los sprites del resaltado toman el filtro nuevo al pintarse (comparan por referencia)
+        this._highlightDirty = true;
+    }
+
     public clearHighlightArea(): void
     {
         if(!this._highlightArea && !this._highlightPlanes.length) return;
