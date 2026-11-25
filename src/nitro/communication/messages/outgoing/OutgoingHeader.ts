@@ -234,6 +234,7 @@ export class OutgoingHeader
     public static UNIT_TYPING = 1597;
     public static UNIT_TYPING_STOP = 1474;
     public static UNIT_WALK = 3320;
+    public static CLICK_FURNI = 6002;
     public static USER_BADGES = 2769;
     public static USER_BADGES_CURRENT = 2091;
     public static USER_BADGES_CURRENT_UPDATE = 644;
