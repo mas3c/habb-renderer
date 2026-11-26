@@ -1617,13 +1617,8 @@ export class AvatarVisualization extends RoomObjectSpriteVisualization implement
 
     private acabarSplash(): void
     {
-        if(this._splashFiltro)
-        {
-            const filtro = this._splashFiltro;
-
-            // se destruye cuando el sprite ya no lo usa
-            requestAnimationFrame(() => requestAnimationFrame(() => filtro.destroy()));
-        }
+        // 26-11: no se destruye: si el keko no se redibuja, su sprite sigue con el filtro y Pixi
+        // revienta en cada fotograma («uniforms» de null) y congela el cliente. Lo recoge el GC
 
         this._splash = null;
         this._splashFiltro = null;
